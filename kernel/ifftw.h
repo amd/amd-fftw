@@ -77,6 +77,20 @@ extern "C"
 # define X(name) CONCAT(fftw_, name)
 #endif
 
+//AMD OPTIMIZATIONS :- start
+
+//Main optimization switch that enables or disables all AMD specific optimizations in FFTW
+#define AMD_OPT_ALL 1
+
+#if AMD_OPT_ALL
+
+//disables 128-bit AVX2 versions of kernels and prefers only 256-bit AVX2 kernels support
+#define AMD_OPT_PREFER_256BIT_FPU 1
+#define AMD_OPT_256BIT_FPU_ABOVE_N 1024//Below this SIZE, 128-bit AVX2 kernels allowed
+
+#endif
+//AMD OPTIMIZATIONS :- end
+
 /*
   integral type large enough to contain a stride (what ``int'' should
   have been in the first place.
@@ -753,6 +767,8 @@ struct planner_s {
      double timelimit; /* elapsed_since(start_time) at which to bail out */
      int timed_out; /* whether most recent search timed out */
      int need_timeout_check;
+
+     int size;
 
      /* various statistics */
      int nplan;    /* number of plans evaluated */

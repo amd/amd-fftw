@@ -33,6 +33,19 @@ planner *X(the_planner)(void)
      return plnr;
 }
 
+#if AMD_OPT_PREFER_256BIT_FPU
+planner *X(the_planner_ex)(int n)
+{
+     if (!plnr) {
+          plnr = X(mkplanner)();
+	  plnr->size = n;
+          X(configure_planner)(plnr);
+     }
+
+     return plnr;
+}
+#endif
+
 void X(cleanup)(void)
 {
      if (plnr) {

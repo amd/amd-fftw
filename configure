@@ -15833,6 +15833,8 @@ fi
    esac
 fi
 
+#AMD architecture favouring compiler flags/switches
+CFLAGS="$CFLAGS -march=znver1 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ANSI C header files" >&5
 $as_echo_n "checking for ANSI C header files... " >&6; }

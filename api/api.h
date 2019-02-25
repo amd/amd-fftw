@@ -98,11 +98,17 @@ printer *X(mkprinter_cnt)(size_t *cnt);
 printer *X(mkprinter_str)(char *s);
 
 FFTW_EXTERN planner *X(the_planner)(void);
+#if AMD_OPT_PREFER_256BIT_FPU
+FFTW_EXTERN planner *X(the_planner_ex)(int);
+#endif
 void X(configure_planner)(planner *plnr);
 
 void X(mapflags)(planner *, unsigned);
 
 apiplan *X(mkapiplan)(int sign, unsigned flags, problem *prb);
+#if AMD_OPT_PREFER_256BIT_FPU
+apiplan *X(mkapiplan_ex)(int sign, unsigned flags, int n, problem *prb);
+#endif
 
 rdft_kind *X(map_r2r_kind)(int rank, const X(r2r_kind) * kind);
 

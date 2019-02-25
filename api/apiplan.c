@@ -176,6 +176,101 @@ apiplan *X(mkapiplan)(int sign, unsigned flags, problem *prb)
      return p;
 }
 
+#if AMD_OPT_PREFER_256BIT_FPU
+apiplan *X(mkapiplan_ex)(int sign, unsigned flags, int n, problem *prb)
+{
+     apiplan *p = 0;
+     plan *pln;
+     unsigned flags_used_for_planning;
+     planner *plnr;
+     static const unsigned int pats[] = {FFTW_ESTIMATE, FFTW_MEASURE,
+                                         FFTW_PATIENT, FFTW_EXHAUSTIVE};
+     int pat, pat_max;
+     double pcost = 0;
+     
+     if (before_planner_hook)
+          before_planner_hook();
+     
+     plnr = X(the_planner_ex)(n);
+
+     if (flags & FFTW_WISDOM_ONLY) {
+	  /* Special mode that returns a plan only if wisdom is present,
+	     and returns 0 otherwise.  This is now documented in the manual,
+	     as a way to detect whether wisdom is available for a problem. */
+	  flags_used_for_planning = flags;
+	  pln = mkplan0(plnr, flags, prb, 0, WISDOM_ONLY);
+     } else {
+	  pat_max = flags & FFTW_ESTIMATE ? 0 :
+	       (flags & FFTW_EXHAUSTIVE ? 3 :
+		(flags & FFTW_PATIENT ? 2 : 1));
+	  pat = plnr->timelimit >= 0 ? 0 : pat_max;
+
+	  flags &= ~(FFTW_ESTIMATE | FFTW_MEASURE |
+		     FFTW_PATIENT | FFTW_EXHAUSTIVE);
+
+	  plnr->start_time = X(get_crude_time)();
+
+	  /* plan at incrementally increasing patience until we run
+	     out of time */
+	  for (pln = 0, flags_used_for_planning = 0; pat <= pat_max; ++pat) {
+	       plan *pln1;
+	       unsigned tmpflags = flags | pats[pat];
+	       pln1 = mkplan(plnr, tmpflags, prb, 0u);
+
+	       if (!pln1) {
+		    /* don't bother continuing if planner failed or timed out */
+		    A(!pln || plnr->timed_out);
+		    break;
+	       }
+
+	       X(plan_destroy_internal)(pln);
+	       pln = pln1;
+	       flags_used_for_planning = tmpflags;
+	       pcost = pln->pcost;
+	  }
+     }
+
+     if (pln) {
+	  /* build apiplan */
+	  p = (apiplan *) MALLOC(sizeof(apiplan), PLANS);
+	  p->prb = prb;
+	  p->sign = sign; /* cache for execute_dft */
+
+	  /* re-create plan from wisdom, adding blessing */
+	  p->pln = mkplan(plnr, flags_used_for_planning, prb, BLESSING);
+
+	  /* record pcost from most recent measurement for use in X(cost) */
+	  p->pln->pcost = pcost;
+
+	  if (sizeof(trigreal) > sizeof(R)) {
+	       /* this is probably faster, and we have enough trigreal
+		  bits to maintain accuracy */
+	       X(plan_awake)(p->pln, AWAKE_SQRTN_TABLE);
+	  } else {
+	       /* more accurate */
+	       X(plan_awake)(p->pln, AWAKE_SINCOS);
+	  }
+
+	  /* we don't use pln for p->pln, above, since by re-creating the
+	     plan we might use more patient wisdom from a timed-out mkplan */
+	  X(plan_destroy_internal)(pln);
+     } else
+	  X(problem_destroy)(prb);
+
+     /* discard all information not necessary to reconstruct the plan */
+     plnr->adt->forget(plnr, FORGET_ACCURSED);
+
+#ifdef FFTW_RANDOM_ESTIMATOR
+     X(random_estimate_seed)++; /* subsequent "random" plans are distinct */
+#endif
+
+     if (after_planner_hook)
+          after_planner_hook();
+     
+     return p;
+}
+#endif
+
 void X(destroy_plan)(X(plan) p)
 {
      if (p) {

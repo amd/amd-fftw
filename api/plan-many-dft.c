@@ -37,8 +37,12 @@ X(plan) X(plan_many_dft)(int rank, const int *n,
      EXTRACT_REIM(sign, in, &ri, &ii);
      EXTRACT_REIM(sign, out, &ro, &io);
 
-     return 
+     return
+#if AMD_OPT_PREFER_256BIT_FPU
+	  X(mkapiplan_ex)(sign, flags, *n,
+#else
 	  X(mkapiplan)(sign, flags,
+#endif
 		       X(mkproblem_dft_d)(
 			    X(mktensor_rowmajor)(rank, n, 
 						 N0(inembed), N0(onembed),
