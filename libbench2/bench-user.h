@@ -141,6 +141,10 @@ extern int always_pad_real;
 #define LIBBENCH_TIMER 0
 #define USER_TIMER 1
 #define BENCH_NTIMERS 2
+
+#define AMD_WISDOM_MULTI_NAMED_FILE 0
+#define AMD_WISDOM_MULTI_NAMED_FILE_READ_ONLY 0
+
 extern void timer_start(int which_timer);
 extern double timer_stop(int which_timer);
 
@@ -150,6 +154,9 @@ extern void doit(int iter, bench_problem *p);
 extern void done(bench_problem *p);
 extern void main_init(int *argc, char ***argv);
 extern void cleanup(void);
+#if AMD_WISDOM_MULTI_NAMED_FILE
+extern void cleanup2(bench_problem *p);
+#endif
 extern void verify(const char *param, int rounds, double tol);
 extern void useropt(const char *arg);
 

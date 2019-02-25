@@ -190,6 +190,10 @@ int bench_main(int argc, char *argv[])
 	  speed(argv[my_optind++], 0);
      }
 
+#if !AMD_WISDOM_MULTI_NAMED_FILE
      cleanup();
+#else
+     cleanup2(p);
+#endif
      return 0;
 }

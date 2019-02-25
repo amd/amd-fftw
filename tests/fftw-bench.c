@@ -27,7 +27,12 @@ int threads_ok = 1;
 
 FFTW(plan) the_plan = 0;
 
+#if AMD_WISDOM_MULTI_NAMED_FILE
+static char wisdat[32];
+#else
 static const char *wisdat = "wis.dat";
+#endif
+
 unsigned the_flags = 0;
 int paranoid = 0;
 int usewisdom = 0;
@@ -126,7 +131,7 @@ void rdwisdom(void)
      timer_start(USER_TIMER);
      if ((f = fopen(wisdat, "r"))) {
 	  if (!import_wisdom(f))
-	       fprintf(stderr, "bench: ERROR reading wisdom\n");
+	       fprintf(stderr, "bench: ERROR reading wisdom %s\n", wisdat);
 	  else
 	       success = 1;
 	  fclose(f);
@@ -148,6 +153,9 @@ void wrwisdom(void)
 {
      FILE *f;
      double tim;
+#if AMD_WISDOM_MULTI_NAMED_FILE_READ_ONLY
+     return;//in order to skip writing wisdom file. for the case when already generated wisdom file is used and not written after use.
+#endif
      if (!havewisdom) return;
 
      timer_start(USER_TIMER);
@@ -183,6 +191,11 @@ int can_do(bench_problem *p)
 
      if (verbose > 2 && p->pstring)
 	  printf("Planning %s...\n", p->pstring);
+#if AMD_WISDOM_MULTI_NAMED_FILE
+     memset(wisdat, 0x0, 32);
+     strncpy(wisdat, p->pstring, strlen(p->pstring));
+     strcat(wisdat, ".dat");
+#endif
      rdwisdom();
 
      timer_start(USER_TIMER);
@@ -216,6 +229,11 @@ void setup(bench_problem *p)
           FFTW(free(ptr));
      }
 
+#if AMD_WISDOM_MULTI_NAMED_FILE
+     memset(wisdat, 0x0, 32);
+     strncpy(wisdat, p->pstring, strlen(p->pstring));
+     strcat(wisdat, ".dat");
+#endif     
      rdwisdom();
      install_hook();
 
@@ -284,4 +302,36 @@ void cleanup(void)
 #    endif
 
      final_cleanup();
+}
+
+void cleanup2(bench_problem *p)
+{
+	initial_cleanup();
+
+#if AMD_WISDOM_MULTI_NAMED_FILE
+
+	memset(wisdat, 0x0, 32);
+	strncpy(wisdat, p->pstring, strlen(p->pstring));
+	strcat(wisdat, ".dat");
+#endif
+	wrwisdom();
+#if AMD_WISDOM_MULTI_NAMED_FILE
+	problem_destroy(p);
+#endif
+
+#ifdef HAVE_SMP
+	FFTW(cleanup_threads)();
+#else
+	FFTW(cleanup)();
+#endif
+
+#    ifdef FFTW_DEBUG_MALLOC
+	{
+		/* undocumented memory checker */
+		FFTW_EXTERN void FFTW(malloc_print_minfo)(int v);
+		FFTW(malloc_print_minfo)(verbose);
+	}
+#    endif
+
+	final_cleanup();
 }
