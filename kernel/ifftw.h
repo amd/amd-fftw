@@ -88,6 +88,10 @@ extern "C"
 #define AMD_OPT_PREFER_256BIT_FPU 1
 #define AMD_OPT_256BIT_FPU_ABOVE_N 1024//Below this SIZE, 128-bit AVX2 kernels allowed
 
+//CPY2d related optimizations :- enable Either (i)C switch Or (ii)INTRIN and/or ASM switch
+#define AMD_OPT_IN_PLACE_1D_CPY2D_STABLE_C 0
+#define AMD_OPT_IN_PLACE_1D_CPY2D_STABLE_INTRIN 1
+#define AMD_OPT_IN_PLACE_1D_CPY2D_EXPERIMENTAL_ASM 0
 #endif
 //AMD OPTIMIZATIONS :- end
 
