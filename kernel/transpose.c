@@ -169,9 +169,73 @@ void X(transpose_tiled)(R *I, INT n, INT s0, INT s1, INT vl)
      transpose_rec(I, n, dotile, &k);
 }
 
+#ifdef AMD_OPT_AUTO_TUNED_RASTER_TILED_TRANS_METHOD
+void trans_autoTuned_tiled_Rorder(R *in, int n, struct transpose_closure *pk)
+{
+    int i, j, k, l;
+    //static arrays of size equal to upper bound of L1D cache size, but it's utilized only as per current CPU's actual L1D size
+    double buf1[BLK_SIZE*BLK_SIZE];
+    double buf2[BLK_SIZE*BLK_SIZE];
+    int atc_blk_size = L1D_blk_size;//auto-tuned L1D cache block size
+    int num_ele = L1D_blk_size >> 1;//(pk->vl-1),//number of complex numbers is half.
+    int m = pk->s0;
+ 
+    //case when n is less than block size is handled by calling original fftw transpose function
+
+    for (i = 0; i < n; i += num_ele)
+    {
+        double tmp1, tmp2;
+	j = i;
+	k = i<<1;
+	//diagonal block: can be directly copied like ramModel
+     	X(cpy2d_ci)(in + i * m + k,
+		 buf1,
+		 num_ele, pk->vl, pk->vl,
+		 num_ele, pk->s0, atc_blk_size,
+		 pk->vl);
+     	X(cpy2d_co)(buf1,
+		 in + i * m + k,
+		 num_ele, atc_blk_size, pk->vl,
+		 num_ele, pk->vl, pk->s0,
+		 pk->vl);
+	j += num_ele;
+
+	//Next block in the raster scan order for current value of i
+	for (; j < n; j += num_ele)
+	{
+		k = j << 1;
+		l = i << 1;
+		X(cpy2d_ci)(in + i * m + k,
+				buf1,
+				num_ele, pk->vl, pk->vl,
+				num_ele, pk->s0, atc_blk_size,
+				pk->vl);
+		X(cpy2d_ci)(in + j * m + l,
+				buf2,
+				num_ele, pk->vl, pk->vl,
+				num_ele, pk->s0, atc_blk_size,
+				pk->vl);
+		X(cpy2d_co)(buf2,
+				in + i * m + k,
+				num_ele, atc_blk_size, pk->vl,
+				num_ele, pk->vl, pk->s0,
+				pk->vl);
+		X(cpy2d_co)(buf1,
+				in + j * m + l,
+				num_ele, atc_blk_size, pk->vl,
+				num_ele, pk->vl, pk->s0,
+				pk->vl);
+	}
+    }
+}
+#endif
+
 void X(transpose_tiledbuf)(R *I, INT n, INT s0, INT s1, INT vl) 
 {
      struct transpose_closure k;
+#ifdef AMD_OPT_AUTO_TUNED_RASTER_TILED_TRANS_METHOD
+     int blkSize = L1D_blk_size >> 1;
+#endif
      /* Assume that the the rows of I conflict into the same cache
         lines, and therefore we don't need to reserve cache space for
         the input.  If the rows don't conflict, there is no reason
@@ -186,6 +250,16 @@ void X(transpose_tiledbuf)(R *I, INT n, INT s0, INT s1, INT vl)
      k.buf1 = buf1;
      A(k.tilesz * k.tilesz * vl * sizeof(R) <= sizeof(buf0));
      A(k.tilesz * k.tilesz * vl * sizeof(R) <= sizeof(buf1));
+
+#ifndef AMD_OPT_AUTO_TUNED_RASTER_TILED_TRANS_METHOD
      transpose_rec(I, n, dotile_buf, &k);
+#else
+     if ((n < blkSize) || (n & (blkSize-1)) || (vl == 1))
+     {
+     	transpose_rec(I, n, dotile_buf, &k);
+	return;
+     }
+     trans_autoTuned_tiled_Rorder(I, n, &k);
+#endif
 }
 

@@ -52,3 +52,13 @@ int X(have_simd_avx)(void)
 
 #endif
 
+#ifdef AMD_OPT_AUTO_TUNED_TRANS_BLK_SIZE
+void X(enquire_L1DcacheSize) (void)
+{
+	int eax, ebx, ecx, edx;
+	cpuid_all(0x80000005,0,&eax,&ebx,&ecx,&edx);
+	L1Dsize = ((ecx >> 24) & 0xFF)*1024;
+	L1D_blk_size = X(isqrt)((L1Dsize/(2*8))); //where 2 is no. of tiles and 8 is double data type (may be use (INT)sizeof(R))
+	L1D_blk_size = L1D_blk_size&0xFF0; //block size is chosen that is multiple of 16/8, currently chosen that is multiple of 16.
+}
+#endif

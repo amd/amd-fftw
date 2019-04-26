@@ -48,6 +48,11 @@ void X(tile2d)(INT n0l, INT n0u, INT n1l, INT n1u, INT tilesz,
 
 INT X(compute_tilesz)(INT vl, int how_many_tiles_in_cache)
 {
+#ifndef AMD_OPT_AUTO_TUNED_TRANS_BLK_SIZE
      return X(isqrt)(CACHESIZE / 
 		     (((INT)sizeof(R)) * vl * (INT)how_many_tiles_in_cache));
+#else
+     return X(isqrt)(L1Dsize / 
+		     (((INT)sizeof(R)) * vl * (INT)how_many_tiles_in_cache));
+#endif
 }

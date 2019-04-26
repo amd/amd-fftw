@@ -92,6 +92,15 @@ extern "C"
 #define AMD_OPT_IN_PLACE_1D_CPY2D_STABLE_C 0
 #define AMD_OPT_IN_PLACE_1D_CPY2D_STABLE_INTRIN 1
 #define AMD_OPT_IN_PLACE_1D_CPY2D_EXPERIMENTAL_ASM 0
+
+//In-place Transpose related optimization switches :- 
+//(i) enables auto-tuned block sized tiling as per CPU's L1D cache size (applicable for both original 
+//    FFTW's transpose and the new auto-tuned cache-efficient raster order tiled transpose
+//#define AMD_OPT_AUTO_TUNED_TRANS_BLK_SIZE
+//(ii) enables new auto-tuned cache-efficient raster order tiled transpose for squared sized matrix
+//     (for this optimization switch, AMD_OPT_AUTO_TUNED_TRANS_BLK_SIZE should also be enabled)
+//#define AMD_OPT_AUTO_TUNED_RASTER_TILED_TRANS_METHOD
+
 #endif
 //AMD OPTIMIZATIONS :- end
 
@@ -137,6 +146,7 @@ extern int X(have_simd_avx512)(void);
 extern int X(have_simd_altivec)(void);
 extern int X(have_simd_vsx)(void);
 extern int X(have_simd_neon)(void);
+extern void X(enquire_L1DcacheSize) (void);
 
 /* forward declarations */
 typedef struct problem_s problem;
@@ -771,9 +781,9 @@ struct planner_s {
      double timelimit; /* elapsed_since(start_time) at which to bail out */
      int timed_out; /* whether most recent search timed out */
      int need_timeout_check;
-
+#if AMD_OPT_PREFER_256BIT_FPU
      int size;
-
+#endif
      /* various statistics */
      int nplan;    /* number of plans evaluated */
      double pcost, epcost; /* total pcost of measured/estimated plans */
@@ -977,8 +987,16 @@ void X(rader_tl_delete)(R *W, rader_tl **tl);
 /*-----------------------------------------------------------------------*/
 /* copy/transposition routines */
 
+#if defined(AMD_OPT_AUTO_TUNED_TRANS_BLK_SIZE) || defined(AMD_OPT_AUTO_TUNED_RASTER_TILED_TRANS_METHOD)
+/* upper bound to the cache size based on latest CPU architectures, for AMD optimized tiled routines */
+#define CACHESIZE 32768
+#define BLK_SIZE 32
+unsigned int L1D_blk_size;// = CACHESIZE;
+unsigned int L1Dsize;// = BLK_SIZE;
+#else
 /* lower bound to the cache size, for tiled routines */
 #define CACHESIZE 8192
+#endif
 
 INT X(compute_tilesz)(INT vl, int how_many_tiles_in_cache);
 
