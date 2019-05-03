@@ -89,4 +89,7 @@ void X(dft_conf_standard)(planner *p)
 #if HAVE_GENERIC_SIMD256
      X(solvtab_exec)(X(solvtab_dft_generic_simd256), p);
 #endif
+#ifdef AMD_OPT_AUTO_TUNED_TRANS_BLK_SIZE
+     X(enquire_L1DcacheSize)();
+#endif
 }
