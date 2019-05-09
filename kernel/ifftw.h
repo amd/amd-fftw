@@ -80,18 +80,18 @@ extern "C"
 //AMD OPTIMIZATIONS :- start
 
 //Main optimization switch that enables or disables all AMD specific optimizations in FFTW
-#define AMD_OPT_ALL 1
+//AMD_OPT_ALL is defined through config.h using configure script run-time feature arg --enable-amd
 
-#if AMD_OPT_ALL
+#ifdef AMD_OPT_ALL
 
 //disables 128-bit AVX2 versions of kernels and prefers only 256-bit AVX2 kernels support
-#define AMD_OPT_PREFER_256BIT_FPU 1
-#define AMD_OPT_256BIT_FPU_ABOVE_N 1024//Below this SIZE, 128-bit AVX2 kernels allowed
+#define AMD_OPT_PREFER_256BIT_FPU
+#define AMD_OPT_128BIT_KERNELS_THRESHOLD 1024//Below this SIZE, 128-bit AVX2 kernels allowed
 
 //CPY2d related optimizations :- enable Either (i)C switch Or (ii)INTRIN and/or ASM switch
-#define AMD_OPT_IN_PLACE_1D_CPY2D_STABLE_C 0
-#define AMD_OPT_IN_PLACE_1D_CPY2D_STABLE_INTRIN 1
-#define AMD_OPT_IN_PLACE_1D_CPY2D_EXPERIMENTAL_ASM 0
+//#define AMD_OPT_IN_PLACE_1D_CPY2D_STABLE_C
+#define AMD_OPT_IN_PLACE_1D_CPY2D_STABLE_INTRIN
+//#define AMD_OPT_IN_PLACE_1D_CPY2D_EXPERIMENTAL_ASM
 
 //In-place Transpose related optimization switches :- 
 //(i) enables auto-tuned block sized tiling as per CPU's L1D cache size (applicable for both original 
@@ -781,7 +781,7 @@ struct planner_s {
      double timelimit; /* elapsed_since(start_time) at which to bail out */
      int timed_out; /* whether most recent search timed out */
      int need_timeout_check;
-#if AMD_OPT_PREFER_256BIT_FPU
+#ifdef AMD_OPT_PREFER_256BIT_FPU
      int size;
 #endif
      /* various statistics */

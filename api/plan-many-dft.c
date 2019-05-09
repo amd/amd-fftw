@@ -38,7 +38,7 @@ X(plan) X(plan_many_dft)(int rank, const int *n,
      EXTRACT_REIM(sign, out, &ro, &io);
 
      return
-#if AMD_OPT_PREFER_256BIT_FPU
+#ifdef AMD_OPT_PREFER_256BIT_FPU
 	  X(mkapiplan_ex)(sign, flags, *n,
 #else
 	  X(mkapiplan)(sign, flags,

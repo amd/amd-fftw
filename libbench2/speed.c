@@ -20,7 +20,7 @@
 
 
 #include "libbench2/bench.h"
-#if AMD_WISDOM_MULTI_NAMED_FILE
+#ifdef AMD_WISDOM_MULTI_NAMED_FILE
 bench_problem *p;
 #endif
 int no_speed_allocation = 0; /* 1 to not allocate array data in speed() */
@@ -29,7 +29,7 @@ void speed(const char *param, int setup_only)
 {
      double *t;
      int iter = 0, k;
-#if !AMD_WISDOM_MULTI_NAMED_FILE
+#ifndef AMD_WISDOM_MULTI_NAMED_FILE
      bench_problem *p;
 #endif
      double tmin, y;
@@ -92,7 +92,7 @@ void speed(const char *param, int setup_only)
      report(p, t, time_repeat);
 
      if (!no_speed_allocation)
-#if !AMD_WISDOM_MULTI_NAMED_FILE
+#ifndef AMD_WISDOM_MULTI_NAMED_FILE
 	problem_destroy(p);
 #endif
      bench_free(t);

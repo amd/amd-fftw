@@ -176,7 +176,7 @@ apiplan *X(mkapiplan)(int sign, unsigned flags, problem *prb)
      return p;
 }
 
-#if AMD_OPT_PREFER_256BIT_FPU
+#ifdef AMD_OPT_PREFER_256BIT_FPU
 apiplan *X(mkapiplan_ex)(int sign, unsigned flags, int n, problem *prb)
 {
      apiplan *p = 0;

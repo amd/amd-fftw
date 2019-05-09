@@ -154,8 +154,8 @@ extern void doit(int iter, bench_problem *p);
 extern void done(bench_problem *p);
 extern void main_init(int *argc, char ***argv);
 extern void cleanup(void);
-#if AMD_WISDOM_MULTI_NAMED_FILE
-extern void cleanup2(bench_problem *p);
+#ifdef AMD_WISDOM_MULTI_NAMED_FILE
+extern void cleanup_ex(bench_problem *p);
 #endif
 extern void verify(const char *param, int rounds, double tol);
 extern void useropt(const char *arg);

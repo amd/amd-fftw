@@ -33,7 +33,8 @@ planner *X(the_planner)(void)
      return plnr;
 }
 
-#if AMD_OPT_PREFER_256BIT_FPU
+#ifdef AMD_OPT_PREFER_256BIT_FPU
+/* create the planner for the rest of the API: this variant also saves the problem size */
 planner *X(the_planner_ex)(int n)
 {
      if (!plnr) {

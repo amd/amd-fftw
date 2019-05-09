@@ -27,7 +27,7 @@ int threads_ok = 1;
 
 FFTW(plan) the_plan = 0;
 
-#if AMD_WISDOM_MULTI_NAMED_FILE
+#ifdef AMD_WISDOM_MULTI_NAMED_FILE
 static char wisdat[32];
 #else
 static const char *wisdat = "wis.dat";
@@ -153,8 +153,11 @@ void wrwisdom(void)
 {
      FILE *f;
      double tim;
-#if AMD_WISDOM_MULTI_NAMED_FILE_READ_ONLY
-     return;//in order to skip writing wisdom file. for the case when already generated wisdom file is used and not written after use.
+#ifdef AMD_WISDOM_MULTI_NAMED_FILE_READ_ONLY
+     /* in order to skip writing wisdom file. for the case when
+      * already generated wisdom file is used and not written after use.
+      */
+     return;
 #endif
      if (!havewisdom) return;
 
@@ -191,7 +194,7 @@ int can_do(bench_problem *p)
 
      if (verbose > 2 && p->pstring)
 	  printf("Planning %s...\n", p->pstring);
-#if AMD_WISDOM_MULTI_NAMED_FILE
+#ifdef AMD_WISDOM_MULTI_NAMED_FILE
      memset(wisdat, 0x0, 32);
      strncpy(wisdat, p->pstring, strlen(p->pstring));
      strcat(wisdat, ".dat");
@@ -229,7 +232,7 @@ void setup(bench_problem *p)
           FFTW(free(ptr));
      }
 
-#if AMD_WISDOM_MULTI_NAMED_FILE
+#ifdef AMD_WISDOM_MULTI_NAMED_FILE
      memset(wisdat, 0x0, 32);
      strncpy(wisdat, p->pstring, strlen(p->pstring));
      strcat(wisdat, ".dat");
@@ -268,7 +271,7 @@ void doit(int iter, bench_problem *p)
 {
      int i;
      FFTW(plan) q = the_plan;
-
+     
      UNUSED(p);
      for (i = 0; i < iter; ++i) 
 	  FFTW(execute)(q);
@@ -304,18 +307,18 @@ void cleanup(void)
      final_cleanup();
 }
 
-void cleanup2(bench_problem *p)
+void cleanup_ex(bench_problem *p)
 {
 	initial_cleanup();
 
-#if AMD_WISDOM_MULTI_NAMED_FILE
+#ifdef AMD_WISDOM_MULTI_NAMED_FILE
 
 	memset(wisdat, 0x0, 32);
 	strncpy(wisdat, p->pstring, strlen(p->pstring));
 	strcat(wisdat, ".dat");
 #endif
 	wrwisdom();
-#if AMD_WISDOM_MULTI_NAMED_FILE
+#ifdef AMD_WISDOM_MULTI_NAMED_FILE
 	problem_destroy(p);
 #endif
 

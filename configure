@@ -874,6 +874,7 @@ with_gnu_ld
 with_sysroot
 enable_libtool_lock
 enable_mpi
+enable_amd
 enable_fortran
 with_g77_wrappers
 enable_openmp
@@ -1580,6 +1581,7 @@ Optional Features:
                           optimize for fast installation [default=yes]
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --enable-mpi            compile FFTW MPI library
+  --enable-amd            enable AMD cpu specific optimizations
   --disable-fortran       don't include Fortran-callable wrappers
   --enable-openmp         use OpenMP directives for parallelism
   --enable-threads        compile FFTW SMP threads library
@@ -15833,8 +15835,6 @@ fi
    esac
 fi
 
-#AMD architecture favouring compiler flags/switches
-CFLAGS="$CFLAGS -march=znver1 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ANSI C header files" >&5
 $as_echo_n "checking for ANSI C header files... " >&6; }
@@ -17435,6 +17435,20 @@ if test "$ac_test_CFLAGS" != "set"; then
 		CFLAGS="$CFLAGS -Wall -W -Wcast-qual -Wpointer-arith -Wcast-align -pedantic -Wno-long-long -Wshadow -Wbad-function-cast -Wwrite-strings -Wstrict-prototypes -Wredundant-decls -Wnested-externs" # -Wundef -Wconversion -Wmissing-prototypes -Wmissing-declarations
 	fi
 fi
+fi
+
+# Check whether --enable-amd was given.
+if test "${enable_amd+set}" = set; then :
+  enableval=$enable_amd; have_amd=$enableval
+else
+  have_amd=no
+fi
+
+if test "$have_amd" = yes; then
+	CFLAGS="$CFLAGS -march=znver1 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+
+$as_echo "#define AMD_OPT_ALL 1" >>confdefs.h
+
 fi
 
 if test "$USE_MAINTAINER_MODE" = yes; then
