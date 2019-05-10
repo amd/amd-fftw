@@ -317,7 +317,7 @@ void X(cpy2d)(R *I, R *O,
 	      break;
      }
 }
-#elif def AMD_OPT_IN_PLACE_1D_CPY2D_STABLE_INTRIN
+#elif defined(AMD_OPT_IN_PLACE_1D_CPY2D_STABLE_INTRIN)
 void X(cpy2d)(R *I, R *O,
 	      INT n0, INT is0, INT os0,
 	      INT n1, INT is1, INT os1,

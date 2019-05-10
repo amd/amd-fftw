@@ -24,9 +24,9 @@
 
 extern double time_min;
 extern int time_repeat;
-#ifdef AMD_WISDOM_MULTI_NAMED_FILE
-extern bench_problem *p;
-#endif
+//#ifdef AMD_WISDOM_MULTI_NAMED_FILE
+//extern bench_problem *p;
+//#endif
 extern void timer_init(double tmin, int repeat);
 
 /* report functions */

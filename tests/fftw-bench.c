@@ -307,20 +307,11 @@ void cleanup(void)
      final_cleanup();
 }
 
-void cleanup_ex(bench_problem *p)
+/*void cleanup_ex(bench_problem *p)
 {
 	initial_cleanup();
-
-#ifdef AMD_WISDOM_MULTI_NAMED_FILE
-
-	memset(wisdat, 0x0, 32);
-	strncpy(wisdat, p->pstring, strlen(p->pstring));
-	strcat(wisdat, ".dat");
-#endif
+	//wisdat already contains wisdom file name string due to strcpy done in can_do/setup
 	wrwisdom();
-#ifdef AMD_WISDOM_MULTI_NAMED_FILE
-	problem_destroy(p);
-#endif
 
 #ifdef HAVE_SMP
 	FFTW(cleanup_threads)();
@@ -330,11 +321,11 @@ void cleanup_ex(bench_problem *p)
 
 #    ifdef FFTW_DEBUG_MALLOC
 	{
-		/* undocumented memory checker */
+		// undocumented memory checker 
 		FFTW_EXTERN void FFTW(malloc_print_minfo)(int v);
 		FFTW(malloc_print_minfo)(verbose);
 	}
 #    endif
 
 	final_cleanup();
-}
+}*/
