@@ -614,11 +614,16 @@ if test "$ac_test_CFLAGS" != "set"; then
 fi
 fi
 
-dnl amd optimization switch and CFLAGS setting based on config arg option --enable-amd
-AC_ARG_ENABLE(amd, [AC_HELP_STRING([--enable-amd],[enable AMD cpu specific optimizations])], have_amd=$enableval, have_amd=no)
-if test "$have_amd" = yes; then
+dnl amd optimization switch and CFLAGS setting based on config arg option --enable-amd-opt
+AC_ARG_ENABLE(amd-opt, [AC_HELP_STRING([--enable-amd-opt],[enable AMD cpu specific optimizations])], have_amd_opt=$enableval, have_amd_opt=no)
+if test "$have_amd_opt" = yes; then
 	CFLAGS="$CFLAGS -march=znver1 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma" 
 	AC_DEFINE(AMD_OPT_ALL,1,[Define to enable AMD cpu specific optimizations.])
+fi
+dnl amd optimization switch to enable amd cpu optimized transpose --enable-amd-trans
+AC_ARG_ENABLE(amd-trans, [AC_HELP_STRING([--enable-amd-trans],[enable AMD cpu optimized Transpose])], have_amd_trans=$enableval, have_amd_trans=no)
+if test "$have_amd_trans" = yes; then
+	AC_DEFINE(AMD_OPT_TRANS,1,[Define to enable AMD cpu optimized Transpose.])
 fi
 
 dnl check for a proper indent in maintainer mode

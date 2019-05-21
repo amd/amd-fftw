@@ -78,30 +78,38 @@ extern "C"
 #endif
 
 //AMD OPTIMIZATIONS :- start
-
+//============================================================
 //Main optimization switch that enables or disables all AMD specific optimizations in FFTW
-//AMD_OPT_ALL is defined through config.h using configure script run-time feature arg --enable-amd
+//AMD_OPT_ALL is defined through config.h using configure script run-time feature arg --enable-amd-opt
 
 #ifdef AMD_OPT_ALL
 
+//--------------------------------
 //disables 128-bit AVX2 versions of kernels and prefers only 256-bit AVX2 kernels support
 #define AMD_OPT_PREFER_256BIT_FPU
 #define AMD_OPT_128BIT_KERNELS_THRESHOLD 1024//Below this SIZE, 128-bit AVX2 kernels allowed
-
-//CPY2d related optimizations :- enable Either (i)C switch Or (ii)INTRIN and/or ASM switch
+//--------------------------------
+//CPY2d related optimizations :- enable Either (i)C switch Or (ii)INTRIN switch
 //#define AMD_OPT_IN_PLACE_1D_CPY2D_STABLE_C
 #define AMD_OPT_IN_PLACE_1D_CPY2D_STABLE_INTRIN
-//#define AMD_OPT_IN_PLACE_1D_CPY2D_EXPERIMENTAL_ASM
-
-//In-place Transpose related optimization switches :- 
+//--------------------------------
+//In-place Transpose related optimization switches :-
+//The below switches are defined through config.h using configure script run-time feature arg --enable-amd-trans
+#ifdef AMD_OPT_TRANS
+#define AMD_OPT_AUTO_TUNED_TRANS_BLK_SIZE
+#define AMD_OPT_AUTO_TUNED_RASTER_TILED_TRANS_METHOD
+#endif
+//Here they are again provided for manual override to enable them.
 //(i) enables auto-tuned block sized tiling as per CPU's L1D cache size (applicable for both original 
 //    FFTW's transpose and the new auto-tuned cache-efficient raster order tiled transpose
 //#define AMD_OPT_AUTO_TUNED_TRANS_BLK_SIZE
 //(ii) enables new auto-tuned cache-efficient raster order tiled transpose for squared sized matrix
 //     (for this optimization switch, AMD_OPT_AUTO_TUNED_TRANS_BLK_SIZE should also be enabled)
 //#define AMD_OPT_AUTO_TUNED_RASTER_TILED_TRANS_METHOD
+//--------------------------------
 
-#endif
+#endif//#ifdef AMD_OPT_ALL
+//============================================================
 //AMD OPTIMIZATIONS :- end
 
 /*

@@ -39,7 +39,288 @@
 
 #ifdef AMD_OPT_ALL //AMD optimized routines
 
-#ifdef AMD_OPT_IN_PLACE_1D_CPY2D_STABLE_C
+#ifdef FFTW_SINGLE//SINGLE PRECISION CPY2d starts
+#ifdef AMD_OPT_IN_PLACE_1D_CPY2D_STABLE_INTRIN//SIMD optimized function
+void X(cpy2d)(R *I, R *O,
+	      INT n0, INT is0, INT os0,
+	      INT n1, INT is1, INT os1,
+	      INT vl)
+{
+     INT i0, i1, v;
+     switch (vl) {
+	 case 1:
+	      for (i1 = 0; i1 < n1; ++i1)
+		   for (i0 = 0; i0 < n0; ++i0) {
+			R x0 = I[i0 * is0 + i1 * is1];
+			O[i0 * os0 + i1 * os1] = x0;
+		   }
+	      break;
+	 case 2:
+	      {
+	      __m256 in1, in2, in3, in4;
+	      __m256 out1, out2, out3, out4;
+	      INT t0, t1, t2, t3;
+	      INT n0_rem = n0&0x3, n1_rem = n1&0x3;
+	      INT n0Many = n0>3;
+	      INT n1Many = n1>3;
+	      t0 = (is0==2) & n0Many;
+	      t1 = (os0==2) & n0Many;
+	      t2 = (is1==2) & n1Many;
+	      t3 = (os1==2) & n1Many;
+
+	      switch(t0 | (t1 << 1) | (t2 << 2) | (t3 << 3))
+	      {
+		      case 6://os0=2 and is1=2. Both 256-bit read and 256-bit write possible
+			  n0 = n0 - n0_rem;
+			  n1 = n1 - n1_rem;
+			  for (i1 = 0; i1 < n1; i1+=4)
+			  {
+			      for (i0 = 0; i0 < n0; i0+=4) {
+				  in1 = _mm256_loadu_ps((float const *)&I[i0 * is0 + i1 * is1]);
+				  in2 = _mm256_loadu_ps((float const *)&I[(i0+1) * is0 + i1 * is1]);
+				  in3 = _mm256_loadu_ps((float const *)&I[(i0+2) * is0 + i1 * is1]);
+				  in4 = _mm256_loadu_ps((float const *)&I[(i0+3) * is0 + i1 * is1]);
+
+				  out2 = _mm256_shuffle_ps(in1, in2, 0x44);
+				  out4 = _mm256_shuffle_ps(in3, in4, 0x44);
+				  out1 = _mm256_permute2f128_ps(out2, out4, 0x20);
+				  out3 = _mm256_permute2f128_ps(out2, out4, 0x31);
+				  in1 = _mm256_shuffle_ps(in1, in2, 0xEE);
+				  in3 = _mm256_shuffle_ps(in3, in4, 0xEE);
+				  out2 = _mm256_permute2f128_ps(in1, in3, 0x20);
+				  out4 = _mm256_permute2f128_ps(in1, in3, 0x31);
+
+				  _mm256_storeu_ps((float *)&O[i0 * os0 + i1 * os1], out1);
+				  _mm256_storeu_ps((float *)&O[i0 * os0 + (i1+1) * os1], out2);
+				  _mm256_storeu_ps((float *)&O[i0 * os0 + (i1+2) * os1], out3);
+				  _mm256_storeu_ps((float *)&O[i0 * os0 + (i1+3) * os1], out4);
+			      }
+			      for (; i0 < (n0+n0_rem); i0++) {
+				  R x0 = I[i0 * is0 + i1 * is1];
+				  R x1 = I[i0 * is0 + i1 * is1 + 1];
+				  R x2 = I[i0 * is0 + (i1+1) * is1];
+				  R x3 = I[i0 * is0 + (i1+1) * is1 + 1];
+				  R x4 = I[i0 * is0 + (i1+2) * is1];
+				  R x5 = I[i0 * is0 + (i1+2) * is1 + 1];
+				  R x6 = I[i0 * is0 + (i1+3) * is1];
+				  R x7 = I[i0 * is0 + (i1+3) * is1 + 1];
+				  O[i0 * os0 + i1 * os1] = x0;
+				  O[i0 * os0 + i1 * os1 + 1] = x1;
+				  O[i0 * os0 + (i1+1) * os1] = x2;
+				  O[i0 * os0 + (i1+1) * os1 + 1] = x3;
+				  O[i0 * os0 + (i1+2) * os1] = x4;
+				  O[i0 * os0 + (i1+2) * os1 + 1] = x5;
+				  O[i0 * os0 + (i1+3) * os1] = x6;
+				  O[i0 * os0 + (i1+3) * os1 + 1] = x7;
+			      }
+			  }
+			  if (n1_rem)
+			  {
+			      n0 += n0_rem;
+			      for (i0 = 0; i0 < n0; ++i0) {
+				  R x0 = I[i0 * is0 + i1 * is1];
+				  R x1 = I[i0 * is0 + i1 * is1 + 1];
+				  O[i0 * os0 + i1 * os1] = x0;
+				  O[i0 * os0 + i1 * os1 + 1] = x1;
+			      }
+			  }
+			  break;
+
+		      case 9://is0=2 and os1=2. Both 256-bit read and 256-bit write possible
+			  n0 = n0 - n0_rem;
+			  n1 = n1 - n1_rem;
+			  for (i1 = 0; i1 < n1; i1+=4)
+			  {
+			      for (i0 = 0; i0 < n0; i0+=4) {
+				  in1 = _mm256_loadu_ps((float const *)&I[i0 * is0 + i1 * is1]);
+				  in2 = _mm256_loadu_ps((float const *)&I[i0 * is0 + (i1+1) * is1]);
+				  in3 = _mm256_loadu_ps((float const *)&I[i0 * is0 + (i1+2) * is1]);
+				  in4 = _mm256_loadu_ps((float const *)&I[i0 * is0 + (i1+3) * is1]);
+
+				  out2 = _mm256_shuffle_ps(in1, in2, 0x44);
+				  out4 = _mm256_shuffle_ps(in3, in4, 0x44);
+				  out1 = _mm256_permute2f128_ps(out2, out4, 0x20);
+				  out3 = _mm256_permute2f128_ps(out2, out4, 0x31);
+				  in1 = _mm256_shuffle_ps(in1, in2, 0xEE);
+				  in3 = _mm256_shuffle_ps(in3, in4, 0xEE);
+				  out2 = _mm256_permute2f128_ps(in1, in3, 0x20);
+				  out4 = _mm256_permute2f128_ps(in1, in3, 0x31);
+
+				  _mm256_storeu_ps((float *)&O[i0 * os0 + i1 * os1], out1);
+				  _mm256_storeu_ps((float *)&O[(i0+1) * os0 + i1 * os1], out2);
+				  _mm256_storeu_ps((float *)&O[(i0+2) * os0 + i1 * os1], out3);
+				  _mm256_storeu_ps((float *)&O[(i0+3) * os0 + i1 * os1], out4);
+			      }
+			      for (; i0 < (n0+n0_rem); i0++) {
+				  R x0 = I[i0 * is0 + i1 * is1];
+				  R x1 = I[i0 * is0 + i1 * is1 + 1];
+				  R x2 = I[i0 * is0 + (i1+1) * is1];
+				  R x3 = I[i0 * is0 + (i1+1) * is1 + 1];
+				  R x4 = I[i0 * is0 + (i1+2) * is1];
+				  R x5 = I[i0 * is0 + (i1+2) * is1 + 1];
+				  R x6 = I[i0 * is0 + (i1+3) * is1];
+				  R x7 = I[i0 * is0 + (i1+3) * is1 + 1];
+				  O[i0 * os0 + i1 * os1] = x0;
+				  O[i0 * os0 + i1 * os1 + 1] = x1;
+				  O[i0 * os0 + (i1+1) * os1] = x2;
+				  O[i0 * os0 + (i1+1) * os1 + 1] = x3;
+				  O[i0 * os0 + (i1+2) * os1] = x4;
+				  O[i0 * os0 + (i1+2) * os1 + 1] = x5;
+				  O[i0 * os0 + (i1+3) * os1] = x6;
+				  O[i0 * os0 + (i1+3) * os1 + 1] = x7;
+			      }
+			  }
+			  if (n1_rem)
+			  {
+			      n0 += n0_rem;
+			      for (i0 = 0; i0 < n0; ++i0) {
+				  R x0 = I[i0 * is0 + i1 * is1];
+				  R x1 = I[i0 * is0 + i1 * is1 + 1];
+				  O[i0 * os0 + i1 * os1] = x0;
+				  O[i0 * os0 + i1 * os1 + 1] = x1;
+			      }
+			  }
+			  break;
+
+		      case 3://is0=2 and os0=2. Both 256-bit read and 256-bit write possible
+		      case 7://is0=2 and os0=2. Also is1=2. Both 256-bit read and 256-bit write possible
+		      case 11://is0=2 and os0=2. Also os1=2. Both 256-bit read and 256-bit write possible
+		      case 15://is0=2 and os0=2. Also is1=2, os1=2. Both 256-bit read and 256-bit write possible
+			  n0 = n0 - n0_rem;
+			  for (i1 = 0; i1 < n1; ++i1)
+			  {
+			      for (i0 = 0; i0 < n0; i0+=4) {
+				  in1 = _mm256_loadu_ps((float const *)&I[i0 * is0 + i1 * is1]);
+				  _mm256_storeu_ps((float *)&O[i0 * os0 + i1 * os1], in1);
+			      }
+			      for (; i0 < (n0+n0_rem); i0++) {
+				  R x0 = I[i0 * is0 + i1 * is1];
+				  R x1 = I[i0 * is0 + i1 * is1 + 1];
+				  O[i0 * os0 + i1 * os1] = x0;
+				  O[i0 * os0 + i1 * os1 + 1] = x1;
+			      }
+			  }
+			  break;
+
+		      default:
+			  if (1
+				  && (2 * sizeof(R) == sizeof(double))
+				  && (((size_t)I) % sizeof(double) == 0)
+				  && (((size_t)O) % sizeof(double) == 0)
+				  && ((is0 & 1) == 0)
+				  && ((is1 & 1) == 0)
+				  && ((os0 & 1) == 0)
+				  && ((os1 & 1) == 0)) {
+			      /* copy R[2] as double if double is large enough to
+				 hold R[2], and if the input is properly aligned.
+				 This case applies when R==float */
+			      for (i1 = 0; i1 < n1; ++i1)
+				  for (i0 = 0; i0 < n0; ++i0) {
+				      *(double *)&O[i0 * os0 + i1 * os1] =
+					  *(double *)&I[i0 * is0 + i1 * is1];
+				  }
+			  }
+			  else
+			  {
+			      for (i1 = 0; i1 < n1; ++i1)
+				  for (i0 = 0; i0 < n0; ++i0) {
+				      R x0 = I[i0 * is0 + i1 * is1];
+				      R x1 = I[i0 * is0 + i1 * is1 + 1];
+				      O[i0 * os0 + i1 * os1] = x0;
+				      O[i0 * os0 + i1 * os1 + 1] = x1;
+				  }
+			  }
+			  break;
+	      }//switch(t0 | (t1 << 1) | (t2 << 2) | (t3 << 3))
+     	 }             
+	 break;
+                      
+	 default:
+	      for (i1 = 0; i1 < n1; ++i1)
+		      for (i0 = 0; i0 < n0; ++i0)
+			      for (v = 0; v < vl; ++v) {
+				      R x0 = I[i0 * is0 + i1 * is1 + v];
+				      O[i0 * os0 + i1 * os1 + v] = x0;
+			      }
+	      break;
+         }//switch (vl)
+}
+#else //Default CPY2D function
+void X(cpy2d)(R *I, R *O,
+	      INT n0, INT is0, INT os0,
+	      INT n1, INT is1, INT os1,
+	      INT vl)
+{
+     INT i0, i1, v;
+
+     switch (vl) {
+	 case 1:
+	      for (i1 = 0; i1 < n1; ++i1)
+		   for (i0 = 0; i0 < n0; ++i0) {
+			R x0 = I[i0 * is0 + i1 * is1];
+			O[i0 * os0 + i1 * os1] = x0;
+		   }
+	      break;
+	 case 2:
+	      if (1
+		  && (2 * sizeof(R) == sizeof(WIDE_TYPE))
+		  && (sizeof(WIDE_TYPE) > sizeof(double))
+		  && (((size_t)I) % sizeof(WIDE_TYPE) == 0)
+		  && (((size_t)O) % sizeof(WIDE_TYPE) == 0)
+		  && ((is0 & 1) == 0)
+		  && ((is1 & 1) == 0)
+		  && ((os0 & 1) == 0)
+		  && ((os1 & 1) == 0)) {
+		   /* copy R[2] as WIDE_TYPE if WIDE_TYPE is large
+		      enough to hold R[2], and if the input is
+		      properly aligned.  This is a win when R==double
+		      and WIDE_TYPE is 128 bits. */
+		   for (i1 = 0; i1 < n1; ++i1)
+			for (i0 = 0; i0 < n0; ++i0) {
+			     *(WIDE_TYPE *)&O[i0 * os0 + i1 * os1] =
+				  *(WIDE_TYPE *)&I[i0 * is0 + i1 * is1];
+			}
+	      } else if (1
+		  && (2 * sizeof(R) == sizeof(double))
+		  && (((size_t)I) % sizeof(double) == 0)
+		  && (((size_t)O) % sizeof(double) == 0)
+		  && ((is0 & 1) == 0)
+		  && ((is1 & 1) == 0)
+		  && ((os0 & 1) == 0)
+		  && ((os1 & 1) == 0)) {
+		   /* copy R[2] as double if double is large enough to
+		      hold R[2], and if the input is properly aligned.
+		      This case applies when R==float */
+		   for (i1 = 0; i1 < n1; ++i1)
+			for (i0 = 0; i0 < n0; ++i0) {
+			     *(double *)&O[i0 * os0 + i1 * os1] =
+				  *(double *)&I[i0 * is0 + i1 * is1];
+			}
+	      } else {
+		   for (i1 = 0; i1 < n1; ++i1)
+			for (i0 = 0; i0 < n0; ++i0) {
+			     R x0 = I[i0 * is0 + i1 * is1];
+			     R x1 = I[i0 * is0 + i1 * is1 + 1];
+			     O[i0 * os0 + i1 * os1] = x0;
+ 			     O[i0 * os0 + i1 * os1 + 1] = x1;
+			}
+	      }
+	      break;
+	 default:
+	      for (i1 = 0; i1 < n1; ++i1)
+		   for (i0 = 0; i0 < n0; ++i0)
+			for (v = 0; v < vl; ++v) {
+			     R x0 = I[i0 * is0 + i1 * is1 + v];
+			     O[i0 * os0 + i1 * os1 + v] = x0;
+			}
+	      break;
+     }
+}
+#endif//SINGLE PRECISION CPY2d ends
+
+#else//DOUBLE-PRECISION CPY2D starts
+
+#ifdef AMD_OPT_IN_PLACE_1D_CPY2D_STABLE_C//C optimized function
 void X(cpy2d)(R *I, R *O,
 	      INT n0, INT is0, INT os0,
 	      INT n1, INT is1, INT os1,
@@ -317,14 +598,14 @@ void X(cpy2d)(R *I, R *O,
 	      break;
      }
 }
-#elif defined(AMD_OPT_IN_PLACE_1D_CPY2D_STABLE_INTRIN)
+#elif defined(AMD_OPT_IN_PLACE_1D_CPY2D_STABLE_INTRIN)//SIMD optimized function
 void X(cpy2d)(R *I, R *O,
 	      INT n0, INT is0, INT os0,
 	      INT n1, INT is1, INT os1,
 	      INT vl)
 {
      INT i0, i1, v;
-
+     
      switch (vl) {
 	 case 1:
 	      for (i1 = 0; i1 < n1; ++i1)
@@ -570,7 +851,7 @@ void X(cpy2d)(R *I, R *O,
 	      break;
      }
 }
-#else //AMD_OPT_IN_PLACE_1D_CPY2D_EXPERIMENTAL_ASM
+#else//Default CPY2D function
 void X(cpy2d)(R *I, R *O,
 	      INT n0, INT is0, INT os0,
 	      INT n1, INT is1, INT os1,
@@ -622,250 +903,13 @@ void X(cpy2d)(R *I, R *O,
 				  *(double *)&I[i0 * is0 + i1 * is1];
 			}
 	      } else {
-		      INT t0, t1, t2, t3;
-		      INT n0_rem = n0&0x1, n1_rem = n1&0x1;
-		      __m256d in1, in2, in3, in4;
-		      __m256d out1, out2;
-		      __m128d in1_128, in2_128;
-		      t0 = (is0==2);
-		      t1 = (os0==2);
-		      t2 = (is1==2);
-		      t3 = (os1==2);
-		      
-		      switch(t0 | (t1 << 1) | (t2 << 2) | (t3 << 3))
-		      {
-			      case 1://only is0 is 2. 256-bit contiguous read possible
-			      n0 = n0 - n0_rem;
-			      _mm256_zeroupper();
-			      for (i1 = 0; i1 < n1; ++i1) {
-				      t1 = i1 * is1;
-				      t2 = i1 * os1;
-				      for (i0 = 0; i0 < n0; i0+=2) {
-					      __asm__ volatile (
-							      //"vzeroall \n\t"
-							      "mov %0, %%rcx \n\t"
-							      "mov %1, %%rax \n\t"
-							      "mul %%rcx \n\t"
-							      "mov %2, %%rdx \n\t"
-							      "mov %5, %%rsi \n\t"
-							      "add %3, %%rsi\n\t"
-							      "mov %6, %%rdi\n\t"
-							      "add %4, %%rdi\n\t"
-							      "vmovupd (%%rsi, %%rax), %%ymm0\n\t"
-							      "mov %%rcx, %%rax \n\t"
-							      "mul %%rdx \n\t"
-							      "vextractf128 $1, %%ymm0, %%xmm1\n\t"
-							      "vmovupd %%ymm0, (%%rdi, %%rax)\n\t"
-							      "add %%rdx, %%rax\n\t"
-							      "vmovupd %%ymm1, (%%rdi, %%rax)\n\t"
-							      :// output operands (none)
-							      :// input operands
-							      "m" (i0), //0
-							      "m" (is0),//1
-							      "m" (os0),//2
-							      "m" (t1), //3
-							      "m" (t2), //4
-							      "m" (I),  //5
-							      "m" (O)   //6
-								      :
-									      // register clobber list
-									      "rax", "rcx", "rdx", "rsi", "rdi", "memory"
-										      );
-				      }
-				      if (n0_rem)
-				      {
-					      R x0 = I[i0 * is0 + i1 * is1];
-					      R x1 = I[i0 * is0 + i1 * is1 + 1];
-					      O[i0 * os0 + i1 * os1] = x0;
-					      O[i0 * os0 + i1 * os1 + 1] = x1;
-				      }
-			      }
-			      break;
-
-			      case 2://only os0 is 2. 256-bit contiguous write possible
-			      n0 = n0 - n0_rem;
-			      for (i1 = 0; i1 < n1; ++i1) {
-				      for (i0 = 0; i0 < n0; i0+=2) {
-					      in1_128 = _mm_loadu_pd((double const *)&I[i0 * is0 + i1 * is1]);
-					      in2_128 = _mm_loadu_pd((double const *)&I[(i0+1) * is0 + i1 * is1]);
-					      in1 = _mm256_castpd128_pd256(in1_128);
-					      //in2 = _mm256_castpd128_pd256(in2_128);
-					      //out1 = _mm256_permute2f128_pd(in1, in2, 0x20);
-					      out1 = _mm256_insertf128_pd(in1, in2_128, 1);
-					      _mm256_storeu_pd((double *)&O[i0 * os0 + i1 * os1], out1);
-				      }
-				      if (n0_rem)
-				      {
-					      R x0 = I[i0 * is0 + i1 * is1];
-					      R x1 = I[i0 * is0 + i1 * is1 + 1];
-					      O[i0 * os0 + i1 * os1] = x0;
-					      O[i0 * os0 + i1 * os1 + 1] = x1;
-				      }
-			      }
-			      break;
-
-			      case 6://os0=2 and is1=2. Both 256-bit read and 256-bit write possible
-			      n0 = n0 - n0_rem;
-			      n1 = n1 - n1_rem;
-			      for (i1 = 0; i1 < n1; i1+=2)
-			      {
-				      for (i0 = 0; i0 < n0; i0+=2) {
-					      in1 = _mm256_loadu_pd((double const *)&I[i0 * is0 + i1 * is1]);
-					      in2 = _mm256_loadu_pd((double const *)&I[(i0+1) * is0 + i1 * is1]);
-
-					      //out1 = _mm256_shuffle_pd(in1, in2, 0x33);
-					      //out2 = _mm256_shuffle_pd(in1, in2, 0x11);
-					      out1 = _mm256_permute2f128_pd(in1, in2, 0x20);
-					      out2 = _mm256_permute2f128_pd(in1, in2, 0x31);
-					      _mm256_storeu_pd((double *)&O[i0 * os0 + i1 * os1], out1);
-					      _mm256_storeu_pd((double *)&O[i0 * os0 + (i1+1) * os1], out2);
-				      }
-				      if (n0_rem)
-				      {
-					      R x0 = I[i0 * is0 + i1 * is1];
-					      R x1 = I[i0 * is0 + i1 * is1 + 1];
-					      R x2 = I[i0 * is0 + (i1+1) * is1];
-					      R x3 = I[i0 * is0 + (i1+1) * is1 + 1];
-					      O[i0 * os0 + i1 * os1] = x0;
-					      O[i0 * os0 + i1 * os1 + 1] = x1;
-					      O[i0 * os0 + (i1+1) * os1] = x2;
-					      O[i0 * os0 + (i1+1) * os1 + 1] = x3;
-				      }
-			      }
-			      n0 += n0_rem;
-			      if (n1_rem)
-			      {
-				      for (i0 = 0; i0 < n0; ++i0) {
-					      R x0 = I[i0 * is0 + i1 * is1];
-					      R x1 = I[i0 * is0 + i1 * is1 + 1];
-					      O[i0 * os0 + i1 * os1] = x0;
-					      O[i0 * os0 + i1 * os1 + 1] = x1;
-				      }
-			      }
-			      break;
-
-			      case 8://only os1 is 2. 256-bit contiguous write possible
-			      n1 = n1 - n1_rem;
-			      _mm256_zeroupper();
-			      for (i1 = 0; i1 < n1; i1+=2) {
-				      t1 = i1 * is1;
-				      t2 = i1 * os1;
-				      for (i0 = 0; i0 < n0; ++i0) {
-					      __asm__ volatile (
-							      //"vzeroall \n\t"
-							      "mov %0, %%rcx \n\t"
-							      "mov %1, %%rax \n\t"
-							      "mul %%rcx \n\t"
-							      "mov %2, %%rdx \n\t"
-							      "mov %5, %%rsi \n\t"
-							      "add %3, %%rsi\n\t"
-							      "mov %6, %%rdi\n\t"
-							      "add %4, %%rdi\n\t"
-							      "vmovupd (%%rsi, %%rax), %%xmm0\n\t"
-							      "add %7, %%rax\n\t"
-							      "vmovupd (%%rsi, %%rax), %%xmm1\n\t"
-							      "mov %%rcx, %%rax \n\t"
-							      "mul %%rdx \n\t"
-							      "vinsertf128 $1, %%xmm0, %%ymm1, %%ymm2\n\t"
-							      "vmovupd %%ymm2, (%%rdi, %%rax)\n\t"
-							      :// output operands (none)
-							      :// input operands
-							      "m" (i0), //0
-							      "m" (is0),//1
-							      "m" (os0),//2
-							      "m" (t1), //3
-							      "m" (t2), //4
-							      "m" (I),  //5
-							      "m" (O),  //6
-							      "m" (is1) //7
-								      :
-									      // register clobber list
-									      "rax", "rcx", "rdx", "rsi", "rdi", "memory"
-										      );
-				      }
-			      }
-			      if (n1_rem)
-			      {
-				      for (i0 = 0; i0 < n0; ++i0) {
-					      R x0 = I[i0 * is0 + i1 * is1];
-					      R x1 = I[i0 * is0 + i1 * is1 + 1];
-					      O[i0 * os0 + i1 * os1] = x0;
-					      O[i0 * os0 + i1 * os1 + 1] = x1;
-				      }
-			      }
-			      break;
-			      
-			      case 9://is0=2 and os1=2. Both 256-bit read and 256-bit write possible
-			      n0 = n0 - n0_rem;
-			      n1 = n1 - n1_rem;
-			      for (i1 = 0; i1 < n1; i1+=2)
-			      {
-				      for (i0 = 0; i0 < n0; i0+=2) {
-					      in1 = _mm256_loadu_pd((double const *)&I[i0 * is0 + i1 * is1]);
-					      in2 = _mm256_loadu_pd((double const *)&I[i0 * is0 + (i1+1) * is1]);
-
-					      //out1 = _mm256_shuffle_pd(in1, in2, 0x33);
-					      //out2 = _mm256_shuffle_pd(in1, in2, 0x11);
-					      out1 = _mm256_permute2f128_pd(in1, in2, 0x20);
-					      out2 = _mm256_permute2f128_pd(in1, in2, 0x31);
-					      _mm256_storeu_pd((double *)&O[i0 * os0 + i1 * os1], out1);
-					      _mm256_storeu_pd((double *)&O[(i0+1) * os0 + i1 * os1], out2);
-				      }
-				      if (n0_rem)
-				      {
-					      R x0 = I[i0 * is0 + i1 * is1];
-					      R x1 = I[i0 * is0 + i1 * is1 + 1];
-					      R x2 = I[i0 * is0 + (i1+1) * is1];
-					      R x3 = I[i0 * is0 + (i1+1) * is1 + 1];
-					      O[i0 * os0 + i1 * os1] = x0;
-					      O[i0 * os0 + i1 * os1 + 1] = x1;
-					      O[i0 * os0 + (i1+1) * os1] = x2;
-					      O[i0 * os0 + (i1+1) * os1 + 1] = x3;
-				      }
-			      }
-			      if (n1_rem)
-			      {
-				      n0 += n0_rem;
-				      for (i0 = 0; i0 < n0; ++i0) {
-					      R x0 = I[i0 * is0 + i1 * is1];
-					      R x1 = I[i0 * is0 + i1 * is1 + 1];
-					      O[i0 * os0 + i1 * os1] = x0;
-					      O[i0 * os0 + i1 * os1 + 1] = x1;
-				      }
-			      }
-			      break;
-
-			      case 3://is0=2 and os0=2. Both 256-bit read and 256-bit write possible
-			      case 7://is0=2 and os0=2. Also is1=2. Both 256-bit read and 256-bit write possible
-			      case 11://is0=2 and os0=2. Also os1=2. Both 256-bit read and 256-bit write possible
-			      case 15://is0=2 and os0=2. Also is1=2, os1=2. Both 256-bit read and 256-bit write possible
-			      n0 = n0 - n0_rem;
-			      for (i1 = 0; i1 < n1; ++i1)
-			      {
-				      for (i0 = 0; i0 < n0; i0+=2) {
-					      in1 = _mm256_loadu_pd((double const *)&I[i0 * is0 + i1 * is1]);
-					      _mm256_storeu_pd((double *)&O[i0 * os0 + i1 * os1], in1);
-				      }
-				      if (n0_rem)
-				      {
-					      R x0 = I[i0 * is0 + i1 * is1];
-					      R x1 = I[i0 * is0 + i1 * is1 + 1];
-					      O[i0 * os0 + i1 * os1] = x0;
-					      O[i0 * os0 + i1 * os1 + 1] = x1;
-				      }
-			      }
-			      break;
-			      
-			      default:
-			      for (i1 = 0; i1 < n1; ++i1)
-				      for (i0 = 0; i0 < n0; ++i0) {
-					      R x0 = I[i0 * is0 + i1 * is1];
-					      R x1 = I[i0 * is0 + i1 * is1 + 1];
-					      O[i0 * os0 + i1 * os1] = x0;
-					      O[i0 * os0 + i1 * os1 + 1] = x1;
-				      }
-			      break;
-		      }
+		   for (i1 = 0; i1 < n1; ++i1)
+			for (i0 = 0; i0 < n0; ++i0) {
+			     R x0 = I[i0 * is0 + i1 * is1];
+			     R x1 = I[i0 * is0 + i1 * is1 + 1];
+			     O[i0 * os0 + i1 * os1] = x0;
+ 			     O[i0 * os0 + i1 * os1 + 1] = x1;
+			}
 	      }
 	      break;
 	 default:
@@ -878,9 +922,10 @@ void X(cpy2d)(R *I, R *O,
 	      break;
      }
 }
-#endif//AMD_OPT_IN_PLACE_1D_CPY2D_EXPERIMENTAL_ASM
+#endif
+#endif//DOUBLE PRECISION CPY2d ends
 
-#else //original cpy2d routine
+#else //Default(original) cpy2d routine
 
 void X(cpy2d)(R *I, R *O,
 	      INT n0, INT is0, INT os0,
@@ -952,7 +997,7 @@ void X(cpy2d)(R *I, R *O,
 	      break;
      }
 }
-#endif//AMD_OPT_ALL
+#endif
 
 /* like cpy2d, but read input contiguously if possible */
 void X(cpy2d_ci)(R *I, R *O,

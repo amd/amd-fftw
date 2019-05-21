@@ -874,7 +874,8 @@ with_gnu_ld
 with_sysroot
 enable_libtool_lock
 enable_mpi
-enable_amd
+enable_amd_opt
+enable_amd_trans
 enable_fortran
 with_g77_wrappers
 enable_openmp
@@ -1581,7 +1582,8 @@ Optional Features:
                           optimize for fast installation [default=yes]
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --enable-mpi            compile FFTW MPI library
-  --enable-amd            enable AMD cpu specific optimizations
+  --enable-amd-opt        enable AMD cpu specific optimizations
+  --enable-amd-trans      enable AMD cpu optimized Transpose
   --disable-fortran       don't include Fortran-callable wrappers
   --enable-openmp         use OpenMP directives for parallelism
   --enable-threads        compile FFTW SMP threads library
@@ -17437,17 +17439,29 @@ if test "$ac_test_CFLAGS" != "set"; then
 fi
 fi
 
-# Check whether --enable-amd was given.
-if test "${enable_amd+set}" = set; then :
-  enableval=$enable_amd; have_amd=$enableval
+# Check whether --enable-amd-opt was given.
+if test "${enable_amd_opt+set}" = set; then :
+  enableval=$enable_amd_opt; have_amd_opt=$enableval
 else
-  have_amd=no
+  have_amd_opt=no
 fi
 
-if test "$have_amd" = yes; then
+if test "$have_amd_opt" = yes; then
 	CFLAGS="$CFLAGS -march=znver1 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
 
 $as_echo "#define AMD_OPT_ALL 1" >>confdefs.h
+
+fi
+# Check whether --enable-amd-trans was given.
+if test "${enable_amd_trans+set}" = set; then :
+  enableval=$enable_amd_trans; have_amd_trans=$enableval
+else
+  have_amd_trans=no
+fi
+
+if test "$have_amd_trans" = yes; then
+
+$as_echo "#define AMD_OPT_TRANS 1" >>confdefs.h
 
 fi
 
