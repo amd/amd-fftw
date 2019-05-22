@@ -17447,7 +17447,13 @@ else
 fi
 
 if test "$have_amd_opt" = yes; then
-	CFLAGS="$CFLAGS -march=znver1 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+	GCCVERSION=$(expr `gcc -dumpversion | cut -f1 -d.` \>= 9)
+	AMDZEN2MODEL=$(expr `cat /proc/cpuinfo | grep -m1 model|cut -f2 -d:` \>= 48)
+	if test "$GCCVERSION" = "1"  && test "$AMDZEN2MODEL" = "1"; then
+		CFLAGS="$CFLAGS -march=znver2 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+	else
+		CFLAGS="$CFLAGS -march=znver1 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+	fi
 
 $as_echo "#define AMD_OPT_ALL 1" >>confdefs.h
 
