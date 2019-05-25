@@ -114,9 +114,8 @@ void X(cpy2d)(R *I, R *O,
 				  O[i0 * os0 + (i1+3) * os1 + 1] = x7;
 			      }
 			  }
-			  if (n1_rem)
-			  {
-			      n0 += n0_rem;
+			  n0 += n0_rem;
+			  for (; i1 < (n1+n1_rem); ++i1) {
 			      for (i0 = 0; i0 < n0; ++i0) {
 				  R x0 = I[i0 * is0 + i1 * is1];
 				  R x1 = I[i0 * is0 + i1 * is1 + 1];
@@ -170,9 +169,8 @@ void X(cpy2d)(R *I, R *O,
 				  O[i0 * os0 + (i1+3) * os1 + 1] = x7;
 			      }
 			  }
-			  if (n1_rem)
-			  {
-			      n0 += n0_rem;
+			  n0 += n0_rem;
+			  for (; i1 < (n1+n1_rem); ++i1) {
 			      for (i0 = 0; i0 < n0; ++i0) {
 				  R x0 = I[i0 * is0 + i1 * is1];
 				  R x1 = I[i0 * is0 + i1 * is1 + 1];
