@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2001 Matteo Frigo
  * Copyright (c) 2001 Massachusetts Institute of Technology
+ * Copyright (C) 2019, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

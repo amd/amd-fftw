@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2019, Advanced Micro Devices, Inc. All Rights Reserved.
+ *
+ */
+
 /* See bench.c.  We keep a few common subroutines in this file so
    that they can be re-used in the MPI test program. */
 
