@@ -617,12 +617,16 @@ fi
 dnl amd optimization switch and CFLAGS setting based on config arg option --enable-amd-opt
 AC_ARG_ENABLE(amd-opt, [AC_HELP_STRING([--enable-amd-opt],[enable AMD cpu specific optimizations])], have_amd_opt=$enableval, have_amd_opt=no)
 if test "$have_amd_opt" = yes; then
-	GCCVERSION=$(expr `gcc -dumpversion | cut -f1 -d.` \>= 9)
-	AMDZEN2MODEL=$(expr `cat /proc/cpuinfo | grep -m1 model|cut -f2 -d:` \>= 48)
-	if test "$GCCVERSION" = "1"  && test "$AMDZEN2MODEL" = "1"; then
-		CFLAGS="$CFLAGS -march=znver2 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+	if test "$CC" = "clang"; then
+		CFLAGS="$CFLAGS -mavx2 -mno-prefer-avx128 -mfma"
 	else
-		CFLAGS="$CFLAGS -march=znver1 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+		GCCVERSION=$(expr `gcc -dumpversion | cut -f1 -d.` \>= 9)
+		AMDZEN2MODEL=$(expr `cat /proc/cpuinfo | grep -m1 model|cut -f2 -d:` \>= 48)
+		if test "$GCCVERSION" = "1"  && test "$AMDZEN2MODEL" = "1"; then
+			CFLAGS="$CFLAGS -march=znver2 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+		else
+			CFLAGS="$CFLAGS -march=znver1 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+		fi
 	fi
 	AC_DEFINE(AMD_OPT_ALL,1,[Define to enable AMD cpu specific optimizations.])
 fi
