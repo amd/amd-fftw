@@ -310,6 +310,19 @@ static inline V VBYI(V x)
 }
 
 /* FMA support */
+//#define VFMA    SUFF(_mm256_fmadd_p)
+//#define VFNMS   SUFF(_mm256_fnmadd_p)
+//#define VFMS    SUFF(_mm256_fmsub_p)
+#ifdef AMD_OPT_KERNEL_256SIMD_PERF
+#define VFMA(a, b, c) _mm256_fmadd_pd(a, b, c)
+#define VFNMS(a, b, c) _mm256_fnmadd_pd(a, b, c)
+#define VFMS(a, b, c) _mm256_fmsub_pd(a, b, c)
+#define VFMAI(b, c) VADD(c, VBYI(b))
+#define VFNMSI(b, c) VSUB(c, VBYI(b))
+#define VFMACONJ(b,c)  VADD(VCONJ(b),c)
+#define VFMSCONJ(b,c)  VSUB(VCONJ(b),c)
+#define VFNMSCONJ(b,c) VSUB(c, VCONJ(b))
+#else
 #define VFMA(a, b, c) VADD(c, VMUL(a, b))
 #define VFNMS(a, b, c) VSUB(c, VMUL(a, b))
 #define VFMS(a, b, c) VSUB(VMUL(a, b), c)
@@ -318,6 +331,7 @@ static inline V VBYI(V x)
 #define VFMACONJ(b,c)  VADD(VCONJ(b),c)
 #define VFMSCONJ(b,c)  VSUB(VCONJ(b),c)
 #define VFNMSCONJ(b,c) VSUB(c, VCONJ(b))
+#endif
 
 static inline V VZMUL(V tx, V sr)
 {
