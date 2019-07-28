@@ -163,6 +163,109 @@ static void n2fv_8(const R *ri, const R *ii, R *ro, R *io, stride is, stride os,
 			 Tm = VADD(T4, T5);
 		    }
 	       }
+#if defined(AMD_OPT_KERNEL_REARRANGE_WRITE_V1)
+           {
+            //V Tr, Tb, Tg, Tp, Tq, Tt;
+            V Tl, To, Tx, Ty, Tb, Tg, Tw;
+            Tb = VADD(T3, Ta);
+            Tg = VBYI(VSUB(Tc, Tf));
+            //Tr = VSUB(Tb, Tg);
+            //STM2(&(xo[14]), Tr, ovs, &(xo[2]));
+            
+            /**/
+            Tl = VADD(Tj, Tk);
+            To = VADD(Tm, Tn);
+            Ty = VADD(Tl, To);
+            Ts = VADD(Tb, Tg);
+#if 0
+            STM2(&(xo[0]), Ty, ovs, &(xo[0]));
+            STM2(&(xo[2]), Ts, ovs, &(xo[2]));
+            STN2(&(xo[0]), Ty, Ts, ovs);
+#else
+            Tx = SHUF_CROSS_LANE_1(Ty, Ts);
+            Ts = SHUF_CROSS_LANE_2(Ty, Ts);
+            STA(&(xo[0]), Tx, ovs, &(xo[0]));
+            STA(&(xo[0])+ovs, Ts, ovs, &(xo[0]));
+#endif
+            Tx = VSUB(Tl, To);
+            /**/
+            
+            //Ts = VADD(Tb, Tg);
+            //STM2(&(xo[2]), Ts, ovs, &(xo[2]));
+            Tl = VSUB(Tj, Tk);
+            To = VBYI(VSUB(Tn, Tm));
+            //Tt = VSUB(Tl, Tq);
+            //STM2(&(xo[12]), Tt, ovs, &(xo[0]));
+            //STN2(&(xo[12]), Tt, Tr, ovs);
+            Tu = VADD(Tl, To);
+            
+            /**/
+            T3 = VSUB(T3, Ta);
+            Ta = VBYI(VADD(Tf, Tc));
+            Tw = VADD(T3, Ta);
+#if 0
+            STM2(&(xo[4]), Tu, ovs, &(xo[0]));
+            STM2(&(xo[6]), Tw, ovs, &(xo[2]));
+            STN2(&(xo[4]), Tu, Tw, ovs);
+#else
+            Ty = SHUF_CROSS_LANE_1(Tu, Tw);
+            Tw = SHUF_CROSS_LANE_2(Tu, Tw);
+            STA(&(xo[4]), Ty, ovs, &(xo[0]));
+            STA(&(xo[4])+ovs, Tw, ovs, &(xo[0]));
+#endif
+            /**/
+            
+            /**/
+            Ta = VSUB(T3, Ta);
+#if 0
+            STM2(&(xo[8]), Tx, ovs, &(xo[0]));
+            STN2(&(xo[8]), Tx, Ta, ovs);
+            STM2(&(xo[10]), Ta, ovs, &(xo[2]));
+#else
+            Ty = SHUF_CROSS_LANE_1(Tx, Ta);
+            Ta = SHUF_CROSS_LANE_2(Tx, Ta);
+            STA(&(xo[8]), Ty, ovs, &(xo[0]));
+            STA(&(xo[8])+ovs, Ta, ovs, &(xo[0]));
+#endif
+            /**/
+            
+            /**/
+            Tl = VSUB(Tl, To);
+            To = VSUB(Tb, Tg);
+#if 0
+            STM2(&(xo[12]), Tl, ovs, &(xo[0]));
+            STM2(&(xo[14]), To, ovs, &(xo[2]));
+            STN2(&(xo[12]), Tl, To, ovs);
+#else
+            Ty = SHUF_CROSS_LANE_1(Tl, To);
+            To = SHUF_CROSS_LANE_2(Tl, To);
+            STA(&(xo[12]), Ty, ovs, &(xo[0]));
+            STA(&(xo[12])+ovs, To, ovs, &(xo[0]));
+#endif
+            /**/
+           }
+           {
+            //V Tv, Th, Ti, Tw;
+            //Th = VSUB(T3, Ta);
+            //Ti = VBYI(VADD(Tf, Tc));
+            //Tv = VSUB(Th, Ti);
+            //STM2(&(xo[10]), Tv, ovs, &(xo[2]));
+            //Tw = VADD(Th, Ti);
+            //STM2(&(xo[6]), Tw, ovs, &(xo[2]));
+            //STN2(&(xo[4]), Tu, Tw, ovs);
+            {
+                 //V Tl, To, Tx, Ty;
+                 //Tl = VADD(Tj, Tk);
+                 //To = VADD(Tm, Tn);
+                 //Tx = VSUB(Tl, To);
+                 //STM2(&(xo[8]), Tx, ovs, &(xo[0]));
+                 //STN2(&(xo[8]), Tx, Tv, ovs);
+                 //Ty = VADD(Tl, To);
+                 //STM2(&(xo[0]), Ty, ovs, &(xo[0]));
+                 //STN2(&(xo[0]), Ty, Ts, ovs);
+            }
+            } 
+#else 
 	       {
 		    V Tr, Tb, Tg, Tp, Tq, Tt;
 		    Tb = VADD(T3, Ta);
@@ -200,6 +303,7 @@ static void n2fv_8(const R *ri, const R *ii, R *ro, R *io, stride is, stride os,
 			 STN2(&(xo[0]), Ty, Ts, ovs);
 		    }
 	       }
+#endif
 	  }
      }
      VLEAVE();

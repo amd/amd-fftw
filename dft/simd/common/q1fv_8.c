@@ -295,6 +295,7 @@ static void q1fv_8(R *ri, R *ii, const R *W, stride rs, stride vs, INT mb, INT m
 		    T3r = VSUB(T3l, T3i);
 		    T3E = VADD(T3C, T3D);
 	       }
+           ////////////////////////////////////////
 	       ST(&(x[0]), VADD(Tp, Ts), ms, &(x[0]));
 	       ST(&(x[WS(rs, 2)]), VADD(T1t, T1w), ms, &(x[0]));
 	       ST(&(x[WS(rs, 5)]), VADD(T34, T37), ms, &(x[WS(rs, 1)]));
@@ -800,6 +801,418 @@ static void q1fv_8(R *ri, R *ii, const R *W, stride rs, stride vs, INT mb, INT m
 		    T3o = VMUL(LDK(KP707106781), VSUB(T3l, T3i));
 		    T3E = VADD(T3C, T3D);
 	       }
+           ////////////////////////////////////////////////////////
+#if defined(AMD_OPT_KERNEL_REARRANGE_WRITE_V1)
+           {//0th row, 0th row + ms
+            V Th, Ti, Tb, Tg, Tx, Tw;
+		    Tb = VADD(T3, Ta);
+		    Tg = VBYI(VSUB(Tc, Tf));
+		    Ti = BYTWJ(&(W[0]), VADD(Tb, Tg));
+            Th = BYTWJ(&(W[TWVL * 12]), VSUB(Tb, Tg));
+#if MEM_256 == 0
+            ST(&(x[0]), VADD(Tp, Ts), ms, &(x[0]));
+		    ST(&(x[WS(vs, 1)]), Ti, ms, &(x[WS(vs, 1)]));
+#else
+            Tw = VADD(Tp, Ts);
+            Tx = SHUF_CROSS_LANE_1(Tw, Ti);
+            Tw = SHUF_CROSS_LANE_2(Tw, Ti);
+            STA(&(x[0]), Tx, ms, &(x[0]));
+            STA(&(x[0])+ms, Tw, ms, &(x[WS(vs, 1)]));
+#endif
+            Tb = VSUB(T3, Ta);
+		    Tg = VBYI(VADD(Tf, Tc));
+            Tx = BYTWJ(&(W[TWVL * 2]), VADD(Tu, Tv));
+            Ti = BYTWJ(&(W[TWVL * 4]), VADD(Tb, Tg));
+#if MEM_256 == 0            
+            ST(&(x[WS(vs, 2)]), Tx, ms, &(x[WS(vs, 2)]));            
+		    ST(&(x[WS(vs, 3)]), Ti, ms, &(x[WS(vs, 3)]));
+#else
+            Tw = SHUF_CROSS_LANE_1(Tx, Ti);
+            Tx = SHUF_CROSS_LANE_2(Tx, Ti);
+            STA(&(x[WS(vs, 2)]), Tw, ms, &(x[WS(vs, 2)]));
+            STA(&(x[WS(vs, 2)])+ms, Tx, ms, &(x[WS(vs, 3)]));
+#endif
+            Tw = BYTWJ(&(W[TWVL * 6]), VSUB(Tp, Ts));
+            Tx = BYTWJ(&(W[TWVL * 8]), VSUB(Tb, Tg));
+#if MEM_256 == 0            
+            ST(&(x[WS(vs, 4)]), Tw, ms, &(x[WS(vs, 4)]));
+            ST(&(x[WS(vs, 5)]), Tx, ms, &(x[WS(vs, 5)]));
+#else
+            Tb = SHUF_CROSS_LANE_1(Tw, Tx);
+            Tx = SHUF_CROSS_LANE_2(Tw, Tx);
+            STA(&(x[WS(vs, 4)]), Tb, ms, &(x[WS(vs, 4)]));
+            STA(&(x[WS(vs, 4)])+ms, Tx, ms, &(x[WS(vs, 5)]));
+#endif            
+            Tw = BYTWJ(&(W[TWVL * 10]), VSUB(Tu, Tv));
+#if MEM_256 == 0            
+		    ST(&(x[WS(vs, 6)]), Tw, ms, &(x[WS(vs, 6)]));
+            ST(&(x[WS(vs, 7)]), Th, ms, &(x[WS(vs, 7)]));
+#else
+            Tx = SHUF_CROSS_LANE_1(Tw, Th);
+            Th = SHUF_CROSS_LANE_2(Tw, Th);
+            STA(&(x[WS(vs, 6)]), Tx, ms, &(x[WS(vs, 6)]));
+            STA(&(x[WS(vs, 6)])+ms, Th, ms, &(x[WS(vs, 7)]));
+#endif             
+           }
+           {//1st row, 1st row + ms
+            V Th, Ti, Tb, Tg, Tx, Tw;
+		    Tb = VADD(TA, TH);
+		    Tg = VBYI(VSUB(TJ, TM));
+		    Ti = BYTWJ(&(W[0]), VADD(Tb, Tg));
+            Th = BYTWJ(&(W[TWVL * 12]), VSUB(Tb, Tg));
+#if MEM_256 == 0
+            ST(&(x[WS(rs, 1)]), VADD(TW, TZ), ms, &(x[WS(rs, 1)]));
+		    ST(&(x[WS(vs, 1) + WS(rs, 1)]), Ti, ms, &(x[WS(vs, 1) + WS(rs, 1)]));
+#else
+            Tw = VADD(TW, TZ);
+            Tx = SHUF_CROSS_LANE_1(Tw, Ti);
+            Tw = SHUF_CROSS_LANE_2(Tw, Ti);
+            STA(&(x[WS(rs, 1)]), Tx, ms, &(x[WS(rs, 1)]));
+            STA(&(x[WS(rs, 1)])+ms, Tw, ms, &(x[WS(vs, 1) + WS(rs, 1)]));
+#endif            
+            Tb = VSUB(TA, TH);
+		    Tg = VBYI(VADD(TM, TJ));
+            Tx = BYTWJ(&(W[TWVL * 2]), VADD(T11, T12));
+            Ti = BYTWJ(&(W[TWVL * 4]), VADD(Tb, Tg));
+#if MEM_256 == 0            
+            ST(&(x[WS(vs, 2) + WS(rs, 1)]), Tx, ms, &(x[WS(vs, 2) + WS(rs, 1)]));
+		    ST(&(x[WS(vs, 3) + WS(rs, 1)]), Ti, ms, &(x[WS(vs, 3) + WS(rs, 1)]));
+#else
+            Tw = SHUF_CROSS_LANE_1(Tx, Ti);
+            Tx = SHUF_CROSS_LANE_2(Tx, Ti);
+            STA(&(x[WS(vs, 2) + WS(rs, 1)]), Tw, ms, &(x[WS(vs, 2) + WS(rs, 1)]));
+            STA(&(x[WS(vs, 2) + WS(rs, 1)])+ms, Tx, ms, &(x[WS(vs, 3) + WS(rs, 1)]));
+#endif            
+            Tw = BYTWJ(&(W[TWVL * 6]), VSUB(TW, TZ));
+            Tx = BYTWJ(&(W[TWVL * 8]), VSUB(Tb, Tg));
+#if MEM_256 == 0            
+            ST(&(x[WS(vs, 4) + WS(rs, 1)]), Tw, ms, &(x[WS(vs, 4) + WS(rs, 1)]));
+            ST(&(x[WS(vs, 5) + WS(rs, 1)]), Tx, ms, &(x[WS(vs, 5) + WS(rs, 1)]));
+#else
+            Tb = SHUF_CROSS_LANE_1(Tw, Tx);
+            Tx = SHUF_CROSS_LANE_2(Tw, Tx);
+            STA(&(x[WS(vs, 4) + WS(rs, 1)]), Tb, ms, &(x[WS(vs, 4) + WS(rs, 1)]));
+            STA(&(x[WS(vs, 4) + WS(rs, 1)])+ms, Tx, ms, &(x[WS(vs, 5) + WS(rs, 1)]));
+#endif             
+            Tw = BYTWJ(&(W[TWVL * 10]), VSUB(T11, T12));
+#if MEM_256 == 0            
+		    ST(&(x[WS(vs, 6) + WS(rs, 1)]), Tw, ms, &(x[WS(vs, 6) + WS(rs, 1)]));
+            ST(&(x[WS(vs, 7) + WS(rs, 1)]), Th, ms, &(x[WS(vs, 7) + WS(rs, 1)]));
+#else
+            Tx = SHUF_CROSS_LANE_1(Tw, Th);
+            Th = SHUF_CROSS_LANE_2(Tw, Th);
+            STA(&(x[WS(vs, 6) + WS(rs, 1)]), Tx, ms, &(x[WS(vs, 6) + WS(rs, 1)]));
+            STA(&(x[WS(vs, 6) + WS(rs, 1)])+ms, Th, ms, &(x[WS(vs, 7) + WS(rs, 1)]));
+#endif            
+           }
+           {//2nd row, 2nd row + ms
+            V Th, Ti, Tb, Tg, Tx, Tw;
+            
+		    Tb = VADD(T17, T1e);
+		    Tg = VBYI(VSUB(T1g, T1j));
+		    Ti = BYTWJ(&(W[0]), VADD(Tb, Tg));
+            Th = BYTWJ(&(W[TWVL * 12]), VSUB(Tb, Tg));
+#if MEM_256 == 0
+            ST(&(x[WS(rs, 2)]), VADD(T1t, T1w), ms, &(x[0]));
+		    ST(&(x[WS(vs, 1) + WS(rs, 2)]), Ti, ms, &(x[WS(vs, 1)]));
+#else
+            Tw = VADD(T1t, T1w);
+            Tx = SHUF_CROSS_LANE_1(Tw, Ti);
+            Tw = SHUF_CROSS_LANE_2(Tw, Ti);
+            STA(&(x[WS(rs, 2)]), Tx, ms, &(x[0]));
+            STA(&(x[WS(rs, 2)])+ms, Tw, ms, &(x[WS(vs, 1)]));
+#endif             
+            Tb = VSUB(T17, T1e);
+		    Tg = VBYI(VADD(T1j, T1g));
+            Tx = BYTWJ(&(W[TWVL * 2]), VADD(T1y, T1z));
+            Ti = BYTWJ(&(W[TWVL * 4]), VADD(Tb, Tg));
+#if MEM_256 == 0            
+            ST(&(x[WS(vs, 2) + WS(rs, 2)]), Tx, ms, &(x[WS(vs, 2)]));
+		    ST(&(x[WS(vs, 3) + WS(rs, 2)]), Ti, ms, &(x[WS(vs, 3)]));
+#else
+            Tw = SHUF_CROSS_LANE_1(Tx, Ti);
+            Tx = SHUF_CROSS_LANE_2(Tx, Ti);
+            STA(&(x[WS(vs, 2) + WS(rs, 2)]), Tw, ms, &(x[WS(vs, 2)]));
+            STA(&(x[WS(vs, 2) + WS(rs, 2)])+ms, Tx, ms, &(x[WS(vs, 3)]));
+#endif              
+            Tw = BYTWJ(&(W[TWVL * 6]), VSUB(T1t, T1w));
+            Tx = BYTWJ(&(W[TWVL * 8]), VSUB(Tb, Tg));
+#if MEM_256 == 0            
+            ST(&(x[WS(vs, 4) + WS(rs, 2)]), Tw, ms, &(x[WS(vs, 4)]));
+		    ST(&(x[WS(vs, 5) + WS(rs, 2)]), Tx, ms, &(x[WS(vs, 5)]));
+#else
+            Tb = SHUF_CROSS_LANE_1(Tw, Tx);
+            Tx = SHUF_CROSS_LANE_2(Tw, Tx);
+            STA(&(x[WS(vs, 4) + WS(rs, 2)]), Tb, ms, &(x[WS(vs, 4)]));
+            STA(&(x[WS(vs, 4) + WS(rs, 2)])+ms, Tx, ms, &(x[WS(vs, 5)]));
+#endif              
+            Tw = BYTWJ(&(W[TWVL * 10]), VSUB(T1y, T1z));
+#if MEM_256 == 0            
+		    ST(&(x[WS(vs, 6) + WS(rs, 2)]), Tw, ms, &(x[WS(vs, 6)]));
+            ST(&(x[WS(vs, 7) + WS(rs, 2)]), Th, ms, &(x[WS(vs, 7)]));
+#else
+            Tx = SHUF_CROSS_LANE_1(Tw, Th);
+            Th = SHUF_CROSS_LANE_2(Tw, Th);
+            STA(&(x[WS(vs, 6) + WS(rs, 2)]), Tx, ms, &(x[WS(vs, 6)]));
+            STA(&(x[WS(vs, 6) + WS(rs, 2)])+ms, Th, ms, &(x[WS(vs, 7)]));
+#endif             
+           }
+           {//3rd row, 3rd row + ms
+            V Th, Ti, Tb, Tg, Tx, Tw;
+		    Tb = VADD(T1E, T1L);
+		    Tg = VBYI(VSUB(T1N, T1Q));
+		    Ti = BYTWJ(&(W[0]), VADD(Tb, Tg));
+            Th = BYTWJ(&(W[TWVL * 12]), VSUB(Tb, Tg));
+#if MEM_256 == 0
+            ST(&(x[WS(rs, 3)]), VADD(T20, T23), ms, &(x[WS(rs, 1)]));
+		    ST(&(x[WS(vs, 1) + WS(rs, 3)]), Ti, ms, &(x[WS(vs, 1) + WS(rs, 1)]));
+#else
+            Tw = VADD(T20, T23);
+            Tx = SHUF_CROSS_LANE_1(Tw, Ti);
+            Tw = SHUF_CROSS_LANE_2(Tw, Ti);
+            STA(&(x[WS(rs, 3)]), Tx, ms, &(x[WS(rs, 1)]));
+            STA(&(x[WS(rs, 3)])+ms, Tw, ms, &(x[WS(vs, 1) + WS(rs, 1)]));
+#endif             
+            Tb = VSUB(T1E, T1L);
+		    Tg = VBYI(VADD(T1Q, T1N));
+            Tx = BYTWJ(&(W[TWVL * 2]), VADD(T25, T26));
+            Ti = BYTWJ(&(W[TWVL * 4]), VADD(Tb, Tg));
+#if MEM_256 == 0            
+            ST(&(x[WS(vs, 2) + WS(rs, 3)]), Tx, ms, &(x[WS(vs, 2) + WS(rs, 1)]));
+		    ST(&(x[WS(vs, 3) + WS(rs, 3)]), Ti, ms, &(x[WS(vs, 3) + WS(rs, 1)]));
+#else
+            Tw = SHUF_CROSS_LANE_1(Tx, Ti);
+            Tx = SHUF_CROSS_LANE_2(Tx, Ti);
+            STA(&(x[WS(vs, 2) + WS(rs, 3)]), Tw, ms, &(x[WS(vs, 2) + WS(rs, 1)]));
+            STA(&(x[WS(vs, 2) + WS(rs, 3)])+ms, Tx, ms, &(x[WS(vs, 3) + WS(rs, 1)]));
+#endif              
+            Tw = BYTWJ(&(W[TWVL * 6]), VSUB(T20, T23));
+            Tx = BYTWJ(&(W[TWVL * 8]), VSUB(Tb, Tg));
+#if MEM_256 == 0            
+            ST(&(x[WS(vs, 4) + WS(rs, 3)]), Tw, ms, &(x[WS(vs, 4) + WS(rs, 1)]));
+		    ST(&(x[WS(vs, 5) + WS(rs, 3)]), Tx, ms, &(x[WS(vs, 5) + WS(rs, 1)]));
+#else
+            Tb = SHUF_CROSS_LANE_1(Tw, Tx);
+            Tx = SHUF_CROSS_LANE_2(Tw, Tx);
+            STA(&(x[WS(vs, 4) + WS(rs, 3)]), Tb, ms, &(x[WS(vs, 4) + WS(rs, 1)]));
+            STA(&(x[WS(vs, 4) + WS(rs, 3)])+ms, Tx, ms, &(x[WS(vs, 5) + WS(rs, 1)]));
+#endif                
+            Tw = BYTWJ(&(W[TWVL * 10]), VSUB(T25, T26));
+#if MEM_256 == 0            
+		    ST(&(x[WS(vs, 6) + WS(rs, 3)]), Tw, ms, &(x[WS(vs, 6) + WS(rs, 1)]));
+            ST(&(x[WS(vs, 7) + WS(rs, 3)]), Th, ms, &(x[WS(vs, 7) + WS(rs, 1)]));
+#else
+            Tx = SHUF_CROSS_LANE_1(Tw, Th);
+            Th = SHUF_CROSS_LANE_2(Tw, Th);
+            STA(&(x[WS(vs, 6) + WS(rs, 3)]), Tx, ms, &(x[WS(vs, 6) + WS(rs, 1)]));
+            STA(&(x[WS(vs, 6) + WS(rs, 3)])+ms, Th, ms, &(x[WS(vs, 7) + WS(rs, 1)]));
+#endif              
+           }
+           {//4rth row, 4rth row + ms
+            V Th, Ti, Tb, Tg, Tx, Tw;
+		    Tb = VADD(T2b, T2i);
+		    Tg = VBYI(VSUB(T2k, T2n));
+		    Ti = BYTWJ(&(W[0]), VADD(Tb, Tg));
+            Th = BYTWJ(&(W[TWVL * 12]), VSUB(Tb, Tg));
+#if MEM_256 == 0
+            ST(&(x[WS(rs, 4)]), VADD(T2x, T2A), ms, &(x[0]));
+		    ST(&(x[WS(vs, 1) + WS(rs, 4)]), Ti, ms, &(x[WS(vs, 1)]));
+#else
+            Tw = VADD(T2x, T2A);
+            Tx = SHUF_CROSS_LANE_1(Tw, Ti);
+            Tw = SHUF_CROSS_LANE_2(Tw, Ti);
+            STA(&(x[WS(rs, 4)]), Tx, ms, &(x[0]));
+            STA(&(x[WS(rs, 4)])+ms, Tw, ms, &(x[WS(vs, 1)]));
+#endif             
+            Tb = VSUB(T2b, T2i);
+		    Tg = VBYI(VADD(T2n, T2k));
+            Tx = BYTWJ(&(W[TWVL * 2]), VADD(T2C, T2D));
+            Ti = BYTWJ(&(W[TWVL * 4]), VADD(Tb, Tg));
+#if MEM_256 == 0            
+            ST(&(x[WS(vs, 2) + WS(rs, 4)]), Tx, ms, &(x[WS(vs, 2)]));
+		    ST(&(x[WS(vs, 3) + WS(rs, 4)]), Ti, ms, &(x[WS(vs, 3)]));
+#else
+            Tw = SHUF_CROSS_LANE_1(Tx, Ti);
+            Tx = SHUF_CROSS_LANE_2(Tx, Ti);
+            STA(&(x[WS(vs, 2) + WS(rs, 4)]), Tw, ms, &(x[WS(vs, 2)]));
+            STA(&(x[WS(vs, 2) + WS(rs, 4)])+ms, Tx, ms, &(x[WS(vs, 3)]));
+#endif             
+            Tw = BYTWJ(&(W[TWVL * 6]), VSUB(T2x, T2A));
+            Tx = BYTWJ(&(W[TWVL * 8]), VSUB(Tb, Tg));
+#if MEM_256 == 0            
+            ST(&(x[WS(vs, 4) + WS(rs, 4)]), Tw, ms, &(x[WS(vs, 4)]));
+		    ST(&(x[WS(vs, 5) + WS(rs, 4)]), Tx, ms, &(x[WS(vs, 5)]));
+#else
+            Tb = SHUF_CROSS_LANE_1(Tw, Tx);
+            Tx = SHUF_CROSS_LANE_2(Tw, Tx);
+            STA(&(x[WS(vs, 4) + WS(rs, 4)]), Tb, ms, &(x[WS(vs, 4)]));
+            STA(&(x[WS(vs, 4) + WS(rs, 4)])+ms, Tx, ms, &(x[WS(vs, 5)]));
+#endif             
+            Tw = BYTWJ(&(W[TWVL * 10]), VSUB(T2C, T2D));
+#if MEM_256 == 0            
+		    ST(&(x[WS(vs, 6) + WS(rs, 4)]), Tw, ms, &(x[WS(vs, 6)]));
+            ST(&(x[WS(vs, 7) + WS(rs, 4)]), Th, ms, &(x[WS(vs, 7)]));
+#else
+            Tx = SHUF_CROSS_LANE_1(Tw, Th);
+            Th = SHUF_CROSS_LANE_2(Tw, Th);
+            STA(&(x[WS(vs, 6) + WS(rs, 4)]), Tx, ms, &(x[WS(vs, 6)]));
+            STA(&(x[WS(vs, 6) + WS(rs, 4)])+ms, Th, ms, &(x[WS(vs, 7)]));
+#endif            
+           }
+           {//5th row, 5th row + ms
+            V Th, Ti, Tb, Tg, Tx, Tw;
+		    Tb = VADD(T2I, T2P);
+		    Tg = VBYI(VSUB(T2R, T2U));
+		    Ti = BYTWJ(&(W[0]), VADD(Tb, Tg));
+            Th = BYTWJ(&(W[TWVL * 12]), VSUB(Tb, Tg));
+#if MEM_256 == 0
+            ST(&(x[WS(rs, 5)]), VADD(T34, T37), ms, &(x[WS(rs, 1)]));
+		    ST(&(x[WS(vs, 1) + WS(rs, 5)]), Ti, ms, &(x[WS(vs, 1) + WS(rs, 1)]));
+#else
+            Tw = VADD(T34, T37);
+            Tx = SHUF_CROSS_LANE_1(Tw, Ti);
+            Tw = SHUF_CROSS_LANE_2(Tw, Ti);
+            STA(&(x[WS(rs, 5)]), Tx, ms, &(x[WS(rs, 1)]));
+            STA(&(x[WS(rs, 5)])+ms, Tw, ms, &(x[WS(vs, 1) + WS(rs, 1)]));
+#endif            
+            Tb = VSUB(T2I, T2P);
+		    Tg = VBYI(VADD(T2U, T2R));
+            Tx = BYTWJ(&(W[TWVL * 2]), VADD(T39, T3a));
+            Ti = BYTWJ(&(W[TWVL * 4]), VADD(Tb, Tg));
+#if MEM_256 == 0            
+            ST(&(x[WS(vs, 2) + WS(rs, 5)]), Tx, ms, &(x[WS(vs, 2) + WS(rs, 1)]));
+		    ST(&(x[WS(vs, 3) + WS(rs, 5)]), Ti, ms, &(x[WS(vs, 3) + WS(rs, 1)]));
+#else
+            Tw = SHUF_CROSS_LANE_1(Tx, Ti);
+            Tx = SHUF_CROSS_LANE_2(Tx, Ti);
+            STA(&(x[WS(vs, 2) + WS(rs, 5)]), Tw, ms, &(x[WS(vs, 2) + WS(rs, 1)]));
+            STA(&(x[WS(vs, 2) + WS(rs, 5)])+ms, Tx, ms, &(x[WS(vs, 3) + WS(rs, 1)]));
+#endif            
+            Tw = BYTWJ(&(W[TWVL * 6]), VSUB(T34, T37));
+            Tx = BYTWJ(&(W[TWVL * 8]), VSUB(Tb, Tg));
+#if MEM_256 == 0            
+            ST(&(x[WS(vs, 4) + WS(rs, 5)]), Tw, ms, &(x[WS(vs, 4) + WS(rs, 1)]));
+            ST(&(x[WS(vs, 5) + WS(rs, 5)]), Tx, ms, &(x[WS(vs, 5) + WS(rs, 1)]));
+#else
+            Tb = SHUF_CROSS_LANE_1(Tw, Tx);
+            Tx = SHUF_CROSS_LANE_2(Tw, Tx);
+            STA(&(x[WS(vs, 4) + WS(rs, 5)]), Tb, ms, &(x[WS(vs, 4) + WS(rs, 1)]));
+            STA(&(x[WS(vs, 4) + WS(rs, 5)])+ms, Tx, ms, &(x[WS(vs, 5) + WS(rs, 1)]));
+#endif            
+            Tw = BYTWJ(&(W[TWVL * 10]), VSUB(T39, T3a));
+#if MEM_256 == 0            
+		    ST(&(x[WS(vs, 6) + WS(rs, 5)]), Tw, ms, &(x[WS(vs, 6) + WS(rs, 1)]));
+            ST(&(x[WS(vs, 7) + WS(rs, 5)]), Th, ms, &(x[WS(vs, 7) + WS(rs, 1)]));
+#else
+            Tx = SHUF_CROSS_LANE_1(Tw, Th);
+            Th = SHUF_CROSS_LANE_2(Tw, Th);
+            STA(&(x[WS(vs, 6) + WS(rs, 5)]), Tx, ms, &(x[WS(vs, 6) + WS(rs, 1)]));
+            STA(&(x[WS(vs, 6) + WS(rs, 5)])+ms, Th, ms, &(x[WS(vs, 7) + WS(rs, 1)]));
+#endif             
+           }
+           {//6th row, 6th row + ms
+            V Th, Ti, Tb, Tg, Tx, Tw;
+		    Tb = VADD(T3f, T3m);
+		    Tg = VBYI(VSUB(T3o, T3r));
+		    Ti = BYTWJ(&(W[0]), VADD(Tb, Tg));
+            Th = BYTWJ(&(W[TWVL * 12]), VSUB(Tb, Tg));
+#if MEM_256 == 0
+            ST(&(x[WS(rs, 6)]), VADD(T3B, T3E), ms, &(x[0]));
+		    ST(&(x[WS(vs, 1) + WS(rs, 6)]), Ti, ms, &(x[WS(vs, 1)]));
+#else
+            Tw = VADD(T3B, T3E);
+            Tx = SHUF_CROSS_LANE_1(Tw, Ti);
+            Tw = SHUF_CROSS_LANE_2(Tw, Ti);
+            STA(&(x[WS(rs, 6)]), Tx, ms, &(x[0]));
+            STA(&(x[WS(rs, 6)])+ms, Tw, ms, &(x[WS(vs, 1)]));
+#endif            
+            Tb = VSUB(T3f, T3m);
+		    Tg = VBYI(VADD(T3r, T3o));
+            Tx = BYTWJ(&(W[TWVL * 2]), VADD(T3G, T3H));
+            Ti = BYTWJ(&(W[TWVL * 4]), VADD(Tb, Tg));
+#if MEM_256 == 0            
+            ST(&(x[WS(vs, 2) + WS(rs, 6)]), Tx, ms, &(x[WS(vs, 2)]));
+		    ST(&(x[WS(vs, 3) + WS(rs, 6)]), Ti, ms, &(x[WS(vs, 3)]));
+#else
+            Tw = SHUF_CROSS_LANE_1(Tx, Ti);
+            Tx = SHUF_CROSS_LANE_2(Tx, Ti);
+            STA(&(x[WS(vs, 2) + WS(rs, 6)]), Tw, ms, &(x[WS(vs, 2)]));
+            STA(&(x[WS(vs, 2) + WS(rs, 6)])+ms, Tx, ms, &(x[WS(vs, 3)]));
+#endif            
+            Tw = BYTWJ(&(W[TWVL * 6]), VSUB(T3B, T3E));
+            Tx = BYTWJ(&(W[TWVL * 8]), VSUB(Tb, Tg));
+#if MEM_256 == 0            
+            ST(&(x[WS(vs, 4) + WS(rs, 6)]), Tw, ms, &(x[WS(vs, 4)]));
+		    ST(&(x[WS(vs, 5) + WS(rs, 6)]), Tx, ms, &(x[WS(vs, 5)]));
+#else
+            Tb = SHUF_CROSS_LANE_1(Tw, Tx);
+            Tx = SHUF_CROSS_LANE_2(Tw, Tx);
+            STA(&(x[WS(vs, 4) + WS(rs, 6)]), Tb, ms, &(x[WS(vs, 4)]));
+            STA(&(x[WS(vs, 4) + WS(rs, 6)])+ms, Tx, ms, &(x[WS(vs, 5)]));
+#endif             
+            Tw = BYTWJ(&(W[TWVL * 10]), VSUB(T3G, T3H));
+#if MEM_256 == 0            
+		    ST(&(x[WS(vs, 6) + WS(rs, 6)]), Tw, ms, &(x[WS(vs, 6)]));
+            ST(&(x[WS(vs, 7) + WS(rs, 6)]), Th, ms, &(x[WS(vs, 7)]));
+#else
+            Tx = SHUF_CROSS_LANE_1(Tw, Th);
+            Th = SHUF_CROSS_LANE_2(Tw, Th);
+            STA(&(x[WS(vs, 6) + WS(rs, 6)]), Tx, ms, &(x[WS(vs, 6)]));
+            STA(&(x[WS(vs, 6) + WS(rs, 6)])+ms, Th, ms, &(x[WS(vs, 7)]));
+#endif             
+           }
+           {//7th row, 7th row + ms
+            V Th, Ti, Tb, Tg, Tx, Tw;
+		    Tb = VADD(T3M, T3T);
+		    Tg = VBYI(VSUB(T3V, T3Y));
+		    Ti = BYTWJ(&(W[0]), VADD(Tb, Tg));
+            Th = BYTWJ(&(W[TWVL * 12]), VSUB(Tb, Tg));
+#if MEM_256 == 0
+            ST(&(x[WS(rs, 7)]), VADD(T48, T4b), ms, &(x[WS(rs, 1)]));
+		    ST(&(x[WS(vs, 1) + WS(rs, 7)]), Ti, ms, &(x[WS(vs, 1) + WS(rs, 1)]));
+#else
+            Tw = VADD(T48, T4b);
+            Tx = SHUF_CROSS_LANE_1(Tw, Ti);
+            Tw = SHUF_CROSS_LANE_2(Tw, Ti);
+            STA(&(x[WS(rs, 7)]), Tx, ms, &(x[WS(rs, 1)]));
+            STA(&(x[WS(rs, 7)])+ms, Tw, ms, &(x[WS(vs, 1) + WS(rs, 1)]));
+#endif            
+            Tb = VSUB(T3M, T3T);
+		    Tg = VBYI(VADD(T3Y, T3V));
+            Tx = BYTWJ(&(W[TWVL * 2]), VADD(T4d, T4e));
+            Ti = BYTWJ(&(W[TWVL * 4]), VADD(Tb, Tg));
+#if MEM_256 == 0            
+            ST(&(x[WS(vs, 2) + WS(rs, 7)]), Tx, ms, &(x[WS(vs, 2) + WS(rs, 1)]));
+		    ST(&(x[WS(vs, 3) + WS(rs, 7)]), Ti, ms, &(x[WS(vs, 3) + WS(rs, 1)]));
+#else
+            Tw = SHUF_CROSS_LANE_1(Tx, Ti);
+            Tx = SHUF_CROSS_LANE_2(Tx, Ti);
+            STA(&(x[WS(vs, 2) + WS(rs, 7)]), Tw, ms, &(x[WS(vs, 2) + WS(rs, 1)]));
+            STA(&(x[WS(vs, 2) + WS(rs, 7)])+ms, Tx, ms, &(x[WS(vs, 3) + WS(rs, 1)]));
+#endif             
+            Tw = BYTWJ(&(W[TWVL * 6]), VSUB(T48, T4b));
+            Tx = BYTWJ(&(W[TWVL * 8]), VSUB(Tb, Tg));
+#if MEM_256 == 0            
+            ST(&(x[WS(vs, 4) + WS(rs, 7)]), Tw, ms, &(x[WS(vs, 4) + WS(rs, 1)]));
+		    ST(&(x[WS(vs, 5) + WS(rs, 7)]), Tx, ms, &(x[WS(vs, 5) + WS(rs, 1)]));
+#else
+            Tb = SHUF_CROSS_LANE_1(Tw, Tx);
+            Tx = SHUF_CROSS_LANE_2(Tw, Tx);
+            STA(&(x[WS(vs, 4) + WS(rs, 7)]), Tb, ms, &(x[WS(vs, 4) + WS(rs, 1)]));
+            STA(&(x[WS(vs, 4) + WS(rs, 7)])+ms, Tx, ms, &(x[WS(vs, 5) + WS(rs, 1)]));
+#endif            
+            Tw = BYTWJ(&(W[TWVL * 10]), VSUB(T4d, T4e));
+#if MEM_256 == 0            
+		    ST(&(x[WS(vs, 6) + WS(rs, 7)]), Tw, ms, &(x[WS(vs, 6) + WS(rs, 1)]));
+            ST(&(x[WS(vs, 7) + WS(rs, 7)]), Th, ms, &(x[WS(vs, 7) + WS(rs, 1)]));
+#else
+            Tx = SHUF_CROSS_LANE_1(Tw, Th);
+            Th = SHUF_CROSS_LANE_2(Tw, Th);
+            STA(&(x[WS(vs, 6) + WS(rs, 7)]), Tx, ms, &(x[WS(vs, 6) + WS(rs, 1)]));
+            STA(&(x[WS(vs, 6) + WS(rs, 7)])+ms, Th, ms, &(x[WS(vs, 7) + WS(rs, 1)]));
+#endif            
+           }
+#else
 	       ST(&(x[0]), VADD(Tp, Ts), ms, &(x[0]));
 	       ST(&(x[WS(rs, 2)]), VADD(T1t, T1w), ms, &(x[0]));
 	       ST(&(x[WS(rs, 5)]), VADD(T34, T37), ms, &(x[WS(rs, 1)]));
@@ -1012,6 +1425,7 @@ static void q1fv_8(R *ri, R *ii, const R *W, stride rs, stride vs, INT mb, INT m
 		    ST(&(x[WS(vs, 5) + WS(rs, 7)]), T44, ms, &(x[WS(vs, 5) + WS(rs, 1)]));
 		    ST(&(x[WS(vs, 3) + WS(rs, 7)]), T45, ms, &(x[WS(vs, 3) + WS(rs, 1)]));
 	       }
+#endif           
 	  }
      }
      VLEAVE();

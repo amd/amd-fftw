@@ -108,6 +108,9 @@ extern "C"
 //     (for this optimization switch, AMD_OPT_AUTO_TUNED_TRANS_BLK_SIZE should also be enabled)
 //#define AMD_OPT_AUTO_TUNED_RASTER_TILED_TRANS_METHOD
 //--------------------------------
+//Kernel new implementations and optimization enable/disable switch by AMD_OPT_KERNEL_256SIMD_PERF
+#define AMD_OPT_KERNEL_256SIMD_PERF
+//--------------------------------
 
 #endif//#ifdef AMD_OPT_ALL
 //============================================================

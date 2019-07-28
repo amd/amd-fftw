@@ -47,6 +47,19 @@
 
 #include <immintrin.h>
 
+//--------------------------------
+//Under AMD_OPT_KERNEL_256SIMD_PERF switch, enable any one of the sub-switches:-
+//(i)   Rearranges data and writes 256-bit as Approach 1
+//(ii)  Rearranges data and writes 256-bit as Approach 2
+//(iii) Use a new implementation of more efficient kernel
+#ifdef AMD_OPT_KERNEL_256SIMD_PERF
+#define MEM_256 1
+#define AMD_OPT_KERNEL_REARRANGE_WRITE_V1
+//#define AMD_OPT_KERNEL_REARRANGE_WRITE_V2
+//#define AMD_OPT_KERNEL_NEW_IMPLEMENTATION
+#endif
+//--------------------------------
+
 typedef DS(__m256d, __m256) V;
 #define VADD SUFF(_mm256_add_p)
 #define VSUB SUFF(_mm256_sub_p)
@@ -183,7 +196,7 @@ static inline void STN2(R *x, V v0, V v1, INT ovs)
      *(__m128 *)(x + 7 * ovs) = _mm256_extractf128_ps(yyy3, 1);	\
 }
 
-#else
+#else //DOUBLE PRECISION STARTS
 static inline __m128d VMOVAPD_LD(const R *x)
 {
      /* gcc-4.6 miscompiles the combination _mm256_castpd128_pd256(VMOVAPD_LD(x))
@@ -219,6 +232,19 @@ static inline void ST(R *x, V v, INT ovs, const R *aligned_like)
      *(__m128d *)x = _mm256_castpd256_pd128(v);
 }
 
+static inline V SHUF_CROSS_LANE_1(V v1, V v2)
+{
+     V var;
+     var = _mm256_insertf128_pd(v1, _mm256_castpd256_pd128(v2), 1);
+     return var;
+}
+
+static inline V SHUF_CROSS_LANE_2(V v1, V v2)
+{
+     V var;
+     var = _mm256_insertf128_pd(v2, (_mm256_extractf128_pd(v1, 1)), 0);
+     return var;
+}
 
 #define STM2 ST
 #define STN2(x, v0, v1, ovs) /* nop */
