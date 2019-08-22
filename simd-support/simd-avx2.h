@@ -60,7 +60,7 @@
 #define MEM_256 1
 #define AMD_OPT_KERNEL_REARRANGE_WRITE_V1
 //#define AMD_OPT_KERNEL_REARRANGE_WRITE_V2
-//#define AMD_OPT_KERNEL_NEW_IMPLEMENTATION
+#define AMD_OPT_KERNEL_NEW_IMPLEMENTATION
 #endif
 //--------------------------------
 
@@ -71,6 +71,7 @@ typedef DS(__m256d, __m256) V;
 #define VXOR SUFF(_mm256_xor_p)
 #define VSHUF SUFF(_mm256_shuffle_p)
 #define VPERM1 SUFF(_mm256_permute_p)
+#define VBROADCAST SUFF(_mm256_broadcast_s)
 
 #define SHUFVALD(fp0,fp1) \
    (((fp1) << 3) | ((fp0) << 2) | ((fp1) << 1) | ((fp0)))
@@ -360,6 +361,15 @@ static inline V VZMULI(V tx, V sr)
     */
 }
 
+static inline V VZMULJB(V tx, V sr)
+{
+     V tr = _mm256_unpacklo_pd(tx, tx);
+     V ti = _mm256_unpackhi_pd(tx, tx);
+     tr = VMUL(sr, tr);
+     sr = VBYI(sr);
+     return VFNMS(ti, sr, tr);
+}
+
 static inline V VZMULIJ(V tx, V sr)
 {
      /* V tr = VDUPL(tx); */
@@ -386,6 +396,11 @@ static inline V BYTW1(const R *t, V sr)
 static inline V BYTWJ1(const R *t, V sr)
 {
      return VZMULJ(LDA(t, 2, t), sr);
+}
+
+static inline V BYTWJB(const R *t, V sr)
+{
+     return VZMULJB( _mm256_broadcast_pd ((__m128d const *)t), sr);
 }
 
 /* twiddle storage #2: twice the space, faster (when in cache) */
