@@ -342,7 +342,7 @@ static inline V VZMUL(V tx, V sr)
      sr = VBYI(sr);
      return VFMA(ti, sr, tr);
 }
-
+#ifdef AMD_OPT_KERNEL_256SIMD_PERF
 static inline V VZMULJB(V tx, V sr)
 {
      V tr = _mm256_unpacklo_pd(tx, tx);
@@ -351,7 +351,7 @@ static inline V VZMULJB(V tx, V sr)
      sr = VBYI(sr);
      return VFNMS(ti, sr, tr);
 }
-
+#endif
 static inline V VZMULJ(V tx, V sr)
 {
      V tr = VDUPL(tx);
@@ -396,12 +396,12 @@ static inline V BYTWJ1(const R *t, V sr)
 {
      return VZMULJ(LDA(t, 2, t), sr);
 }
-
+#ifdef AMD_OPT_KERNEL_256SIMD_PERF
 static inline V BYTWJB(const R *t, V sr)
 {
      return VZMULJB( _mm256_broadcast_pd ((__m128d const *)t), sr);
 }
-
+#endif
 /* twiddle storage #2: twice the space, faster (when in cache) */
 #ifdef FFTW_SINGLE
 # define VTW2(v,x)							\
