@@ -540,7 +540,444 @@ void XSIMD(codelet_q1fv_8) (planner *p) {
  */
 #include "dft/simd/q1f.h"
 
-#ifndef AMD_OPT_KERNEL_NEW_IMPLEMENTATION
+#if !defined(FFTW_SINGLE) && defined(AMD_OPT_KERNEL_NEW_IMPLEMENTATION)
+static void q1fv_8(R *ri, R *ii, const R *W, stride rs, stride vs, INT mb, INT me, INT ms)
+{
+    V W1_2_8K;
+    R W1_2_8 = 0.70710678118654752440084436210485;
+    INT mn = WS(vs, 2);//should be 4 complex apart for double and 8 complex apart for single
+    INT mm, mt, w_ms, mn4, mn6;
+    R *x;
+    x = ri;
+
+    W1_2_8K = VBROADCASTS((const double *)&W1_2_8);
+    mn4 = (mn<<1);
+    mn6 = (mn * 3);
+
+    for (mm = mb, W = W + (mb * ((TWVL / VL) * 14)); mm < me; mm = mm + VL, x = x + (VL * ms), W = W + (TWVL * 14),MAKE_VOLATILE_STRIDE(16, rs), MAKE_VOLATILE_STRIDE(16, vs))
+    {
+        V a, c, d, e;
+        V f, g, h, i;
+        V j, k, l, m;
+        V a2, c2, d2, e2;
+        V f2, g2, h2, i2;
+        V a3, c3, d3, e3;
+        V f3, g3, h3, i3;
+        V a4, c4, d4, e4;
+        V f4, g4, h4, i4;
+        V a5, c5, d5, e5;
+        
+        w_ms = 0;   
+        for (mt = 0; mt <= ms; mt += ms)
+        {
+            //Stage-1
+            {
+                //0,4,2,6
+                f = LDA(x + mt, 0, 0);                  //0
+                g = LDA(x + WS(rs, 2) + mt, 0, 0);      //2
+                h = LDA(x + WS(rs, 4) + mt, 0, 0);      //4
+                i = LDA(x + WS(rs, 6) + mt, 0, 0);      //6
+
+                f2 = LDA(x + mt + mn, 0, 0);                //0+m
+                g2 = LDA(x + WS(rs, 2) + mt + mn, 0, 0);    //2+m
+                h2 = LDA(x + WS(rs, 4) + mt + mn, 0, 0);    //4+m
+                i2 = LDA(x + WS(rs, 6) + mt + mn, 0, 0);    //6+m
+
+                //first set
+                a = VADD(f, h);                     //0+4
+                c = VSUB(f, h);                     //0-4
+                d = VADD(g, i);                     //2+6
+                e = VSUB(g, i);                     //2-6
+
+                //second set
+                a2 = VADD(f2, h2);                  //0+4
+                c2 = VSUB(f2, h2);                  //0-4
+                d2 = VADD(g2, i2);                  //2+6
+                e2 = VSUB(g2, i2);                  //2-6
+
+                //1,5,3,7
+                j = LDA(x + WS(rs, 1) + mt, 0, 0);      //1
+                k = LDA(x + WS(rs, 3) + mt, 0, 0);      //3
+                l = LDA(x + WS(rs, 5) + mt, 0, 0);      //5
+                m = LDA(x + WS(rs, 7) + mt, 0, 0);      //7
+
+                f2 = LDA(x + WS(rs, 1) + mt + mn, 0, 0);    //1
+                g2 = LDA(x + WS(rs, 3) + mt + mn, 0, 0);    //3
+                h2 = LDA(x + WS(rs, 5) + mt + mn, 0, 0);    //5
+                i2 = LDA(x + WS(rs, 7) + mt + mn, 0, 0);    //7
+
+                //first set
+                f = VADD(j, l);                     //1+5
+                g = VSUB(j, l);                     //1-5
+                h = VADD(k, m);                     //3+7
+                i = VSUB(k, m);                     //3-7
+
+                //second set
+                j = VADD(f2, h2);                   //1+5
+                k = VSUB(f2, h2);                   //1-5
+                l = VADD(g2, i2);                   //3+7
+                m = VSUB(g2, i2);                   //3-7
+            }
+
+            //Stage-2
+            {
+                V tw1, tw2;
+
+                //second set
+                e2 = VCONJ(FLIP_RI(e2));
+
+                tw1 = VSHUF(k, k, 0x0);         //5th r
+                k = VSHUF(k, k, 0xF);           //5th i
+                tw1 = VCONJ(tw1);               //Towards Real=(r+i)W , Img=(i-r)*W
+                tw2 = VSHUF(m, m, 0xF);         //7th i
+                m = VSHUF(m, m, 0x0);           //7th r
+                tw2 = VCONJ(tw2);               //Towards Real=(i-r)W, Img=(-i-r)W
+                k = VADD(k, tw1);               //Towards Real=(r+i)W , Img=(i-r)*W
+                m = VSUB(tw2, m);               //Towards Real=(i-r)W, Img=(-i-r)W
+                k = VMUL(k, W1_2_8K);           //Towards Real=(r+i)W , Img=(i-r)*W
+                m = VMUL(m, W1_2_8K);           //Towards Real=(i-r)W, Img=(-i-r)W
+
+                //first set
+                e = VCONJ(FLIP_RI(e));
+
+                tw1 = VSHUF(g, g, 0x0);         //5th r
+                g = VSHUF(g, g, 0xF);           //5th i
+                tw1 = VCONJ(tw1);               //Towards Real=(r+i)W , Img=(i-r)*W
+                tw2 = VSHUF(i, i, 0xF);         //7th i
+                i = VSHUF(i, i, 0x0);           //7th r
+                tw2 = VCONJ(tw2);               //Towards Real=(i-r)W, Img=(-i-r)W
+                g = VADD(g, tw1);               //Towards Real=(r+i)W , Img=(i-r)*W
+                i = VSUB(tw2, i);               //Towards Real=(i-r)W, Img=(-i-r)W
+                g = VMUL(g, W1_2_8K);           //Towards Real=(r+i)W , Img=(i-r)*W
+                i = VMUL(i, W1_2_8K);           //Towards Real=(i-r)W, Img=(-i-r)W
+
+                ////////// Next 8 - 15 (Stage-1) starts //////////
+                //0,4,2,6
+                f3 = LDA(x + mt + mn4, 0, 0);                       //0
+                g3 = LDA(x + WS(rs, 2) + mt + mn4, 0, 0);       //2
+                h3 = LDA(x + WS(rs, 4) + mt + mn4, 0, 0);       //4
+                i3 = LDA(x + WS(rs, 6) + mt + mn4, 0, 0);       //6
+
+                f4 = LDA(x + mt + mn6, 0, 0);                   //0+m
+                g4 = LDA(x + WS(rs, 2) + mt + mn6, 0, 0);       //2+m
+                h4 = LDA(x + WS(rs, 4) + mt + mn6, 0, 0);       //4+m
+                i4 = LDA(x + WS(rs, 6) + mt + mn6, 0, 0);       //6+m
+                ///////// Next 8 - 15 ends ///////////
+
+                //second set
+                f2 = VADD(j, l);                    //1+5
+                h2 = VSUB(j, l);                    //3+7
+                g2 = VADD(k, m);                    //1-5
+                i2 = VSUB(k, m);                    //3-7
+
+                //first set
+                j = VADD(a, d);                 //0+4
+                l = VSUB(a, d);                 //2+6
+                k = VADD(c, e);                 //0-4
+                m = VSUB(c, e);                 //2-6
+
+                ////////// Next 8 - 15 (Stage-1) starts //////////
+                //first set
+                a3 = VADD(f3, h3);                      //0+4
+                c3 = VSUB(f3, h3);                      //0-4
+                d3 = VADD(g3, i3);                      //2+6
+                e3 = VSUB(g3, i3);                      //2-6
+
+                //second set
+                a4 = VADD(f4, h4);                  //0+4
+                c4 = VSUB(f4, h4);                  //0-4
+                d4 = VADD(g4, i4);                  //2+6
+                e4 = VSUB(g4, i4);                  //2-6
+
+                //1,5,3,7
+                f3 = LDA(x + WS(rs, 1) + mt + mn4, 0, 0);           //1
+                g3 = LDA(x + WS(rs, 3) + mt + mn4, 0, 0);   //3
+                h3 = LDA(x + WS(rs, 5) + mt + mn4, 0, 0);   //5
+                i3 = LDA(x + WS(rs, 7) + mt + mn4, 0, 0);   //7
+
+                f4 = LDA(x + WS(rs, 1) + mt + mn6, 0, 0);           //1
+                g4 = LDA(x + WS(rs, 3) + mt + mn6, 0, 0);   //3
+                h4 = LDA(x + WS(rs, 5) + mt + mn6, 0, 0);   //5
+                i4 = LDA(x + WS(rs, 7) + mt + mn6, 0, 0);   //7
+                ///////// Next 8 - 15 ends ///////////
+
+                //first set
+                a = VADD(f, h);                 //1+5
+                d = VSUB(f, h);                 //3+7
+                c = VADD(g, i);                 //1-5
+                e = VSUB(g, i);                 //3-7
+
+                //second set
+                f = VADD(a2, d2);                   //0+4
+                h = VSUB(a2, d2);                   //2+6
+                g = VADD(c2, e2);                   //0-4
+                i = VSUB(c2, e2);                   //2-6
+
+                ////////// Next 8 - 15 (Stage-1) starts //////////
+                //first set
+                a2 = VADD(f3, h3);                  //1+5
+                c2 = VSUB(f3, h3);                  //1-5
+                d2 = VADD(g3, i3);                  //3+7
+                e2 = VSUB(g3, i3);                  //3-7
+
+                //second set
+                f3 = VADD(f4, h4);                  //1+5
+                g3 = VSUB(f4, h4);                  //1-5
+                h3 = VADD(g4, i4);                  //3+7
+                i3 = VSUB(g4, i4);                  //3-7
+                ///////// Next 8 - 15 ends ///////////
+            }
+
+            //Stage-3
+            {
+                V tw1, tw2;
+
+                d = VCONJ(FLIP_RI(d));
+                e = VCONJ(FLIP_RI(e));
+                h2 = VCONJ(FLIP_RI(h2));
+                i2 = VCONJ(FLIP_RI(i2));
+
+                ////////// Next 8 - 15 (Stage-2) starts //////////
+                //second set
+                e4 = VCONJ(FLIP_RI(e4));
+
+                tw1 = VSHUF(g3, g3, 0x0);           //5th r
+                g3 = VSHUF(g3, g3, 0xF);            //5th i
+                tw1 = VCONJ(tw1);               //Towards Real=(r+i)W , Img=(i-r)*W
+                tw2 = VSHUF(i3, i3, 0xF);           //7th i
+                i3 = VSHUF(i3, i3, 0x0);            //7th r
+                tw2 = VCONJ(tw2);               //Towards Real=(i-r)W, Img=(-i-r)W
+                g3 = VADD(g3, tw1);             //Towards Real=(r+i)W , Img=(i-r)*W
+                i3 = VSUB(tw2, i3);             //Towards Real=(i-r)W, Img=(-i-r)W
+                g3 = VMUL(g3, W1_2_8K);         //Towards Real=(r+i)W , Img=(i-r)*W
+                i3 = VMUL(i3, W1_2_8K);         //Towards Real=(i-r)W, Img=(-i-r)W
+
+                //first set
+                e3 = VCONJ(FLIP_RI(e3));
+
+                tw1 = VSHUF(c2, c2, 0x0);           //5th r
+                c2 = VSHUF(c2, c2, 0xF);            //5th i
+                tw1 = VCONJ(tw1);               //Towards Real=(r+i)W , Img=(i-r)*W
+                tw2 = VSHUF(e2, e2, 0xF);           //7th i
+                e2 = VSHUF(e2, e2, 0x0);            //7th r
+                tw2 = VCONJ(tw2);               //Towards Real=(i-r)W, Img=(-i-r)W
+                c2 = VADD(c2, tw1);             //Towards Real=(r+i)W , Img=(i-r)*W
+                e2 = VSUB(tw2, e2);             //Towards Real=(i-r)W, Img=(-i-r)W
+                c2 = VMUL(c2, W1_2_8K);         //Towards Real=(r+i)W , Img=(i-r)*W
+                e2 = VMUL(e2, W1_2_8K);         //Towards Real=(i-r)W, Img=(-i-r)W
+                ///////// Next 8 - 15 ends ///////////
+
+                ///// Shuffle operations before stores : Start /////
+                //vs:0,1
+                f4 = VADD(j, a);    //vs:0,1 ; rs:0
+                g4 = VADD(k, c);    //vs:0,1 ; rs:1
+                h4 = VADD(l, d);    //vs:0,1 ; rs:2
+                i4 = VADD(m, e);    //vs:0,1 ; rs:3
+                j = VSUB(j, a);     //vs:0,1 ; rs:4
+                k = VSUB(k, c);     //vs:0,1 ; rs:5
+                l = VSUB(l, d);     //vs:0,1 ; rs:6
+                m = VSUB(m, e);     //vs:0,1 ; rs:7
+
+                //Multiply additional next stage Twiddle Factors for vs:0,1
+                g4 = BYTWJB(&(W[0+w_ms]), g4);
+                h4 = BYTWJB(&(W[(TWVL * 2)+w_ms]), h4);
+                i4 = BYTWJB(&(W[(TWVL * 4)+w_ms]), i4);
+                j = BYTWJB(&(W[(TWVL * 6)+w_ms]), j);
+                k = BYTWJB(&(W[(TWVL * 8)+w_ms]), k);
+                l = BYTWJB(&(W[(TWVL * 10)+w_ms]), l);
+                m = BYTWJB(&(W[(TWVL * 12)+w_ms]), m);
+
+                ///// Shuffle operations before stores : Start /////
+
+                ////////// Next 8 - 15 (Stage-2) starts //////////
+                //second set
+                a = VADD(a4, d4);                   //0+4
+                d = VSUB(a4, d4);                   //2+6
+                c = VADD(c4, e4);                   //0-4
+                e = VSUB(c4, e4);                   //2-6
+
+                //second set
+                a4 = VADD(f3, h3);                  //1+5
+                d4 = VSUB(f3, h3);                  //3+7
+                c4 = VADD(g3, i3);                  //1-5
+                e4 = VSUB(g3, i3);                  //3-7
+
+                a5 = SHUF_CROSS_LANE_1(f4, g4);     //vs:0,0 ; rs:0,1
+                c5 = SHUF_CROSS_LANE_2(f4, g4);     //vs:1,1 ; rs:0,1
+                d5 = SHUF_CROSS_LANE_1(h4, i4);     //vs:0,0 ; rs:2,3
+                e5 = SHUF_CROSS_LANE_2(h4, i4);     //vs:1,1 ; rs:2,3
+                f4 = SHUF_CROSS_LANE_1(j, k);       //vs:0,0 ; rs:4,5
+                g4 = SHUF_CROSS_LANE_2(j, k);       //vs:1,1 ; rs:4,5
+                h4 = SHUF_CROSS_LANE_1(l, m);       //vs:0,0 ; rs:6,7
+                i4 = SHUF_CROSS_LANE_2(l, m);       //vs:1,1 ; rs:6,7
+
+                //first set
+                f3 = VADD(a3, d3);                  //0+4
+                h3 = VSUB(a3, d3);                  //2+6
+                g3 = VADD(c3, e3);                  //0-4
+                i3 = VSUB(c3, e3);                  //2-6
+
+                //first set
+                a3 = VADD(a2, d2);                  //1+5
+                d3 = VSUB(a2, d2);                  //3+7
+                c3 = VADD(c2, e2);                  //1-5
+                e3 = VSUB(c2, e2);                  //3-7
+
+                ///////// Next 8 - 15 ends ///////////
+            }
+
+            //Stage-3 ////////// Next 8 - 15 (Stage-1) starts //////////
+            {
+
+                d3 = VCONJ(FLIP_RI(d3));
+                e3 = VCONJ(FLIP_RI(e3));
+                d4 = VCONJ(FLIP_RI(d4));
+                e4 = VCONJ(FLIP_RI(e4));
+
+                ///// Shuffle operations before stores : Start /////
+
+                //vs:0,0 ; rs:0->7
+                STA((x + mt), a5, 0, 0);
+                STA((x + mt + mn), d5, 0, 0);
+                STA((x + mt + mn4), f4, 0, 0);
+                STA((x + mt + mn6), h4, 0, 0);
+
+                //vs:2,3
+                a2 = VADD(f, f2);   //vs:2,3 ; rs:0
+                c2 = VADD(g, g2);   //vs:2,3 ; rs:1
+                d2 = VADD(h, h2);   //vs:2,3 ; rs:2
+                e2 = VADD(i, i2);   //vs:2,3 ; rs:3
+                f2 = VSUB(f, f2);   //vs:2,3 ; rs:4
+                g2 = VSUB(g, g2);   //vs:2,3 ; rs:5
+                h2 = VSUB(h, h2);   //vs:2,3 ; rs:6
+                i2 = VSUB(i, i2);   //vs:2,3 ; rs:7
+
+                //Multiply additional next stage Twiddle Factors for vs:2,3
+                c2 = BYTWJB(&(W[0+w_ms]), c2);
+                d2 = BYTWJB(&(W[(TWVL * 2)+w_ms]), d2);
+                e2 = BYTWJB(&(W[(TWVL * 4)+w_ms]), e2);
+                f2 = BYTWJB(&(W[(TWVL * 6)+w_ms]), f2);
+                g2 = BYTWJB(&(W[(TWVL * 8)+w_ms]), g2);
+                h2 = BYTWJB(&(W[(TWVL * 10)+w_ms]), h2);
+                i2 = BYTWJB(&(W[(TWVL * 12)+w_ms]), i2);
+
+                //vs:1,1 ; rs:0->7
+                STA((x + WS(rs, 1) + mt), c5, 0, 0);
+                STA((x + WS(rs, 1) + mt + mn), e5, 0, 0);
+                STA((x + WS(rs, 1) + mt + mn4), g4, 0, 0);
+                STA((x + WS(rs, 1) + mt + mn6), i4, 0, 0);
+
+                //vs:4,5
+                f = VADD(f3, a3);   //vs:4,5 ; rs:0
+                g = VADD(g3, c3);   //vs:4,5 ; rs:1
+                h = VADD(h3, d3);   //vs:4,5 ; rs:2
+                i = VADD(i3, e3);   //vs:4,5 ; rs:3
+                f3 = VSUB(f3, a3);  //vs:4,5 ; rs:4
+                g3 = VSUB(g3, c3);  //vs:4,5 ; rs:5
+                h3 = VSUB(h3, d3);  //vs:4,5 ; rs:6
+                i3 = VSUB(i3, e3);  //vs:4,5 ; rs:7
+
+                j = SHUF_CROSS_LANE_1(a2, c2);      //vs:2,2 ; rs:0,1
+                k = SHUF_CROSS_LANE_2(a2, c2);      //vs:3,3 ; rs:0,1
+                l = SHUF_CROSS_LANE_1(d2, e2);      //vs:2,2 ; rs:2,3
+                m = SHUF_CROSS_LANE_2(d2, e2);      //vs:3,3 ; rs:2,3
+                a2 = SHUF_CROSS_LANE_1(f2, g2);     //vs:2,2 ; rs:4,5
+                c2 = SHUF_CROSS_LANE_2(f2, g2);     //vs:3,3 ; rs:4,5
+                d2 = SHUF_CROSS_LANE_1(h2, i2);     //vs:2,2 ; rs:6,7
+                e2 = SHUF_CROSS_LANE_2(h2, i2);     //vs:3,3 ; rs:6,7
+
+                //vs:6,7
+                a3 = VADD(a, a4);   //vs:6,7 ; rs:0
+                c3 = VADD(c, c4);   //vs:6,7 ; rs:1
+                d3 = VADD(d, d4);   //vs:6,7 ; rs:2
+                e3 = VADD(e, e4);   //vs:6,7 ; rs:3
+                a4 = VSUB(a, a4);   //vs:6,7 ; rs:4
+                c4 = VSUB(c, c4);   //vs:6,7 ; rs:5
+                d4 = VSUB(d, d4);   //vs:6,7 ; rs:6
+                e4 = VSUB(e, e4);   //vs:6,7 ; rs:7
+
+                //Multiply additional next stage Twiddle Factors for vs:4,5
+                g = BYTWJB(&(W[0+w_ms]), g);
+                h = BYTWJB(&(W[(TWVL * 2)+w_ms]), h);
+                i = BYTWJB(&(W[(TWVL * 4)+w_ms]), i);
+                f3 = BYTWJB(&(W[(TWVL * 6)+w_ms]), f3);
+                g3 = BYTWJB(&(W[(TWVL * 8)+w_ms]), g3);
+                h3 = BYTWJB(&(W[(TWVL * 10)+w_ms]), h3);
+                i3 = BYTWJB(&(W[(TWVL * 12)+w_ms]), i3);
+
+                //vs:2,2 ; rs:0->7
+                STA((x + WS(rs, 2) + mt), j, 0, 0);
+                STA((x + WS(rs, 2) + mt + mn), l, 0, 0);
+                STA((x + WS(rs, 2) + mt + mn4), a2, 0, 0);
+                STA((x + WS(rs, 2) + mt + mn6), d2, 0, 0);
+
+                //vs:3,3 ; rs:0->7
+                STA((x + WS(rs, 3) + mt), k, 0, 0);
+                STA((x + WS(rs, 3) + mt + mn), m, 0, 0);
+                STA((x + WS(rs, 3) + mt + mn4), c2, 0, 0);
+                STA((x + WS(rs, 3) + mt + mn6), e2, 0, 0);
+
+                //Multiply additional next stage Twiddle Factors for vs:6,7
+                c3 = BYTWJB(&(W[0+w_ms]), c3);
+                d3 = BYTWJB(&(W[(TWVL * 2)+w_ms]), d3);
+                e3 = BYTWJB(&(W[(TWVL * 4)+w_ms]), e3);
+                a4 = BYTWJB(&(W[(TWVL * 6)+w_ms]), a4);
+                c4 = BYTWJB(&(W[(TWVL * 8)+w_ms]), c4);
+                d4 = BYTWJB(&(W[(TWVL * 10)+w_ms]), d4);
+                e4 = BYTWJB(&(W[(TWVL * 12)+w_ms]), e4);
+
+                f2 = SHUF_CROSS_LANE_1(f, g);      //vs:4,4 ; rs:0,1
+                g2 = SHUF_CROSS_LANE_2(f, g);      //vs:5,5 ; rs:0,1
+                h2 = SHUF_CROSS_LANE_1(h, i);      //vs:4,4 ; rs:2,3
+                i2 = SHUF_CROSS_LANE_2(h, i);      //vs:5,5 ; rs:2,3
+                f = SHUF_CROSS_LANE_1(f3, g3);     //vs:4,4 ; rs:4,5
+                g = SHUF_CROSS_LANE_2(f3, g3);     //vs:5,5 ; rs:4,5
+                h = SHUF_CROSS_LANE_1(h3, i3);     //vs:4,4 ; rs:6,7
+                i = SHUF_CROSS_LANE_2(h3, i3);     //vs:5,5 ; rs:6,7
+
+                f3 = SHUF_CROSS_LANE_1(a3, c3);    //vs:6,6 ; rs:0,1
+                g3 = SHUF_CROSS_LANE_2(a3, c3);    //vs:7,7 ; rs:0,1
+                h3 = SHUF_CROSS_LANE_1(d3, e3);    //vs:6,6 ; rs:2,3
+                i3 = SHUF_CROSS_LANE_2(d3, e3);    //vs:7,7 ; rs:2,3
+                a3 = SHUF_CROSS_LANE_1(a4, c4);    //vs:6,6 ; rs:4,5
+                c3 = SHUF_CROSS_LANE_2(a4, c4);    //vs:7,7 ; rs:4,5
+                d3 = SHUF_CROSS_LANE_1(d4, e4);    //vs:6,6 ; rs:6,7
+                e3 = SHUF_CROSS_LANE_2(d4, e4);    //vs:7,7 ; rs:6,7
+
+                ///// Shuffle operations before stores : end /////
+
+                //vs:4,4 ; rs:0->7
+                STA((x + WS(rs, 4) + mt), f2, 0, 0);
+                STA((x + WS(rs, 4) + mt + mn), h2, 0, 0);
+                STA((x + WS(rs, 4) + mt + mn4), f, 0, 0);
+                STA((x + WS(rs, 4) + mt + mn6), h, 0, 0);
+
+                //vs:5,5 ; rs:0->7
+                STA((x + WS(rs, 5) + mt), g2, 0, 0);
+                STA((x + WS(rs, 5) + mt + mn), i2, 0, 0);
+                STA((x + WS(rs, 5) + mt + mn4), g, 0, 0);
+                STA((x + WS(rs, 5) + mt + mn6), i, 0, 0);
+
+                //vs:6,6 ; rs:0->7
+                STA((x + WS(rs, 6) + mt), f3, 0, 0);
+                STA((x + WS(rs, 6) + mt + mn), h3, 0, 0);
+                STA((x + WS(rs, 6) + mt + mn4), a3, 0, 0);
+                STA((x + WS(rs, 6) + mt + mn6), d3, 0, 0);
+
+                //vs:7,7 ; rs:0->7
+                STA((x + WS(rs, 7) + mt), g3, 0, 0);
+                STA((x + WS(rs, 7) + mt + mn), i3, 0, 0);
+                STA((x + WS(rs, 7) + mt + mn4), c3, 0, 0);
+                STA((x + WS(rs, 7) + mt + mn6), e3, 0, 0);
+            }
+            w_ms=TWVL;
+        }
+    }
+    VLEAVE();
+}
+#endif
+
+#if (!defined(FFTW_SINGLE) && !defined(AMD_OPT_KERNEL_NEW_IMPLEMENTATION)) || defined(FFTW_SINGLE)
 static void q1fv_8(R *ri, R *ii, const R *W, stride rs, stride vs, INT mb, INT me, INT ms)
 {
      DVK(KP707106781, +0.707106781186547524400844362104849039284835938);
@@ -803,7 +1240,7 @@ static void q1fv_8(R *ri, R *ii, const R *W, stride rs, stride vs, INT mb, INT m
             T3E = VADD(T3C, T3D);
            }
            ////////////////////////////////////////////////////////
-#if defined(AMD_OPT_KERNEL_REARRANGE_WRITE_V1)
+#if (defined(FFTW_SINGLE) && defined(AMD_OPT_KERNEL_REARRANGE_WRITE_V1)) || (!defined(AMD_OPT_KERNEL_NEW_IMPLEMENTATION) && defined(AMD_OPT_KERNEL_REARRANGE_WRITE_V1))
            {//0th row, 0th row + ms
             V Th, Ti, Tb, Tg, Tx, Tw;
             Tb = VADD(T3, Ta);
@@ -1214,6 +1651,7 @@ static void q1fv_8(R *ri, R *ii, const R *W, stride rs, stride vs, INT mb, INT m
 #endif            
            }
 #else
+#if (!defined(FFTW_SINGLE) && !defined(AMD_OPT_KERNEL_NEW_IMPLEMENTATION)) || defined(FFTW_SINGLE)
            ST(&(x[0]), VADD(Tp, Ts), ms, &(x[0]));
            ST(&(x[WS(rs, 2)]), VADD(T1t, T1w), ms, &(x[0]));
            ST(&(x[WS(rs, 5)]), VADD(T34, T37), ms, &(x[WS(rs, 1)]));
@@ -1427,446 +1865,10 @@ static void q1fv_8(R *ri, R *ii, const R *W, stride rs, stride vs, INT mb, INT m
             ST(&(x[WS(vs, 3) + WS(rs, 7)]), T45, ms, &(x[WS(vs, 3) + WS(rs, 1)]));
            }
 #endif           
+#endif                      
       }
      }
      VLEAVE();
-}
-#else
-static void q1fv_8(R *ri, R *ii, const R *W, stride rs, stride vs, INT mb, INT me, INT ms)
-{
-    V W1_2_8K;
-    R W1_2_8 = 0.70710678118654752440084436210485;
-    INT mn = WS(vs, 2);//should be 4 complex apart for double and 8 complex apart for single
-    INT mm, mt, w_ms, mn4, mn6;
-    R *x;
-    x = ri;
-
-    W1_2_8K = VBROADCAST((const double *)&W1_2_8);
-    mn4 = (mn<<1);
-    mn6 = (mn * 3);
-
-    for (mm = mb, W = W + (mb * ((TWVL / VL) * 14)); mm < me; mm = mm + VL, x = x + (VL * ms), W = W + (TWVL * 14),MAKE_VOLATILE_STRIDE(16, rs), MAKE_VOLATILE_STRIDE(16, vs))
-    {
-        V a, c, d, e;
-        V f, g, h, i;
-        V j, k, l, m;
-        V a2, c2, d2, e2;
-        V f2, g2, h2, i2;
-        V a3, c3, d3, e3;
-        V f3, g3, h3, i3;
-        V a4, c4, d4, e4;
-        V f4, g4, h4, i4;
-        V a5, c5, d5, e5;
-        //INT mn=1;
-
-
-        w_ms = 0;   
-        for (mt = 0; mt <= ms; mt += ms)
-        {
-            //Stage-1
-            {
-                //0,4,2,6
-                f = LDA(x + mt, 0, 0);                  //0
-                g = LDA(x + WS(rs, 2) + mt, 0, 0);      //2
-                h = LDA(x + WS(rs, 4) + mt, 0, 0);      //4
-                i = LDA(x + WS(rs, 6) + mt, 0, 0);      //6
-
-                f2 = LDA(x + mt + mn, 0, 0);                //0+m
-                g2 = LDA(x + WS(rs, 2) + mt + mn, 0, 0);    //2+m
-                h2 = LDA(x + WS(rs, 4) + mt + mn, 0, 0);    //4+m
-                i2 = LDA(x + WS(rs, 6) + mt + mn, 0, 0);    //6+m
-
-                //first set
-                a = VADD(f, h);                     //0+4
-                c = VSUB(f, h);                     //0-4
-                d = VADD(g, i);                     //2+6
-                e = VSUB(g, i);                     //2-6
-
-                //second set
-                a2 = VADD(f2, h2);                  //0+4
-                c2 = VSUB(f2, h2);                  //0-4
-                d2 = VADD(g2, i2);                  //2+6
-                e2 = VSUB(g2, i2);                  //2-6
-
-                //1,5,3,7
-                j = LDA(x + WS(rs, 1) + mt, 0, 0);      //1
-                k = LDA(x + WS(rs, 3) + mt, 0, 0);      //3
-                l = LDA(x + WS(rs, 5) + mt, 0, 0);      //5
-                m = LDA(x + WS(rs, 7) + mt, 0, 0);      //7
-
-                f2 = LDA(x + WS(rs, 1) + mt + mn, 0, 0);    //1
-                g2 = LDA(x + WS(rs, 3) + mt + mn, 0, 0);    //3
-                h2 = LDA(x + WS(rs, 5) + mt + mn, 0, 0);    //5
-                i2 = LDA(x + WS(rs, 7) + mt + mn, 0, 0);    //7
-
-                //first set
-                f = VADD(j, l);                     //1+5
-                g = VSUB(j, l);                     //1-5
-                h = VADD(k, m);                     //3+7
-                i = VSUB(k, m);                     //3-7
-
-                //second set
-                j = VADD(f2, h2);                   //1+5
-                k = VSUB(f2, h2);                   //1-5
-                l = VADD(g2, i2);                   //3+7
-                m = VSUB(g2, i2);                   //3-7
-            }
-
-            //Stage-2
-            {
-                V tw1, tw2;
-
-                //second set
-                e2 = VCONJ(FLIP_RI(e2));
-
-                tw1 = VSHUF(k, k, 0x0);         //5th r
-                k = VSHUF(k, k, 0xF);           //5th i
-                tw1 = VCONJ(tw1);               //Towards Real=(r+i)W , Img=(i-r)*W
-                tw2 = VSHUF(m, m, 0xF);         //7th i
-                m = VSHUF(m, m, 0x0);           //7th r
-                tw2 = VCONJ(tw2);               //Towards Real=(i-r)W, Img=(-i-r)W
-                k = VADD(k, tw1);               //Towards Real=(r+i)W , Img=(i-r)*W
-                m = VSUB(tw2, m);               //Towards Real=(i-r)W, Img=(-i-r)W
-                k = VMUL(k, W1_2_8K);           //Towards Real=(r+i)W , Img=(i-r)*W
-                m = VMUL(m, W1_2_8K);           //Towards Real=(i-r)W, Img=(-i-r)W
-
-                //first set
-                e = VCONJ(FLIP_RI(e));
-
-                tw1 = VSHUF(g, g, 0x0);         //5th r
-                g = VSHUF(g, g, 0xF);           //5th i
-                tw1 = VCONJ(tw1);               //Towards Real=(r+i)W , Img=(i-r)*W
-                tw2 = VSHUF(i, i, 0xF);         //7th i
-                i = VSHUF(i, i, 0x0);           //7th r
-                tw2 = VCONJ(tw2);               //Towards Real=(i-r)W, Img=(-i-r)W
-                g = VADD(g, tw1);               //Towards Real=(r+i)W , Img=(i-r)*W
-                i = VSUB(tw2, i);               //Towards Real=(i-r)W, Img=(-i-r)W
-                g = VMUL(g, W1_2_8K);           //Towards Real=(r+i)W , Img=(i-r)*W
-                i = VMUL(i, W1_2_8K);           //Towards Real=(i-r)W, Img=(-i-r)W
-
-                ////////// Next 8 - 15 (Stage-1) starts //////////
-                //0,4,2,6
-                f3 = LDA(x + mt + mn4, 0, 0);                       //0
-                g3 = LDA(x + WS(rs, 2) + mt + mn4, 0, 0);       //2
-                h3 = LDA(x + WS(rs, 4) + mt + mn4, 0, 0);       //4
-                i3 = LDA(x + WS(rs, 6) + mt + mn4, 0, 0);       //6
-
-                f4 = LDA(x + mt + mn6, 0, 0);                   //0+m
-                g4 = LDA(x + WS(rs, 2) + mt + mn6, 0, 0);       //2+m
-                h4 = LDA(x + WS(rs, 4) + mt + mn6, 0, 0);       //4+m
-                i4 = LDA(x + WS(rs, 6) + mt + mn6, 0, 0);       //6+m
-                ///////// Next 8 - 15 ends ///////////
-
-                //second set
-                f2 = VADD(j, l);                    //1+5
-                h2 = VSUB(j, l);                    //3+7
-                g2 = VADD(k, m);                    //1-5
-                i2 = VSUB(k, m);                    //3-7
-
-                //first set
-                j = VADD(a, d);                 //0+4
-                l = VSUB(a, d);                 //2+6
-                k = VADD(c, e);                 //0-4
-                m = VSUB(c, e);                 //2-6
-
-                ////////// Next 8 - 15 (Stage-1) starts //////////
-                //first set
-                a3 = VADD(f3, h3);                      //0+4
-                c3 = VSUB(f3, h3);                      //0-4
-                d3 = VADD(g3, i3);                      //2+6
-                e3 = VSUB(g3, i3);                      //2-6
-
-                //second set
-                a4 = VADD(f4, h4);                  //0+4
-                c4 = VSUB(f4, h4);                  //0-4
-                d4 = VADD(g4, i4);                  //2+6
-                e4 = VSUB(g4, i4);                  //2-6
-
-                //1,5,3,7
-                f3 = LDA(x + WS(rs, 1) + mt + mn4, 0, 0);           //1
-                g3 = LDA(x + WS(rs, 3) + mt + mn4, 0, 0);   //3
-                h3 = LDA(x + WS(rs, 5) + mt + mn4, 0, 0);   //5
-                i3 = LDA(x + WS(rs, 7) + mt + mn4, 0, 0);   //7
-
-                f4 = LDA(x + WS(rs, 1) + mt + mn6, 0, 0);           //1
-                g4 = LDA(x + WS(rs, 3) + mt + mn6, 0, 0);   //3
-                h4 = LDA(x + WS(rs, 5) + mt + mn6, 0, 0);   //5
-                i4 = LDA(x + WS(rs, 7) + mt + mn6, 0, 0);   //7
-                ///////// Next 8 - 15 ends ///////////
-
-                //first set
-                a = VADD(f, h);                 //1+5
-                d = VSUB(f, h);                 //3+7
-                c = VADD(g, i);                 //1-5
-                e = VSUB(g, i);                 //3-7
-
-                //second set
-                f = VADD(a2, d2);                   //0+4
-                h = VSUB(a2, d2);                   //2+6
-                g = VADD(c2, e2);                   //0-4
-                i = VSUB(c2, e2);                   //2-6
-
-                ////////// Next 8 - 15 (Stage-1) starts //////////
-                //first set
-                a2 = VADD(f3, h3);                  //1+5
-                c2 = VSUB(f3, h3);                  //1-5
-                d2 = VADD(g3, i3);                  //3+7
-                e2 = VSUB(g3, i3);                  //3-7
-
-                //second set
-                f3 = VADD(f4, h4);                  //1+5
-                g3 = VSUB(f4, h4);                  //1-5
-                h3 = VADD(g4, i4);                  //3+7
-                i3 = VSUB(g4, i4);                  //3-7
-                ///////// Next 8 - 15 ends ///////////
-            }
-
-            //Stage-3
-            {
-                V tw1, tw2;
-
-                d = VCONJ(FLIP_RI(d));
-                e = VCONJ(FLIP_RI(e));
-                h2 = VCONJ(FLIP_RI(h2));
-                i2 = VCONJ(FLIP_RI(i2));
-
-                ////////// Next 8 - 15 (Stage-2) starts //////////
-                //second set
-                e4 = VCONJ(FLIP_RI(e4));
-
-                tw1 = VSHUF(g3, g3, 0x0);           //5th r
-                g3 = VSHUF(g3, g3, 0xF);            //5th i
-                tw1 = VCONJ(tw1);               //Towards Real=(r+i)W , Img=(i-r)*W
-                tw2 = VSHUF(i3, i3, 0xF);           //7th i
-                i3 = VSHUF(i3, i3, 0x0);            //7th r
-                tw2 = VCONJ(tw2);               //Towards Real=(i-r)W, Img=(-i-r)W
-                g3 = VADD(g3, tw1);             //Towards Real=(r+i)W , Img=(i-r)*W
-                i3 = VSUB(tw2, i3);             //Towards Real=(i-r)W, Img=(-i-r)W
-                g3 = VMUL(g3, W1_2_8K);         //Towards Real=(r+i)W , Img=(i-r)*W
-                i3 = VMUL(i3, W1_2_8K);         //Towards Real=(i-r)W, Img=(-i-r)W
-
-                //first set
-                e3 = VCONJ(FLIP_RI(e3));
-
-                tw1 = VSHUF(c2, c2, 0x0);           //5th r
-                c2 = VSHUF(c2, c2, 0xF);            //5th i
-                tw1 = VCONJ(tw1);               //Towards Real=(r+i)W , Img=(i-r)*W
-                tw2 = VSHUF(e2, e2, 0xF);           //7th i
-                e2 = VSHUF(e2, e2, 0x0);            //7th r
-                tw2 = VCONJ(tw2);               //Towards Real=(i-r)W, Img=(-i-r)W
-                c2 = VADD(c2, tw1);             //Towards Real=(r+i)W , Img=(i-r)*W
-                e2 = VSUB(tw2, e2);             //Towards Real=(i-r)W, Img=(-i-r)W
-                c2 = VMUL(c2, W1_2_8K);         //Towards Real=(r+i)W , Img=(i-r)*W
-                e2 = VMUL(e2, W1_2_8K);         //Towards Real=(i-r)W, Img=(-i-r)W
-                ///////// Next 8 - 15 ends ///////////
-
-                ///// Shuffle operations before stores : Start /////
-                //vs:0,1
-                f4 = VADD(j, a);    //vs:0,1 ; rs:0
-                g4 = VADD(k, c);    //vs:0,1 ; rs:1
-                h4 = VADD(l, d);    //vs:0,1 ; rs:2
-                i4 = VADD(m, e);    //vs:0,1 ; rs:3
-                j = VSUB(j, a);     //vs:0,1 ; rs:4
-                k = VSUB(k, c);     //vs:0,1 ; rs:5
-                l = VSUB(l, d);     //vs:0,1 ; rs:6
-                m = VSUB(m, e);     //vs:0,1 ; rs:7
-
-                //Multiply additional next stage Twiddle Factors for vs:0,1
-                g4 = BYTWJB(&(W[0+w_ms]), g4);
-                h4 = BYTWJB(&(W[(TWVL * 2)+w_ms]), h4);
-                i4 = BYTWJB(&(W[(TWVL * 4)+w_ms]), i4);
-                j = BYTWJB(&(W[(TWVL * 6)+w_ms]), j);
-                k = BYTWJB(&(W[(TWVL * 8)+w_ms]), k);
-                l = BYTWJB(&(W[(TWVL * 10)+w_ms]), l);
-                m = BYTWJB(&(W[(TWVL * 12)+w_ms]), m);
-
-                ///// Shuffle operations before stores : Start /////
-
-                ////////// Next 8 - 15 (Stage-2) starts //////////
-                //second set
-                a = VADD(a4, d4);                   //0+4
-                d = VSUB(a4, d4);                   //2+6
-                c = VADD(c4, e4);                   //0-4
-                e = VSUB(c4, e4);                   //2-6
-
-                //second set
-                a4 = VADD(f3, h3);                  //1+5
-                d4 = VSUB(f3, h3);                  //3+7
-                c4 = VADD(g3, i3);                  //1-5
-                e4 = VSUB(g3, i3);                  //3-7
-
-                a5 = SHUF_CROSS_LANE_1(f4, g4);     //vs:0,0 ; rs:0,1
-                c5 = SHUF_CROSS_LANE_2(f4, g4);     //vs:1,1 ; rs:0,1
-                d5 = SHUF_CROSS_LANE_1(h4, i4);     //vs:0,0 ; rs:2,3
-                e5 = SHUF_CROSS_LANE_2(h4, i4);     //vs:1,1 ; rs:2,3
-                f4 = SHUF_CROSS_LANE_1(j, k);       //vs:0,0 ; rs:4,5
-                g4 = SHUF_CROSS_LANE_2(j, k);       //vs:1,1 ; rs:4,5
-                h4 = SHUF_CROSS_LANE_1(l, m);       //vs:0,0 ; rs:6,7
-                i4 = SHUF_CROSS_LANE_2(l, m);       //vs:1,1 ; rs:6,7
-
-                //first set
-                f3 = VADD(a3, d3);                  //0+4
-                h3 = VSUB(a3, d3);                  //2+6
-                g3 = VADD(c3, e3);                  //0-4
-                i3 = VSUB(c3, e3);                  //2-6
-
-                //first set
-                a3 = VADD(a2, d2);                  //1+5
-                d3 = VSUB(a2, d2);                  //3+7
-                c3 = VADD(c2, e2);                  //1-5
-                e3 = VSUB(c2, e2);                  //3-7
-
-                ///////// Next 8 - 15 ends ///////////
-            }
-
-            //Stage-3 ////////// Next 8 - 15 (Stage-1) starts //////////
-            {
-
-                d3 = VCONJ(FLIP_RI(d3));
-                e3 = VCONJ(FLIP_RI(e3));
-                d4 = VCONJ(FLIP_RI(d4));
-                e4 = VCONJ(FLIP_RI(e4));
-
-                ///// Shuffle operations before stores : Start /////
-
-                //vs:0,0 ; rs:0->7
-                STA((x + mt), a5, 0, 0);
-                STA((x + mt + mn), d5, 0, 0);
-                STA((x + mt + mn4), f4, 0, 0);
-                STA((x + mt + mn6), h4, 0, 0);
-
-                //vs:2,3
-                a2 = VADD(f, f2);   //vs:2,3 ; rs:0
-                c2 = VADD(g, g2);   //vs:2,3 ; rs:1
-                d2 = VADD(h, h2);   //vs:2,3 ; rs:2
-                e2 = VADD(i, i2);   //vs:2,3 ; rs:3
-                f2 = VSUB(f, f2);   //vs:2,3 ; rs:4
-                g2 = VSUB(g, g2);   //vs:2,3 ; rs:5
-                h2 = VSUB(h, h2);   //vs:2,3 ; rs:6
-                i2 = VSUB(i, i2);   //vs:2,3 ; rs:7
-
-                //Multiply additional next stage Twiddle Factors for vs:2,3
-                c2 = BYTWJB(&(W[0+w_ms]), c2);
-                d2 = BYTWJB(&(W[(TWVL * 2)+w_ms]), d2);
-                e2 = BYTWJB(&(W[(TWVL * 4)+w_ms]), e2);
-                f2 = BYTWJB(&(W[(TWVL * 6)+w_ms]), f2);
-                g2 = BYTWJB(&(W[(TWVL * 8)+w_ms]), g2);
-                h2 = BYTWJB(&(W[(TWVL * 10)+w_ms]), h2);
-                i2 = BYTWJB(&(W[(TWVL * 12)+w_ms]), i2);
-
-                //vs:1,1 ; rs:0->7
-                STA((x + WS(rs, 1) + mt), c5, 0, 0);
-                STA((x + WS(rs, 1) + mt + mn), e5, 0, 0);
-                STA((x + WS(rs, 1) + mt + mn4), g4, 0, 0);
-                STA((x + WS(rs, 1) + mt + mn6), i4, 0, 0);
-
-                //vs:4,5
-                f = VADD(f3, a3);   //vs:4,5 ; rs:0
-                g = VADD(g3, c3);   //vs:4,5 ; rs:1
-                h = VADD(h3, d3);   //vs:4,5 ; rs:2
-                i = VADD(i3, e3);   //vs:4,5 ; rs:3
-                f3 = VSUB(f3, a3);  //vs:4,5 ; rs:4
-                g3 = VSUB(g3, c3);  //vs:4,5 ; rs:5
-                h3 = VSUB(h3, d3);  //vs:4,5 ; rs:6
-                i3 = VSUB(i3, e3);  //vs:4,5 ; rs:7
-
-                j = SHUF_CROSS_LANE_1(a2, c2);      //vs:2,2 ; rs:0,1
-                k = SHUF_CROSS_LANE_2(a2, c2);      //vs:3,3 ; rs:0,1
-                l = SHUF_CROSS_LANE_1(d2, e2);      //vs:2,2 ; rs:2,3
-                m = SHUF_CROSS_LANE_2(d2, e2);      //vs:3,3 ; rs:2,3
-                a2 = SHUF_CROSS_LANE_1(f2, g2);     //vs:2,2 ; rs:4,5
-                c2 = SHUF_CROSS_LANE_2(f2, g2);     //vs:3,3 ; rs:4,5
-                d2 = SHUF_CROSS_LANE_1(h2, i2);     //vs:2,2 ; rs:6,7
-                e2 = SHUF_CROSS_LANE_2(h2, i2);     //vs:3,3 ; rs:6,7
-
-                //vs:6,7
-                a3 = VADD(a, a4);   //vs:6,7 ; rs:0
-                c3 = VADD(c, c4);   //vs:6,7 ; rs:1
-                d3 = VADD(d, d4);   //vs:6,7 ; rs:2
-                e3 = VADD(e, e4);   //vs:6,7 ; rs:3
-                a4 = VSUB(a, a4);   //vs:6,7 ; rs:4
-                c4 = VSUB(c, c4);   //vs:6,7 ; rs:5
-                d4 = VSUB(d, d4);   //vs:6,7 ; rs:6
-                e4 = VSUB(e, e4);   //vs:6,7 ; rs:7
-
-                //Multiply additional next stage Twiddle Factors for vs:4,5
-                g = BYTWJB(&(W[0+w_ms]), g);
-                h = BYTWJB(&(W[(TWVL * 2)+w_ms]), h);
-                i = BYTWJB(&(W[(TWVL * 4)+w_ms]), i);
-                f3 = BYTWJB(&(W[(TWVL * 6)+w_ms]), f3);
-                g3 = BYTWJB(&(W[(TWVL * 8)+w_ms]), g3);
-                h3 = BYTWJB(&(W[(TWVL * 10)+w_ms]), h3);
-                i3 = BYTWJB(&(W[(TWVL * 12)+w_ms]), i3);
-
-                //vs:2,2 ; rs:0->7
-                STA((x + WS(rs, 2) + mt), j, 0, 0);
-                STA((x + WS(rs, 2) + mt + mn), l, 0, 0);
-                STA((x + WS(rs, 2) + mt + mn4), a2, 0, 0);
-                STA((x + WS(rs, 2) + mt + mn6), d2, 0, 0);
-
-                //vs:3,3 ; rs:0->7
-                STA((x + WS(rs, 3) + mt), k, 0, 0);
-                STA((x + WS(rs, 3) + mt + mn), m, 0, 0);
-                STA((x + WS(rs, 3) + mt + mn4), c2, 0, 0);
-                STA((x + WS(rs, 3) + mt + mn6), e2, 0, 0);
-
-                //Multiply additional next stage Twiddle Factors for vs:6,7
-                c3 = BYTWJB(&(W[0+w_ms]), c3);
-                d3 = BYTWJB(&(W[(TWVL * 2)+w_ms]), d3);
-                e3 = BYTWJB(&(W[(TWVL * 4)+w_ms]), e3);
-                a4 = BYTWJB(&(W[(TWVL * 6)+w_ms]), a4);
-                c4 = BYTWJB(&(W[(TWVL * 8)+w_ms]), c4);
-                d4 = BYTWJB(&(W[(TWVL * 10)+w_ms]), d4);
-                e4 = BYTWJB(&(W[(TWVL * 12)+w_ms]), e4);
-
-                f2 = SHUF_CROSS_LANE_1(f, g);      //vs:4,4 ; rs:0,1
-                g2 = SHUF_CROSS_LANE_2(f, g);      //vs:5,5 ; rs:0,1
-                h2 = SHUF_CROSS_LANE_1(h, i);      //vs:4,4 ; rs:2,3
-                i2 = SHUF_CROSS_LANE_2(h, i);      //vs:5,5 ; rs:2,3
-                f = SHUF_CROSS_LANE_1(f3, g3);     //vs:4,4 ; rs:4,5
-                g = SHUF_CROSS_LANE_2(f3, g3);     //vs:5,5 ; rs:4,5
-                h = SHUF_CROSS_LANE_1(h3, i3);     //vs:4,4 ; rs:6,7
-                i = SHUF_CROSS_LANE_2(h3, i3);     //vs:5,5 ; rs:6,7
-
-                f3 = SHUF_CROSS_LANE_1(a3, c3);    //vs:6,6 ; rs:0,1
-                g3 = SHUF_CROSS_LANE_2(a3, c3);    //vs:7,7 ; rs:0,1
-                h3 = SHUF_CROSS_LANE_1(d3, e3);    //vs:6,6 ; rs:2,3
-                i3 = SHUF_CROSS_LANE_2(d3, e3);    //vs:7,7 ; rs:2,3
-                a3 = SHUF_CROSS_LANE_1(a4, c4);    //vs:6,6 ; rs:4,5
-                c3 = SHUF_CROSS_LANE_2(a4, c4);    //vs:7,7 ; rs:4,5
-                d3 = SHUF_CROSS_LANE_1(d4, e4);    //vs:6,6 ; rs:6,7
-                e3 = SHUF_CROSS_LANE_2(d4, e4);    //vs:7,7 ; rs:6,7
-
-                ///// Shuffle operations before stores : end /////
-
-                //vs:4,4 ; rs:0->7
-                STA((x + WS(rs, 4) + mt), f2, 0, 0);
-                STA((x + WS(rs, 4) + mt + mn), h2, 0, 0);
-                STA((x + WS(rs, 4) + mt + mn4), f, 0, 0);
-                STA((x + WS(rs, 4) + mt + mn6), h, 0, 0);
-
-                //vs:5,5 ; rs:0->7
-                STA((x + WS(rs, 5) + mt), g2, 0, 0);
-                STA((x + WS(rs, 5) + mt + mn), i2, 0, 0);
-                STA((x + WS(rs, 5) + mt + mn4), g, 0, 0);
-                STA((x + WS(rs, 5) + mt + mn6), i, 0, 0);
-
-                //vs:6,6 ; rs:0->7
-                STA((x + WS(rs, 6) + mt), f3, 0, 0);
-                STA((x + WS(rs, 6) + mt + mn), h3, 0, 0);
-                STA((x + WS(rs, 6) + mt + mn4), a3, 0, 0);
-                STA((x + WS(rs, 6) + mt + mn6), d3, 0, 0);
-
-                //vs:7,7 ; rs:0->7
-                STA((x + WS(rs, 7) + mt), g3, 0, 0);
-                STA((x + WS(rs, 7) + mt + mn), i3, 0, 0);
-                STA((x + WS(rs, 7) + mt + mn4), c3, 0, 0);
-                STA((x + WS(rs, 7) + mt + mn6), e3, 0, 0);
-            }
-            w_ms=TWVL;
-        }
-    }
-    VLEAVE();
 }
 #endif
 

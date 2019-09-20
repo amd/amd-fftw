@@ -52,15 +52,14 @@
 #include <immintrin.h>
 
 //--------------------------------
-//Under AMD_OPT_KERNEL_256SIMD_PERF switch, enable any one of the sub-switches:-
-//(i)   Rearranges data and writes 256-bit as Approach 1
-//(ii)  Rearranges data and writes 256-bit as Approach 2
-//(iii) Use a new implementation of more efficient kernel
+//Under AMD_OPT_KERNEL_256SIMD_PERF switch, enable the required sub-switches:-
+//(i)   Rearranges data and writes 256-bit in original kernel
+//(iii) Use a new implementation of more efficient kernel available for whichever kernel
+// MEM_256 must be 0 in case of FFTW_SINGLE
 #ifdef AMD_OPT_KERNEL_256SIMD_PERF
-#define MEM_256 1
+#define MEM_256 0
 #define AMD_OPT_KERNEL_REARRANGE_WRITE_V1
-//#define AMD_OPT_KERNEL_REARRANGE_WRITE_V2
-#define AMD_OPT_KERNEL_NEW_IMPLEMENTATION
+//#define AMD_OPT_KERNEL_NEW_IMPLEMENTATION
 #endif
 //--------------------------------
 
@@ -71,7 +70,13 @@ typedef DS(__m256d, __m256) V;
 #define VXOR SUFF(_mm256_xor_p)
 #define VSHUF SUFF(_mm256_shuffle_p)
 #define VPERM1 SUFF(_mm256_permute_p)
-#define VBROADCAST SUFF(_mm256_broadcast_s)
+
+#ifdef AMD_OPT_KERNEL_256SIMD_PERF
+#define VBROADCASTS SUFF(_mm256_broadcast_s)
+#define VBROADCASTP SUFF(_mm256_broadcast_p)
+#define VUNPACKLO SUFF(_mm256_unpacklo_p)
+#define VUNPACKHI SUFF(_mm256_unpackhi_p)
+#endif
 
 #define SHUFVALD(fp0,fp1) \
    (((fp1) << 3) | ((fp0) << 2) | ((fp1) << 1) | ((fp0)))
@@ -84,6 +89,16 @@ typedef DS(__m256d, __m256) V;
 #define VLIT(x0, x1) DS(_mm256_set_pd(x0, x1, x0, x1), _mm256_set_ps(x0, x1, x0, x1, x0, x1, x0, x1))
 #define DVK(var, val) V var = VLIT(val, val)
 #define LDK(x) x
+
+/* FMA support */
+#define VFMA    SUFF(_mm256_fmadd_p)
+#define VFNMS   SUFF(_mm256_fnmadd_p)
+#define VFMS    SUFF(_mm256_fmsub_p)
+#define VFMAI(b, c) SUFF(_mm256_addsub_p)(c, FLIP_RI(b)) /* VADD(c, VBYI(b)) */
+#define VFNMSI(b, c)   VSUB(c, VBYI(b))
+#define VFMACONJ(b,c)  VADD(VCONJ(b),c)
+#define VFMSCONJ(b,c)  VSUB(VCONJ(b),c)
+#define VFNMSCONJ(b,c) SUFF(_mm256_addsub_p)(c, b)  /* VSUB(c, VCONJ(b)) */
 
 static inline V LDA(const R *x, INT ivs, const R *aligned_like)
 {
@@ -98,6 +113,55 @@ static inline void STA(R *x, V v, INT ovs, const R *aligned_like)
      (void)ovs; /* UNUSED */
      SUFF(_mm256_storeu_p)(x, v);
 }
+
+static inline V FLIP_RI(V x)
+{
+     return VPERM1(x, DS(SHUFVALD(1, 0), SHUFVALS(1, 0, 3, 2)));
+}
+
+static inline V VCONJ(V x)
+{
+     /* Produce a SIMD vector[VL] of (0 + -0i). 
+
+        We really want to write this:
+
+           V pmpm = VLIT(-0.0, 0.0);
+
+        but historically some compilers have ignored the distiction
+        between +0 and -0.  It looks like 'gcc-8 -fast-math' treats -0
+        as 0 too.
+      */
+     union uvec {
+          unsigned u[8];
+          V v;
+     };
+     static const union uvec pmpm = {
+#ifdef FFTW_SINGLE
+          { 0x00000000, 0x80000000, 0x00000000, 0x80000000,
+            0x00000000, 0x80000000, 0x00000000, 0x80000000 }
+#else
+          { 0x00000000, 0x00000000, 0x00000000, 0x80000000,
+            0x00000000, 0x00000000, 0x00000000, 0x80000000 }
+#endif
+     };
+     return VXOR(pmpm.v, x);
+}
+
+static inline V VBYI(V x)
+{
+     return FLIP_RI(VCONJ(x));
+}
+
+#ifdef AMD_OPT_KERNEL_256SIMD_PERF
+static inline V VZMULJB(V tx, V sr)
+{
+     V tr = VUNPACKLO(tx, tx);
+     V ti = VUNPACKHI(tx, tx);
+     tr = VMUL(sr, tr);
+     sr = VBYI(sr);
+     return VFNMS(ti, sr, tr);
+}
+#endif
 
 #if FFTW_SINGLE
 
@@ -200,6 +264,12 @@ static inline void STN2(R *x, V v0, V v1, INT ovs)
      *(__m128 *)(x + 3 * ovs) = _mm256_castps256_ps128(yyy3);	\
      *(__m128 *)(x + 7 * ovs) = _mm256_extractf128_ps(yyy3, 1);	\
 }
+#ifdef AMD_OPT_KERNEL_256SIMD_PERF
+static inline V BYTWJB(const R *t, V sr)
+{
+     return VZMULJB( VBROADCASTP((__m128 const *)t), sr);
+}
+#endif
 
 #else //DOUBLE PRECISION Starts
 static inline __m128d VMOVAPD_LD(const R *x)
@@ -273,55 +343,13 @@ static inline V SHUF_CROSS_LANE_2(V v1, V v2)
      STA(x + 2 * ovs, _mm256_permute2f128_pd(xxx0, xxx2, 0x31), 0, 0); \
      STA(x + 3 * ovs, _mm256_permute2f128_pd(xxx1, xxx3, 0x31), 0, 0); \
 }
+#ifdef AMD_OPT_KERNEL_256SIMD_PERF
+static inline V BYTWJB(const R *t, V sr)
+{
+     return VZMULJB( VBROADCASTP((__m128d const *)t), sr);
+}
 #endif
-
-static inline V FLIP_RI(V x)
-{
-     return VPERM1(x, DS(SHUFVALD(1, 0), SHUFVALS(1, 0, 3, 2)));
-}
-
-static inline V VCONJ(V x)
-{
-     /* Produce a SIMD vector[VL] of (0 + -0i). 
-
-        We really want to write this:
-
-           V pmpm = VLIT(-0.0, 0.0);
-
-        but historically some compilers have ignored the distiction
-        between +0 and -0.  It looks like 'gcc-8 -fast-math' treats -0
-        as 0 too.
-      */
-     union uvec {
-          unsigned u[8];
-          V v;
-     };
-     static const union uvec pmpm = {
-#ifdef FFTW_SINGLE
-          { 0x00000000, 0x80000000, 0x00000000, 0x80000000,
-            0x00000000, 0x80000000, 0x00000000, 0x80000000 }
-#else
-          { 0x00000000, 0x00000000, 0x00000000, 0x80000000,
-            0x00000000, 0x00000000, 0x00000000, 0x80000000 }
 #endif
-     };
-     return VXOR(pmpm.v, x);
-}
-
-static inline V VBYI(V x)
-{
-     return FLIP_RI(VCONJ(x));
-}
-
-/* FMA support */
-#define VFMA    SUFF(_mm256_fmadd_p)
-#define VFNMS   SUFF(_mm256_fnmadd_p)
-#define VFMS    SUFF(_mm256_fmsub_p)
-#define VFMAI(b, c) SUFF(_mm256_addsub_p)(c, FLIP_RI(b)) /* VADD(c, VBYI(b)) */
-#define VFNMSI(b, c)   VSUB(c, VBYI(b))
-#define VFMACONJ(b,c)  VADD(VCONJ(b),c)
-#define VFMSCONJ(b,c)  VSUB(VCONJ(b),c)
-#define VFNMSCONJ(b,c) SUFF(_mm256_addsub_p)(c, b)  /* VSUB(c, VCONJ(b)) */
 
 static inline V VZMUL(V tx, V sr)
 {
@@ -360,16 +388,6 @@ static inline V VZMULI(V tx, V sr)
      * VMUL(FLIP_RI(sr), VDUPL(tx)));
     */
 }
-#ifdef AMD_OPT_KERNEL_256SIMD_PERF
-static inline V VZMULJB(V tx, V sr)
-{
-     V tr = _mm256_unpacklo_pd(tx, tx);
-     V ti = _mm256_unpackhi_pd(tx, tx);
-     tr = VMUL(sr, tr);
-     sr = VBYI(sr);
-     return VFNMS(ti, sr, tr);
-}
-#endif
 static inline V VZMULIJ(V tx, V sr)
 {
      /* V tr = VDUPL(tx); */
@@ -397,12 +415,6 @@ static inline V BYTWJ1(const R *t, V sr)
 {
      return VZMULJ(LDA(t, 2, t), sr);
 }
-#ifdef AMD_OPT_KERNEL_256SIMD_PERF
-static inline V BYTWJB(const R *t, V sr)
-{
-     return VZMULJB( _mm256_broadcast_pd ((__m128d const *)t), sr);
-}
-#endif
 /* twiddle storage #2: twice the space, faster (when in cache) */
 #ifdef FFTW_SINGLE
 # define VTW2(v,x)							\
