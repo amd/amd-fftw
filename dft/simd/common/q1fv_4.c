@@ -154,17 +154,21 @@ void XSIMD(codelet_q1fv_4) (planner *p) {
 
 static void q1fv_4(R *ri, R *ii, const R *W, stride rs, stride vs, INT mb, INT me, INT ms)
 {
+
      {
 	  INT m;
 	  R *x;
 	  x = ri;
-	  for (m = mb, W = W + (mb * ((TWVL / VL) * 6)); m < me; m = m + VL, x = x + (VL * ms), W = W + (TWVL * 6), MAKE_VOLATILE_STRIDE(8, rs), MAKE_VOLATILE_STRIDE(8, vs)) {
-	       V T3, T9, TA, TG, TD, TH, T6, Ta, Te, Tk, Tp, Tv, Ts, Tw, Th;
+
+	  for (m = mb, W = W + (mb * ((TWVL / VL) * 6)); m < me; m = m + VL, x = x + (VL * ms), W = W + (TWVL * 6), MAKE_VOLATILE_STRIDE(8, rs), MAKE_VOLATILE_STRIDE(8, vs)) 
+	  {	        
+               V T3, T9, TA, TG, TD, TH, T6, Ta, Te, Tk, Tp, Tv, Ts, Tw, Th;
 	       V Tl;
 	       {
 		    V T1, T2, Ty, Tz;
 		    T1 = LD(&(x[0]), ms, &(x[0]));
 		    T2 = LD(&(x[WS(rs, 2)]), ms, &(x[0]));
+
 		    T3 = VSUB(T1, T2);
 		    T9 = VADD(T1, T2);
 		    Ty = LD(&(x[WS(vs, 3)]), ms, &(x[WS(vs, 3)]));
@@ -205,10 +209,56 @@ static void q1fv_4(R *ri, R *ii, const R *W, stride rs, stride vs, INT mb, INT m
 		    Th = VBYI(VSUB(Tf, Tg));
 		    Tl = VADD(Tf, Tg);
 	       }
-	       ST(&(x[0]), VADD(T9, Ta), ms, &(x[0]));
-	       ST(&(x[WS(rs, 1)]), VADD(Tk, Tl), ms, &(x[WS(rs, 1)]));
-	       ST(&(x[WS(rs, 2)]), VADD(Tv, Tw), ms, &(x[0]));
-	       ST(&(x[WS(rs, 3)]), VADD(TG, TH), ms, &(x[WS(rs, 1)]));
+
+#if defined(AMD_OPT_KERNEL_REARRANGE_WRITE_V1)
+	       
+	       {
+	            V T7,T8,Tb;
+                    ST(&(x[0]), VADD(T9, Ta), ms, &(x[0]));
+	            T7 = BYTWJ(&(W[0]), VSUB(T3, T6));
+		    ST(&(x[WS(vs, 1)]), T7, ms, &(x[WS(vs, 1)]));
+		    Tb = BYTWJ(&(W[TWVL * 2]), VSUB(T9, Ta));
+		    ST(&(x[WS(vs, 2)]), Tb, ms, &(x[WS(vs, 2)]));
+		    T8 = BYTWJ(&(W[TWVL * 4]), VADD(T3, T6));
+		    ST(&(x[WS(vs, 3)]), T8, ms, &(x[WS(vs, 3)]));
+	       }
+	       {
+	            V Ti,Tj,Tm;
+	            ST(&(x[WS(rs, 1)]), VADD(Tk, Tl), ms, &(x[WS(rs, 1)]));
+	            Ti = BYTWJ(&(W[0]), VSUB(Te, Th));
+	            ST(&(x[WS(vs, 1) + WS(rs, 1)]), Ti, ms, &(x[WS(vs, 1) + WS(rs, 1)]));
+	            Tm = BYTWJ(&(W[TWVL * 2]), VSUB(Tk, Tl));
+	            ST(&(x[WS(vs, 2) + WS(rs, 1)]), Tm, ms, &(x[WS(vs, 2) + WS(rs, 1)]));
+	            Tj = BYTWJ(&(W[TWVL * 4]), VADD(Te, Th));
+	            ST(&(x[WS(vs, 3) + WS(rs, 1)]), Tj, ms, &(x[WS(vs, 3) + WS(rs, 1)]));
+	       }
+               {
+           	    V Tt,Tu,Tx;
+	            ST(&(x[WS(rs, 2)]), VADD(Tv, Tw), ms, &(x[0]));
+	            Tt = BYTWJ(&(W[0]), VSUB(Tp, Ts));
+	            ST(&(x[WS(vs, 1) + WS(rs, 2)]), Tt, ms, &(x[WS(vs, 1)]));
+	            Tx = BYTWJ(&(W[TWVL * 2]), VSUB(Tv, Tw));
+	            ST(&(x[WS(vs, 2) + WS(rs, 2)]), Tx, ms, &(x[WS(vs, 2)]));
+	            Tu = BYTWJ(&(W[TWVL * 4]), VADD(Tp, Ts));
+	            ST(&(x[WS(vs, 3) + WS(rs, 2)]), Tu, ms, &(x[WS(vs, 3)]));
+ 	       }
+ 	       {
+ 		    V TE,TF,TI;	
+	            ST(&(x[WS(rs, 3)]), VADD(TG, TH), ms, &(x[WS(rs, 1)]));
+	            TE = BYTWJ(&(W[0]), VSUB(TA, TD));
+	            ST(&(x[WS(vs, 1) + WS(rs, 3)]), TE, ms, &(x[WS(vs, 1) + WS(rs, 1)]));
+	            TI = BYTWJ(&(W[TWVL * 2]), VSUB(TG, TH));
+	            ST(&(x[WS(vs, 2) + WS(rs, 3)]), TI, ms, &(x[WS(vs, 2) + WS(rs, 1)]));
+	            TF = BYTWJ(&(W[TWVL * 4]), VADD(TA, TD));
+	            ST(&(x[WS(vs, 3) + WS(rs, 3)]), TF, ms, &(x[WS(vs, 3) + WS(rs, 1)]));
+	       }
+
+#else   
+			
+		    ST(&(x[0]), VADD(T9, Ta), ms, &(x[0]));
+	            ST(&(x[WS(rs, 1)]), VADD(Tk, Tl), ms, &(x[WS(rs, 1)]));
+	            ST(&(x[WS(rs, 2)]), VADD(Tv, Tw), ms, &(x[0]));
+	            ST(&(x[WS(rs, 3)]), VADD(TG, TH), ms, &(x[WS(rs, 1)]));
 	       {
 		    V T7, Ti, Tt, TE;
 		    T7 = BYTWJ(&(W[0]), VSUB(T3, T6));
@@ -242,10 +292,17 @@ static void q1fv_4(R *ri, R *ii, const R *W, stride rs, stride vs, INT mb, INT m
 		    TI = BYTWJ(&(W[TWVL * 2]), VSUB(TG, TH));
 		    ST(&(x[WS(vs, 2) + WS(rs, 3)]), TI, ms, &(x[WS(vs, 2) + WS(rs, 1)]));
 	       }
-	  }
+	       	    
+#endif      
+
+	 }
+
      }
      VLEAVE();
+
+
 }
+
 
 static const tw_instr twinstr[] = {
      VTW(0, 1),
