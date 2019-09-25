@@ -38,7 +38,7 @@
 #  define WIDE_TYPE double
 #endif
 
-#ifdef AMD_OPT_ALL //AMD optimized routines
+#if defined(AMD_OPT_ALL) && (!defined(FFTW_LDOUBLE) && !defined(FFTW_QUAD)) //AMD optimized routines
 
 #ifdef FFTW_SINGLE//SINGLE PRECISION CPY2d starts
 #ifdef AMD_OPT_IN_PLACE_1D_CPY2D_STABLE_INTRIN//SIMD optimized function

@@ -96,6 +96,10 @@ extern "C"
 //--------------------------------
 //In-place Transpose related optimization switches :-
 //The below switches are defined through config.h using configure script run-time feature arg --enable-amd-trans
+//AMD_OPT_TRANS is currently tested and supported only for single-threaded, so undefining when MPI or openMP used
+#if defined(HAVE_MPI) || defined(HAVE_OPENMP)
+#undef AMD_OPT_TRANS
+#endif
 #ifdef AMD_OPT_TRANS
 #define AMD_OPT_AUTO_TUNED_TRANS_BLK_SIZE
 #define AMD_OPT_AUTO_TUNED_RASTER_TILED_TRANS_METHOD
