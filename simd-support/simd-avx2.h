@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
+ * Copyright (C) 2019, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * Modifications by Romain Dolbeau & Erik Lindahl, derived from simd-avx.h
  * Romain Dolbeau hereby places his modifications in the public domain.
