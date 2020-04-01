@@ -19,6 +19,8 @@ extern void XSIMD(codelet_n1fv_16)(planner *);
 extern void XSIMD(codelet_n1fv_32)(planner *);
 extern void XSIMD(codelet_n1fv_64)(planner *);
 extern void XSIMD(codelet_n1fv_128)(planner *);
+extern void XSIMD(codelet_n1fv_256)(planner *);
+extern void XSIMD(codelet_n1fv_512)(planner *);
 extern void XSIMD(codelet_n1fv_20)(planner *);
 extern void XSIMD(codelet_n1fv_25)(planner *);
 extern void XSIMD(codelet_n1bv_2)(planner *);
@@ -51,6 +53,9 @@ extern void XSIMD(codelet_n2fv_14)(planner *);
 extern void XSIMD(codelet_n2fv_16)(planner *);
 extern void XSIMD(codelet_n2fv_32)(planner *);
 extern void XSIMD(codelet_n2fv_64)(planner *);
+extern void XSIMD(codelet_n2fv_128)(planner *);
+extern void XSIMD(codelet_n2fv_256)(planner *);
+extern void XSIMD(codelet_n2fv_512)(planner *);
 extern void XSIMD(codelet_n2fv_20)(planner *);
 extern void XSIMD(codelet_n2bv_2)(planner *);
 extern void XSIMD(codelet_n2bv_4)(planner *);
@@ -93,6 +98,8 @@ extern void XSIMD(codelet_t1fv_32)(planner *);
 extern void XSIMD(codelet_t1fv_64)(planner *);
 extern void XSIMD(codelet_t1fv_20)(planner *);
 extern void XSIMD(codelet_t1fv_25)(planner *);
+extern void XSIMD(codelet_t1fv_128)(planner *);
+extern void XSIMD(codelet_t1fv_256)(planner *);
 extern void XSIMD(codelet_t2fv_2)(planner *);
 extern void XSIMD(codelet_t2fv_4)(planner *);
 extern void XSIMD(codelet_t2fv_8)(planner *);
@@ -103,6 +110,8 @@ extern void XSIMD(codelet_t2fv_5)(planner *);
 extern void XSIMD(codelet_t2fv_10)(planner *);
 extern void XSIMD(codelet_t2fv_20)(planner *);
 extern void XSIMD(codelet_t2fv_25)(planner *);
+extern void XSIMD(codelet_t2fv_128)(planner *);
+extern void XSIMD(codelet_t2fv_256)(planner *);
 extern void XSIMD(codelet_t3fv_4)(planner *);
 extern void XSIMD(codelet_t3fv_8)(planner *);
 extern void XSIMD(codelet_t3fv_16)(planner *);
@@ -111,6 +120,8 @@ extern void XSIMD(codelet_t3fv_5)(planner *);
 extern void XSIMD(codelet_t3fv_10)(planner *);
 extern void XSIMD(codelet_t3fv_20)(planner *);
 extern void XSIMD(codelet_t3fv_25)(planner *);
+extern void XSIMD(codelet_t3fv_128)(planner *);
+extern void XSIMD(codelet_t3fv_64)(planner *);
 extern void XSIMD(codelet_t1buv_2)(planner *);
 extern void XSIMD(codelet_t1buv_3)(planner *);
 extern void XSIMD(codelet_t1buv_4)(planner *);
@@ -167,6 +178,11 @@ extern void XSIMD(codelet_q1fv_2)(planner *);
 extern void XSIMD(codelet_q1fv_4)(planner *);
 extern void XSIMD(codelet_q1fv_5)(planner *);
 extern void XSIMD(codelet_q1fv_8)(planner *);
+extern void XSIMD(codelet_q1fv_10)(planner *);
+extern void XSIMD(codelet_q1fv_12)(planner *);
+extern void XSIMD(codelet_q1fv_16)(planner *);
+extern void XSIMD(codelet_q1fv_20)(planner *);
+extern void XSIMD(codelet_q1fv_32)(planner *);
 extern void XSIMD(codelet_q1bv_2)(planner *);
 extern void XSIMD(codelet_q1bv_4)(planner *);
 extern void XSIMD(codelet_q1bv_5)(planner *);
@@ -193,6 +209,8 @@ const solvtab XSIMD(solvtab_dft) = {
    SOLVTAB(XSIMD(codelet_n1fv_32)),
    SOLVTAB(XSIMD(codelet_n1fv_64)),
    SOLVTAB(XSIMD(codelet_n1fv_128)),
+   SOLVTAB(XSIMD(codelet_n1fv_256)),
+   SOLVTAB(XSIMD(codelet_n1fv_512)),
    SOLVTAB(XSIMD(codelet_n1fv_20)),
    SOLVTAB(XSIMD(codelet_n1fv_25)),
    SOLVTAB(XSIMD(codelet_n1bv_2)),
@@ -225,6 +243,9 @@ const solvtab XSIMD(solvtab_dft) = {
    SOLVTAB(XSIMD(codelet_n2fv_16)),
    SOLVTAB(XSIMD(codelet_n2fv_32)),
    SOLVTAB(XSIMD(codelet_n2fv_64)),
+   SOLVTAB(XSIMD(codelet_n2fv_128)),
+   SOLVTAB(XSIMD(codelet_n2fv_256)),
+   SOLVTAB(XSIMD(codelet_n2fv_512)),
    SOLVTAB(XSIMD(codelet_n2fv_20)),
    SOLVTAB(XSIMD(codelet_n2bv_2)),
    SOLVTAB(XSIMD(codelet_n2bv_4)),
@@ -267,6 +288,8 @@ const solvtab XSIMD(solvtab_dft) = {
    SOLVTAB(XSIMD(codelet_t1fv_64)),
    SOLVTAB(XSIMD(codelet_t1fv_20)),
    SOLVTAB(XSIMD(codelet_t1fv_25)),
+   SOLVTAB(XSIMD(codelet_t1fv_128)),
+   SOLVTAB(XSIMD(codelet_t1fv_256)),
    SOLVTAB(XSIMD(codelet_t2fv_2)),
    SOLVTAB(XSIMD(codelet_t2fv_4)),
    SOLVTAB(XSIMD(codelet_t2fv_8)),
@@ -277,6 +300,8 @@ const solvtab XSIMD(solvtab_dft) = {
    SOLVTAB(XSIMD(codelet_t2fv_10)),
    SOLVTAB(XSIMD(codelet_t2fv_20)),
    SOLVTAB(XSIMD(codelet_t2fv_25)),
+   SOLVTAB(XSIMD(codelet_t2fv_128)),
+   SOLVTAB(XSIMD(codelet_t2fv_256)),
    SOLVTAB(XSIMD(codelet_t3fv_4)),
    SOLVTAB(XSIMD(codelet_t3fv_8)),
    SOLVTAB(XSIMD(codelet_t3fv_16)),
@@ -285,6 +310,8 @@ const solvtab XSIMD(solvtab_dft) = {
    SOLVTAB(XSIMD(codelet_t3fv_10)),
    SOLVTAB(XSIMD(codelet_t3fv_20)),
    SOLVTAB(XSIMD(codelet_t3fv_25)),
+   SOLVTAB(XSIMD(codelet_t3fv_128)),
+   SOLVTAB(XSIMD(codelet_t3fv_64)),
    SOLVTAB(XSIMD(codelet_t1buv_2)),
    SOLVTAB(XSIMD(codelet_t1buv_3)),
    SOLVTAB(XSIMD(codelet_t1buv_4)),
@@ -341,6 +368,11 @@ const solvtab XSIMD(solvtab_dft) = {
    SOLVTAB(XSIMD(codelet_q1fv_4)),
    SOLVTAB(XSIMD(codelet_q1fv_5)),
    SOLVTAB(XSIMD(codelet_q1fv_8)),
+   SOLVTAB(XSIMD(codelet_q1fv_10)),
+   SOLVTAB(XSIMD(codelet_q1fv_12)),
+   SOLVTAB(XSIMD(codelet_q1fv_16)),
+   SOLVTAB(XSIMD(codelet_q1fv_20)),
+   SOLVTAB(XSIMD(codelet_q1fv_32)),
    SOLVTAB(XSIMD(codelet_q1bv_2)),
    SOLVTAB(XSIMD(codelet_q1bv_4)),
    SOLVTAB(XSIMD(codelet_q1bv_5)),
