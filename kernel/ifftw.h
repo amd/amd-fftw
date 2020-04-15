@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
- * Copyright (C) 2019, Advanced Micro Devices, Inc. All Rights Reserved.
+ * Copyright (C) 2019-2020, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -114,6 +114,16 @@ extern "C"
 //--------------------------------
 //Kernel new implementations and optimization enable/disable switch by AMD_OPT_KERNEL_256SIMD_PERF
 #define AMD_OPT_KERNEL_256SIMD_PERF
+//--------------------------------
+//MPI FFT related optimization switches:-
+#ifdef AMD_OPT_MPIFFT
+//Below switch enables new in-place MPI transpose solver that overlaps memcpy with MPI send-recv communication.
+#define AMD_OPT_MPIFFT_OVERLAP_MEMCPY_MPICOMM
+//Enables one-time memory allocation of temporary memory towards in-place MPI transpose pairwise operation
+//#define AMD_MPI_MALLOC_ONCE
+//Enables debug logs for MPI FFT/Transpose solvers
+//#define AMD_MPI_TRANSPOSE_LOGS
+#endif
 //--------------------------------
 
 #endif//#ifdef AMD_OPT_ALL

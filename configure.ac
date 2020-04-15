@@ -637,6 +637,11 @@ AC_ARG_ENABLE(amd-trans, [AC_HELP_STRING([--enable-amd-trans],[enable AMD cpu op
 if test "$have_amd_trans" = yes; then
 	AC_DEFINE(AMD_OPT_TRANS,1,[Define to enable AMD cpu optimized Transpose.])
 fi
+dnl amd optimization switch to enable MPI FFT improvements for AMD cpus --enable-amd-mpifft
+AC_ARG_ENABLE(amd-mpifft, [AC_HELP_STRING([--enable-amd-mpifft],[enable AMD cpu optimized MPI FFT])], have_amd_mpifft=$enableval, have_amd_mpifft=no)
+if test "$have_amd_mpifft" = yes; then
+	AC_DEFINE(AMD_OPT_MPIFFT,1,[Define to enable AMD cpu optimized MPI FFT.])
+fi
 
 dnl check for a proper indent in maintainer mode
 if test "$USE_MAINTAINER_MODE" = yes; then

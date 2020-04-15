@@ -876,6 +876,7 @@ enable_libtool_lock
 enable_mpi
 enable_amd_opt
 enable_amd_trans
+enable_amd_mpifft
 enable_fortran
 with_g77_wrappers
 enable_openmp
@@ -1584,6 +1585,7 @@ Optional Features:
   --enable-mpi            compile FFTW MPI library
   --enable-amd-opt        enable AMD cpu specific optimizations
   --enable-amd-trans      enable AMD cpu optimized Transpose
+  --enable-amd-mpifft     enable AMD cpu optimized MPI FFT
   --disable-fortran       don't include Fortran-callable wrappers
   --enable-openmp         use OpenMP directives for parallelism
   --enable-threads        compile FFTW SMP threads library
@@ -17474,6 +17476,18 @@ fi
 if test "$have_amd_trans" = yes; then
 
 $as_echo "#define AMD_OPT_TRANS 1" >>confdefs.h
+
+fi
+# Check whether --enable-amd-mpifft was given.
+if test "${enable_amd_mpifft+set}" = set; then :
+  enableval=$enable_amd_mpifft; have_amd_mpifft=$enableval
+else
+  have_amd_mpifft=no
+fi
+
+if test "$have_amd_mpifft" = yes; then
+
+$as_echo "#define AMD_OPT_MPIFFT 1" >>confdefs.h
 
 fi
 
