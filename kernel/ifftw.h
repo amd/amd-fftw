@@ -93,6 +93,8 @@ extern "C"
 //CPY2d related optimizations :- enable Either (i)C switch Or (ii)INTRIN switch
 //#define AMD_OPT_IN_PLACE_1D_CPY2D_STABLE_C
 #define AMD_OPT_IN_PLACE_1D_CPY2D_STABLE_INTRIN
+//Below switch enables the use of memcpy function in cpy2d_pair routine instead of SIMD 256-bit load and store
+#define AMD_OPT_USE_MEMCPY_TO_CPY
 //--------------------------------
 //In-place Transpose related optimization switches :-
 //The below switches are defined through config.h using configure script run-time feature arg --enable-amd-trans

@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
- * Copyright (C) 2019, Advanced Micro Devices, Inc. All Rights Reserved.
+ * Copyright (C) 2019-2020, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -182,6 +182,9 @@ void X(cpy2d_pair)(R *I0, R *I1, R *O0, R *O1,
               n0 = n0 - n0_rem;
               for (i1 = 0; i1 < n1; ++i1)
               {
+#ifdef AMD_OPT_USE_MEMCPY_TO_CPY
+                  memcpy(&O[i1 * os1], &I[i1 * is1], (n0+n0_rem)*2*sizeof(R));
+#else
                   for (i0 = 0; i0 < n0; i0+=4) 
                   {
                     in1 = _mm256_loadu_ps((float const *)&I[i0 * is0 + i1 * is1]);
@@ -194,6 +197,7 @@ void X(cpy2d_pair)(R *I0, R *I1, R *O0, R *O1,
                     O[i0 * os0 + i1 * os1] = x0;
                     O[i0 * os0 + i1 * os1 + 1] = x1;
                   }
+#endif
               }
               break;
 
@@ -244,6 +248,7 @@ void X(cpy2d_pair)(R *I0, R *I1, R *O0, R *O1,
 #endif//ends
 
 #else//DOUBLE-PRECISION
+
 #if defined(AMD_OPT_IN_PLACE_1D_CPY2D_STABLE_INTRIN)//SIMD optimized function
 void X(cpy2d_pair)(R *I0, R *I1, R *O0, R *O1,
            INT n0, INT is0, INT os0,
@@ -426,6 +431,9 @@ void X(cpy2d_pair)(R *I0, R *I1, R *O0, R *O1,
                 t3 = t3 - n0_rem;///presence of 2
                 for (i1 = 0; i1 < n1; ++i1)
                 {
+#ifdef AMD_OPT_USE_MEMCPY_TO_CPY
+                    memcpy(&O[i1 * os1], &I[i1 * is1], n0*2*sizeof(R));
+#else
                     for (i0 = 0; i0 < t2; i0+=8) 
                     {
                         t0 = i0 * is0 + i1 * is1;
@@ -472,6 +480,7 @@ void X(cpy2d_pair)(R *I0, R *I1, R *O0, R *O1,
                         O[i0 * os0 + i1 * os1] = x0;
                         O[i0 * os0 + i1 * os1 + 1] = x1;
                     }
+#endif
                 }
                 break;
     
