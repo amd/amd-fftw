@@ -10,7 +10,9 @@ AMD Optimized FFTW achieves higher performance than the FFTW 3.3.8 due to
 various optimizations involving improved SIMD Kernel functions, improved copy
 functions (cpy2d and cpy2d_pair used in rank-0 transform and buffering plan),
 improved 256-bit kernels selection by Planner and an optional in-place 
-transpose for large problem sizes.
+transpose for large problem sizes. AMD Optimized FFTW improves the performance
+of in-place MPI FFT over FFTW 3.3.8 by employing a faster in-place MPI
+transpose function.
 
 FFTW is a free collection of fast C routines for computing the
 Discrete Fourier Transform and various special cases thereof in one or more
@@ -36,7 +38,7 @@ generation architectures.
 
      ./configure --enable-sse2 --enable-avx --enable-avx2 
                  --enable-mpi --enable-openmp --enable-shared 
-                 --enable-amd-opt 
+                 --enable-amd-opt --enable-amd-mpifft 
                  --prefix=<your-install-dir>
      make
      make install
@@ -45,6 +47,9 @@ The configure option "--enable-amd-opt" enables all the improvements and
 optimizations targeted for AMD EPYC CPUs.
 When enabling configure option "--enable-amd-opt", do not use the 
 configure option "--enable-generic-simd128" or "--enable-generic-simd256".
+
+The optional configure option "--enable-amd-mpifft" enables the MPI FFT
+related optimizations.
 
 An optional configure option "--enable-amd-trans" is provided that may benefit
 the performance of transpose operations in case of very large FFT problem sizes.
