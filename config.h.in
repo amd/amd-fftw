@@ -9,6 +9,9 @@
 /* Define to enable AMD cpu optimized Transpose. */
 #undef AMD_OPT_TRANS
 
+/* AOCL Version of AMD-FFTW */
+#undef AOCL_FFTW_VERSION
+
 /* Define if the machine architecture "naturally" prefers fused multiply-add
    instructions */
 #undef ARCH_PREFERS_FMA

@@ -1,4 +1,8 @@
 /**************************************************************************/
+/* 
+ * Copyright (C) 2020, Advanced Micro Devices, Inc. All Rights Reserved.
+ */
+
 /* NOTE to users: this is the FFTW self-test and benchmark program.
    It is probably NOT a good place to learn FFTW usage, since it has a
    lot of added complexity in order to exercise and test the full API,
@@ -14,12 +18,14 @@
 #include "tests/fftw-bench.h"
 
 static const char *mkversion(void) { return FFTW(version); }
+static const char *mkaoclversion(void) { return FFTW(aoclversion); }
 static const char *mkcc(void) { return FFTW(cc); }
 static const char *mkcodelet_optim(void) { return FFTW(codelet_optim); }
 
 BEGIN_BENCH_DOC
 BENCH_DOC("name", "fftw3")
 BENCH_DOCF("version", mkversion)
+BENCH_DOCF("aocl-version", mkaoclversion)
 BENCH_DOCF("cc", mkcc)
 BENCH_DOCF("codelet-optim", mkcodelet_optim)
 END_BENCH_DOC 

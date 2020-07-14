@@ -17491,6 +17491,9 @@ $as_echo "#define AMD_OPT_MPIFFT 1" >>confdefs.h
 
 fi
 
+$as_echo "#define AOCL_FFTW_VERSION \"AOCL-2.2.1\"" >>confdefs.h
+
+
 if test "$USE_MAINTAINER_MODE" = yes; then
         # Extract the first word of "indent", so it can be a program name with args.
 set dummy indent; ac_word=$2

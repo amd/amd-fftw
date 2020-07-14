@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
+ * Copyright (C) 2020, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +28,8 @@ const char X(cc)[] = FFTW_CC;
    not used anymore.  We keep this variable around because it is part
    of the ABI */
 const char X(codelet_optim)[] = "";
+
+const char X(aoclversion)[] = AOCL_FFTW_VERSION;
 
 const char X(version)[] = PACKAGE "-" PACKAGE_VERSION
 

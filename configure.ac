@@ -642,6 +642,8 @@ AC_ARG_ENABLE(amd-mpifft, [AC_HELP_STRING([--enable-amd-mpifft],[enable AMD cpu 
 if test "$have_amd_mpifft" = yes; then
 	AC_DEFINE(AMD_OPT_MPIFFT,1,[Define to enable AMD cpu optimized MPI FFT.])
 fi
+dnl aocl version number of amd-fftw
+AC_DEFINE(AOCL_FFTW_VERSION,"AOCL-2.2.1",[AOCL Version of AMD-FFTW])
 
 dnl check for a proper indent in maintainer mode
 if test "$USE_MAINTAINER_MODE" = yes; then

@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
+ * Copyright (C) 2020, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * The following statement of license applies *only* to this header file,
  * and *not* to the other files distributed with FFTW or derived therefrom:
@@ -448,6 +449,7 @@ FFTW_EXTERN int                                                         \
 FFTW_CDECL X(alignment_of)(R *p);                                       \
                                                                         \
 FFTW_EXTERN const char X(version)[];                                    \
+FFTW_EXTERN const char X(aoclversion)[];                                \
 FFTW_EXTERN const char X(cc)[];                                         \
 FFTW_EXTERN const char X(codelet_optim)[];
 
