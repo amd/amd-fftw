@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2000 Matteo Frigo
  * Copyright (c) 2000 Massachusetts Institute of Technology
+ * Copyright (C) 2019-2020, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +20,9 @@
  */
 
 #include "kernel/ifftw.h"
+#ifdef AMD_FAST_PLANNER
+#include "dft/dft.h"
+#endif
 #include <string.h>
 
 /* GNU Coding Standards, Sec. 5.2: "Please write the comments in a GNU
@@ -619,12 +623,11 @@ static plan *search(planner *ego, const problem *p, unsigned *slvndx,
 	  (ego->wisdom_state = ego->bogosity_hook(ego->wisdom_state, p)) \
 	  : ego->wisdom_state) == WISDOM_IS_BOGUS)			\
 	  goto wisdom_is_bogus;
-
 static plan *mkplan(planner *ego, const problem *p)
 {
      plan *pln;
      md5 m;
-     unsigned slvndx;
+     unsigned slvndx=0;
      flags_t flags_of_solution;
      solution *sol;
      solver *s;
@@ -663,7 +666,6 @@ static plan *mkplan(planner *ego, const problem *p)
 		    goto do_search; /* ignore not-ok wisdom */
 	       
 	       slvndx = SLVNDX(sol);
-	       
 	       if (slvndx == INFEASIBLE_SLVNDX) {
 		    if (ego->wisdom_state == WISDOM_IGNORE_INFEASIBLE)
 			 goto do_search;
@@ -676,8 +678,13 @@ static plan *mkplan(planner *ego, const problem *p)
 	       /* inherit blessing either from wisdom
 		  or from the planner */
 	       flags_of_solution.hash_info |= BLISS(ego->flags);
-	       
+
+#ifdef AMD_FAST_PLANNER
+	       if (ego->wisdom_state != WISDOM_ONLY)
+			ego->wisdom_state = WISDOM_NORMAL;
+#else
 	       ego->wisdom_state = WISDOM_ONLY;
+#endif
 	       
 	       s = ego->slvdescs[slvndx].slv;
 	       if (p->adt->problem_kind != s->adt->problem_kind)
@@ -692,7 +699,16 @@ static plan *mkplan(planner *ego, const problem *p)
 			   reuse it. */
 	       
 	       if (!pln)
+	       {
+#ifdef AMD_FAST_PLANNER
+	       if (ego->wisdom_state == WISDOM_ONLY)
 		    goto wisdom_is_bogus;
+	       else
+		    goto do_search;
+#else
+	       goto wisdom_is_bogus;
+#endif
+	       }
 	       
 	       ego->wisdom_state = owisdom_state;
 	       
@@ -709,8 +725,8 @@ static plan *mkplan(planner *ego, const problem *p)
 
      flags_of_solution = ego->flags;
      pln = search(ego, p, &slvndx, &flags_of_solution);
-     CHECK_FOR_BOGOSITY; 	  /* catch error in child solvers */
 
+     CHECK_FOR_BOGOSITY; 	  /* catch error in child solvers */
      if (ego->timed_out) {
 	  A(!pln);
 	  if (PLNR_TIMELIMIT_IMPATIENCE(ego) != 0) {
@@ -737,7 +753,6 @@ static plan *mkplan(planner *ego, const problem *p)
 	       hinsert(ego, m.s, &flags_of_solution, INFEASIBLE_SLVNDX);
 	  }
      }
-
      return pln;
 
  wisdom_is_bogus:
@@ -766,6 +781,48 @@ static void mkhashtab(hashtab *ht)
 
 /* destroy hash table entries.  If FORGET_EVERYTHING, destroy the whole
    table.  If FORGET_ACCURSED, then destroy entries that are not blessed. */
+#ifdef AMD_FAST_PLANNER
+static void forget(planner *ego, amnesia a)
+{
+     switch (a) {
+	 case FORGET_ACCURSED:
+	      //Do not delete the unblessed hash table after setup done.
+	      //But maintain its state in order to reuse the solvers next time.
+	      //htab_destroy(&ego->htab_unblessed);
+	      //mkhashtab(&ego->htab_unblessed);
+
+	      //Check the unblessed size and switch it with blessed when its size grows beyond the MAX size
+	      //AMD_HASH_UNBLESS_MAX_SIZE
+	      if ((sizeof(struct solution_s)*ego->htab_unblessed.hashsiz) > AMD_HASH_UNBLESS_MAX_SIZE)
+	      {
+		      solution *ht_unblessed_sols = ego->htab_unblessed.solutions;
+		      ego->htab_unblessed.solutions = ego->htab_blessed.solutions;
+		      ego->htab_unblessed.hashsiz = ego->htab_blessed.hashsiz;
+		      ego->htab_unblessed.nelem = ego->htab_blessed.nelem;
+		      ego->htab_unblessed.lookup = ego->htab_blessed.lookup;
+		      ego->htab_unblessed.succ_lookup = ego->htab_blessed.succ_lookup;
+		      ego->htab_unblessed.lookup_iter = ego->htab_blessed.lookup_iter;
+		      ego->htab_unblessed.insert = ego->htab_blessed.insert;
+		      ego->htab_unblessed.insert_iter = ego->htab_blessed.insert_iter;
+		      ego->htab_unblessed.insert_unknown = ego->htab_blessed.insert_unknown;
+		      ego->htab_unblessed.nrehash = ego->htab_blessed.nrehash;
+		      X(ifree)(ht_unblessed_sols);
+		      //Should blessed be cleared and deleted at this point??
+		      mkhashtab(&ego->htab_blessed);
+	      }
+	      break;
+	 case FORGET_EVERYTHING:
+	      //When wisdom is set bogus; delete both blessed and unblessed hash table
+	      htab_destroy(&ego->htab_blessed);
+	      mkhashtab(&ego->htab_blessed);
+	      htab_destroy(&ego->htab_unblessed);
+	      mkhashtab(&ego->htab_unblessed);
+	      break;
+	 default:
+	      break;
+     }
+}
+#else
 static void forget(planner *ego, amnesia a)
 {
      switch (a) {
@@ -781,6 +838,7 @@ static void forget(planner *ego, amnesia a)
 	      break;
      }
 }
+#endif
 
 /* FIXME: what sort of version information should we write? */
 #define WISDOM_PREAMBLE PACKAGE "-" VERSION " " STRINGIZE(X(wisdom))

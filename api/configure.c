@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
+ * Copyright (C) 2019-2020, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +26,13 @@
 
 void X(configure_planner)(planner *plnr)
 {
+#ifdef AMD_FAST_PLANNER
+     X(reodft_conf_standard)(plnr);
+     X(rdft_conf_standard)(plnr);
+     X(dft_conf_standard)(plnr);
+#else
      X(dft_conf_standard)(plnr);
      X(rdft_conf_standard)(plnr);
      X(reodft_conf_standard)(plnr);
+#endif
 }

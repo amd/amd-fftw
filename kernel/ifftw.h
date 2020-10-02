@@ -127,6 +127,19 @@ extern "C"
 //#define AMD_MPI_TRANSPOSE_LOGS
 #endif
 //--------------------------------
+//NEW FAST PLANNER for AMD CPUs can be enabled with the below switch AMD_FAST_PLANNER.
+//A new generalized Hash key based Planner is implemented that achieves high reuse of solvers among similar problems.
+//A minor variation is available in the generalized Hash key method controlled by :-
+//AMD_FAST_PLANNING_HASH_V1 and AMD_FAST_PLANNING_HASH_V2.
+//AMD_FAST_PLANNING_HASH_V1 is by default turned on.
+//UNBLESSED HASH table is kept alive till the process/thread life like the BLESSED HASH table.
+//Since UNBLESSED HASH table keeps growing, so it is cleared smartly beyond a MAX SIZE by swapping with BLESSED table.
+#ifdef AMD_OPT_FAST_PLANNER
+#define AMD_FAST_PLANNER
+#define AMD_FAST_PLANNING_HASH_V1
+//#define AMD_FAST_PLANNING_HASH_V2
+#define AMD_HASH_UNBLESS_MAX_SIZE 10485760
+#endif
 
 #endif//#ifdef AMD_OPT_ALL
 //============================================================

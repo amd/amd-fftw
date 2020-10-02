@@ -3,6 +3,9 @@
 /* Define to enable AMD cpu specific optimizations. */
 #undef AMD_OPT_ALL
 
+/* Define to enable AMD Fast Planner for AMD cpus. */
+#undef AMD_OPT_FAST_PLANNER
+
 /* Define to enable AMD cpu optimized MPI FFT. */
 #undef AMD_OPT_MPIFFT
 

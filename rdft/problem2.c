@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
+ * Copyright (C) 2019-2020, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +21,9 @@
 
 
 #include "dft/dft.h"
+#ifdef AMD_FAST_PLANNER
+#include "simd-support/simd-common.h"
+#endif
 #include "rdft/rdft.h"
 #include <stddef.h>
 
@@ -42,8 +46,51 @@ static void hash(const problem *p_, md5 *m)
      X(md5int)(m, X(ialignment_of)(p->cr)); 
      X(md5int)(m, X(ialignment_of)(p->ci)); 
      X(md5int)(m, p->kind);
+#ifdef AMD_FAST_PLANNER
+     X(md5int)(m, p->sz->rnk);
+     if (FINITE_RNK(p->sz->rnk)) {
+          int x1, x2, x3, x4, x5, x6, x7, x8, x9;
+	  for (int i = 0; i < p->sz->rnk; ++i) {
+	       X(md5INT)(m, p->sz->dims[i].n);
+	       x1 = (p->sz->dims[i].is == p->sz->dims[i].os);
+	       x2 = (p->sz->dims[i].is == 2);
+	       x3 = (p->sz->dims[i].os == 2);
+	       x4 = !((p->sz->dims[i].is * sizeof(R)) % ALIGNMENT);
+	       x5 = !((p->sz->dims[i].os * sizeof(R)) % ALIGNMENT);
+	       x6 = !((p->sz->dims[i].is * sizeof(R)) % ALIGNMENTA);
+	       x7 = !((p->sz->dims[i].os * sizeof(R)) % ALIGNMENTA);
+	       if (p->vecsz->rnk > i)
+		       x8 = (p->sz->dims[i].is <= p->vecsz->dims[i].is);
+	       else
+		       x8 = 0;
+	       x9 = (x8<<7) | (x7<<6) | (x6<<5) | (x5<<4) | (x4<<3) | (x3<<2) | (x2<<1) | x1;
+	       X(md5INT)(m, x9);
+	  }
+     }
+     X(md5int)(m, p->vecsz->rnk);
+     if (FINITE_RNK(p->vecsz->rnk)) {
+          int x1, x2, x3, x4, x5, x6, x7, x8, x9;
+	  for (int i = 0; i < p->vecsz->rnk; ++i) {
+	       X(md5INT)(m, p->vecsz->dims[i].n);
+	       x1 = (p->vecsz->dims[i].is == p->vecsz->dims[i].os);
+	       x2 = (p->vecsz->dims[i].is == 2);
+	       x3 = (p->vecsz->dims[i].os == 2);
+	       x4 = !((p->vecsz->dims[i].is * sizeof(R)) % ALIGNMENT);
+	       x5 = !((p->vecsz->dims[i].os * sizeof(R)) % ALIGNMENT);
+	       x6 = !((p->vecsz->dims[i].is * sizeof(R)) % ALIGNMENTA);
+	       x7 = !((p->vecsz->dims[i].os * sizeof(R)) % ALIGNMENTA);
+	       if (p->sz->rnk > i)
+		       x8 = (p->vecsz->dims[i].n <= p->sz->dims[i].n);
+	       else
+		       x8 = 0;
+	       x9 = (x8<<7) | (x7<<6) | (x6<<5) | (x5<<4) | (x4<<3) | (x3<<2) | (x2<<1) | x1;
+	       X(md5INT)(m, x9);
+	  }
+     }
+#else
      X(tensor_md5)(m, p->sz);
      X(tensor_md5)(m, p->vecsz);
+#endif
 }
 
 static void print(const problem *ego_, printer *p)
