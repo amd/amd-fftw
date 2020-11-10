@@ -74,7 +74,9 @@ fi
 AM_CONDITIONAL(SINGLE, test "$ok" = "yes")
 
 AC_ARG_ENABLE(long-double, [AC_HELP_STRING([--enable-long-double],[compile fftw in long-double precision])], ok=$enableval, ok=no)
+long_double_supported=no;
 if test "$ok" = "yes"; then
+	long_double_supported=yes;
 	if test "$PRECISION" = "s"; then
 		AC_MSG_ERROR([--enable-single/--enable-long-double conflict])
 	fi
@@ -85,7 +87,9 @@ fi
 AM_CONDITIONAL(LDOUBLE, test "$ok" = "yes")
 
 AC_ARG_ENABLE(quad-precision, [AC_HELP_STRING([--enable-quad-precision],[compile fftw in quadruple precision if available])], ok=$enableval, ok=no)
+quad_precision_supported=no;
 if test "$ok" = "yes"; then
+	quad_precision_supported=yes;
 	if test "$PRECISION" != "d"; then
 		AC_MSG_ERROR([conflicting precisions specified])
 	fi
@@ -563,7 +567,26 @@ AC_FUNC_VPRINTF
 AC_CHECK_LIB(m, sin)
 
 if test $PRECISION = q; then
-   AX_GCC_VERSION(4,6,0,[],[AC_MSG_ERROR([gcc 4.6 or later required for quad precision support])])
+   AX_GCC_VERSION(4,6,0,[gcc_supported=1],[gcc_supported=0])
+   AC_MSG_CHECKING([whether we are using clang 10 or later])
+   AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+		      #ifdef __clang__
+		      #if __clang_major__ < 10
+		      #error Clang 10 or later is recommended for Quad precision
+		      #endif
+		      #else
+		      #error Other compiler unsupported
+		      #endif
+		      ]])],
+		      [AC_MSG_RESULT([yes])
+		       clang_supported=1],
+		      [AC_MSG_RESULT([no])
+		       clang_supported=0])
+   if test "$gcc_supported" = "1" || test "$clang_supported" = "1"; then
+	   :
+   else
+	AC_MSG_ERROR([gcc 4.6 or later OR clang 10 or later required for quad precision support])
+   fi
    AC_CHECK_LIB(quadmath, sinq, [], [AC_MSG_ERROR([quad precision requires libquadmath for quad-precision trigonometric routines])])
    LIBQUADMATH=-lquadmath
 fi
@@ -616,17 +639,74 @@ fi
 
 dnl amd optimization switch and CFLAGS setting based on config arg option --enable-amd-opt
 AC_ARG_ENABLE(amd-opt, [AC_HELP_STRING([--enable-amd-opt],[enable AMD cpu specific optimizations])], have_amd_opt=$enableval, have_amd_opt=no)
-if test "$have_amd_opt" = yes; then
+if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
+	AMDZENFAMILY=$(expr `cat /proc/cpuinfo | grep -m1 family|cut -f2 -d:`)
+	AMDZENMODEL=$(expr `cat /proc/cpuinfo | grep -m1 model|cut -f2 -d:`)
 	if test "$ac_test_CFLAGS" != "set"; then
-		if test "$CC" = "clang"; then
+		if [[ "$AMD_ARCH" = "auto" ]]; then
+			AMD_ARCH=""
+		fi
+		SUBSTRCLANG='clang'
+		SUBSTRGCC='gcc'
+		if grep -q "$SUBSTRCLANG" <<<"$CC"; then
 			CFLAGS="$CFLAGS -mavx2 -mfma"
-		else
-			GCCVERSION=$(expr `gcc -dumpversion | cut -f1 -d.` \>= 9)
-			AMDZEN2MODEL=$(expr `cat /proc/cpuinfo | grep -m1 model|cut -f2 -d:` \>= 48)
-			if test "$GCCVERSION" = "1"  && test "$AMDZEN2MODEL" = "1"; then
-				CFLAGS="$CFLAGS -march=znver2 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+		elif grep -q "$SUBSTRGCC" <<<"$CC"; then
+			GCCVERSION=$(expr `gcc -dumpversion | cut -f1 -d.`)
+			case "$AMDZENFAMILY" in
+				"23") 
+				if [[ -z "${AMD_ARCH}" ]]; then
+				if [[ "$GCCVERSION" -ge "9" ]] && [[ "$AMDZENMODEL" -ge "48" ]]; then
+					CFLAGS="$CFLAGS -march=znver2 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+				else
+					CFLAGS="$CFLAGS -march=znver1 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+				fi
+				else
+					CFLAGS="$CFLAGS -march=$AMD_ARCH -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+				fi
+				;;
+				"25")
+				if [[ -z "${AMD_ARCH}" ]]; then
+				if [[ "$GCCVERSION" -ge "9" ]] && [[ "$AMDZENMODEL" -le "15" ]]; then
+					CFLAGS="$CFLAGS -march=znver2 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+				elif [[ "$GCCVERSION" -lt "9" ]] && [[ "$AMDZENMODEL" -le "15" ]]; then
+					CFLAGS="$CFLAGS -march=znver1 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+				else
+					CFLAGS="$CFLAGS -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+				fi
+				else
+					CFLAGS="$CFLAGS -march=$AMD_ARCH -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+				fi
+				;;
+				*)
+				if [[ -z "${AMD_ARCH}" ]]; then
+				CFLAGS="$CFLAGS -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+				else
+				CFLAGS="$CFLAGS -march=$AMD_ARCH -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+				fi
+				;;
+			esac
+		fi
+	else
+		if [[ -n "${AMD_ARCH}" ]]; then
+			if [[ "$AMD_ARCH" = "auto" ]]; then
+			case "$AMDZENFAMILY" in
+				"23") 
+				if [[ "$AMDZENMODEL" -ge "48" ]]; then
+					CFLAGS="$CFLAGS -march=znver2"
+				else
+					CFLAGS="$CFLAGS -march=znver1"
+				fi
+				;;
+				"25")
+				if [[ "$AMDZENMODEL" -le "15" ]]; then
+					CFLAGS="$CFLAGS -march=znver2"
+				else
+					CFLAGS="$CFLAGS -mavx2"
+				fi
+				;;
+			esac
 			else
-				CFLAGS="$CFLAGS -march=znver1 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+				CFLAGS="$CFLAGS -march=$AMD_ARCH"
 			fi
 		fi
 	fi
@@ -643,10 +723,10 @@ if test "$have_amd_mpifft" = yes; then
 	AC_DEFINE(AMD_OPT_MPIFFT,1,[Define to enable AMD cpu optimized MPI FFT.])
 fi
 dnl aocl version number of amd-fftw
-AC_DEFINE(AOCL_FFTW_VERSION,"AOCL-2.2.1",[AOCL Version of AMD-FFTW])
+AC_DEFINE(AOCL_FFTW_VERSION,"AOCL-3.0",[AOCL Version of AMD-FFTW])
 dnl amd optimization switch to enable AMD Fast Planner for AMD cpus --enable-amd-fast-planner
 AC_ARG_ENABLE(amd-fast-planner, [AC_HELP_STRING([--enable-amd-fast-planner],[enable AMD Fast Planner for a faster planning time on AMD cpus])], have_amd_fast_planner=$enableval, have_amd_fast_planner=no)
-if test "$have_amd_fast_planner" = yes; then
+if test "$have_amd_fast_planner" = yes && test "$quad_precision_supported" = no && test "$long_double_supported" = no; then
 	AC_DEFINE(AMD_OPT_FAST_PLANNER,1,[Define to enable AMD Fast Planner for AMD cpus.])
 fi
 

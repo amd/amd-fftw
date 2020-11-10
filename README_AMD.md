@@ -12,7 +12,9 @@ functions (cpy2d and cpy2d_pair used in rank-0 transform and buffering plan),
 improved 256-bit kernels selection by Planner and an optional in-place 
 transpose for large problem sizes. AMD Optimized FFTW improves the performance
 of in-place MPI FFT over FFTW 3.3.8 by employing a faster in-place MPI
-transpose function.
+transpose function. As of AMD FFTW 3.0, a new fast planner is added as an
+extension to the original planner that improves planning time of various
+planning modes in general and PATIENT mode in particular.
 
 FFTW is a free collection of fast C routines for computing the
 Discrete Fourier Transform and various special cases thereof in one or more
@@ -50,6 +52,12 @@ configure option "--enable-generic-simd128" or "--enable-generic-simd256".
 
 The optional configure option "--enable-amd-mpifft" enables the MPI FFT
 related optimizations.
+
+The new fast planner can be enabled using optional configure option 
+"--enable-amd-fast-planner". It is supported for single and double precisions.
+
+An optional configure option "AMD_ARCH" is supported that can be set to CPU 
+architecture values like "auto" or "znver1" or "znver2" for AMD EPYC processors.
 
 An optional configure option "--enable-amd-trans" is provided that may benefit
 the performance of transpose operations in case of very large FFT problem sizes.
