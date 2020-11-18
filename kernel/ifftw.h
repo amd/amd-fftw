@@ -87,7 +87,8 @@ extern "C"
 
 //--------------------------------
 //disables 128-bit AVX2 versions of kernels and prefers only 256-bit AVX2 kernels support
-#define AMD_OPT_PREFER_256BIT_FPU
+//This optimization switch is disabled by default. If it is enabled, WISDOM feature is not to be used.
+//#define AMD_OPT_PREFER_256BIT_FPU
 #define AMD_OPT_128BIT_KERNELS_THRESHOLD 1024//Below this SIZE, 128-bit AVX2 kernels allowed
 //--------------------------------
 //CPY2d related optimizations :- enable Either (i)C switch Or (ii)INTRIN switch
