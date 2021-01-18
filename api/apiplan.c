@@ -29,10 +29,59 @@ void X(set_planner_hooks)(planner_hook_t before, planner_hook_t after)
      after_planner_hook = after;
 }
 
+#ifdef AMD_TOP_N_PLANNER
+plan *plans[AMD_OPT_TOP_N];
+static int find_lowcost_plan()
+{
+    int i, lowcost, lowcost_idx;
+    lowcost = plans[0]->pcost;
+    lowcost_idx = 0;
+
+    for (i = 1; i < AMD_OPT_TOP_N; i++) {
+         if (plans[i]->pcost < lowcost) {
+              lowcost = plans[i]->pcost;
+              lowcost_idx = i;
+         }
+    }
+    return lowcost_idx;
+}
+#endif
+
 static plan *mkplan0(planner *plnr, unsigned flags,
 		     const problem *prb, unsigned hash_info,
 		     wisdom_state_t wisdom_state)
 {
+#ifdef AMD_TOP_N_PLANNER
+/* map API flags into FFTW flags */
+     X(mapflags)(plnr, flags);
+
+     plnr->flags.hash_info = hash_info;
+     plnr->wisdom_state = wisdom_state;
+     
+     /* create plan */
+
+     if (AMD_OPT_TOP_N > 1) {
+          if (wisp_set == 1) {
+               for (int pln_idx = 0; pln_idx < AMD_OPT_TOP_N ; pln_idx ++) {
+                    plnr->index = pln_idx;
+	            plans[pln_idx] = plnr->adt->mkplan(plnr, prb);
+               }
+               lowcost_idx = find_lowcost_plan(plans);
+               return plans[lowcost_idx];
+          }
+          else {        
+               for (int pln_idx = 0; pln_idx < AMD_OPT_TOP_N ; pln_idx ++) {
+                    plnr->index = pln_idx;
+	            plans[pln_idx] = plnr->adt->mkplan(plnr, prb);
+               }	   
+	       return plans[0];
+          }
+     }   
+     else {
+          plnr->index = 0;
+          return plnr->adt->mkplan(plnr, prb);
+     }	
+#else	
      /* map API flags into FFTW flags */
      X(mapflags)(plnr, flags);
 
@@ -41,6 +90,7 @@ static plan *mkplan0(planner *plnr, unsigned flags,
 
      /* create plan */
      return plnr->adt->mkplan(plnr, prb);
+#endif     
 }
 
 static unsigned force_estimator(unsigned flags)

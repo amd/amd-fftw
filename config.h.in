@@ -9,6 +9,9 @@
 /* Define to enable AMD cpu optimized MPI FFT. */
 #undef AMD_OPT_MPIFFT
 
+/* Define to enable AMD Top N Planner for AMD cpus. */
+#undef AMD_OPT_TOP_N_PLANNER
+
 /* Define to enable AMD cpu optimized Transpose. */
 #undef AMD_OPT_TRANS
 

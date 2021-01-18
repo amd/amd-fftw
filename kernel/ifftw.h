@@ -142,8 +142,17 @@ extern "C"
 #define AMD_HASH_UNBLESS_MAX_SIZE 10485760
 #endif
 
-#endif//#ifdef AMD_OPT_ALL
-//============================================================
+//NEW TOP N PLANNER feature for AMD CPUs can be enabled with the below switch AMD_TOP_N_PLANNER.
+//The new Top N planner improves the run-to-run variations by using a dynamic wisdom (preset) plan functionality.
+//This feature implements the mechanism to search and store top N plans into the wisdom file and then use these plans to find the best plan for execution in the consecutive runs.
+//AMD_TOP_N_PLANNER can not be used with AMD_FAST_PLANNER. Only one of them can be enabled at a time. 
+#ifdef AMD_OPT_TOP_N_PLANNER 
+#define AMD_TOP_N_PLANNER
+#define AMD_OPT_TOP_N 3 //The value of AMD_OPT_TOP_N is fixed as 3, enabling the search, store and re-use of Top 3 plans. This value should not be changed by the user.
+#endif
+
+#endif//#ifdef AMD_OPT_ALL  
+ //============================================================
 //AMD OPTIMIZATIONS :- end
 
 /*
@@ -813,8 +822,14 @@ struct planner_s {
 
      wisdom_state_t wisdom_state;
 
+#ifdef AMD_TOP_N_PLANNER
+     hashtab htab_blessed[AMD_OPT_TOP_N];
+     hashtab htab_unblessed[AMD_OPT_TOP_N];
+     int index;
+#else
      hashtab htab_blessed;
      hashtab htab_unblessed;
+#endif
 
      int nthr;
      flags_t flags;
@@ -831,6 +846,11 @@ struct planner_s {
      double pcost, epcost; /* total pcost of measured/estimated plans */
      int nprob;    /* number of problems evaluated */
 };
+
+#ifdef AMD_TOP_N_PLANNER
+     int wisp_set;     /* flag to identify if the plans for an input problem size is found in the wisdom file or not*/
+     int lowcost_idx;  /* to hold the index of the plan which has the least pcost among the top N plans*/
+#endif
 
 planner *X(mkplanner)(void);
 void X(planner_destroy)(planner *ego);
