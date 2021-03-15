@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
+ * Copyright (C) 2019-2020, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -244,7 +245,11 @@ static int applicable(const S *ego,
 				       v, m * r, r))
 	  return 0;
 
+#ifdef AMD_FAST_PLANNER
+     if ((m * r > 262144 && NO_FIXED_RADIX_LARGE_NP(plnr)) || v > 4096)
+#else
      if (m * r > 262144 && NO_FIXED_RADIX_LARGE_NP(plnr))
+#endif
 	  return 0;
 
      return 1;

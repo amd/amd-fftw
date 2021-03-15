@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
+ * Copyright (C) 2019-2020, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +21,21 @@
 
 
 #include "rdft/rdft.h"
+#ifdef AMD_FAST_PLANNER
+#include "simd-support/simd-common.h"
+#endif
 #include <stddef.h>
+
+#ifdef AMD_FAST_PLANNER
+#define MAXRRNK 32 /* FIXME: should malloc() */
+typedef struct {
+     plan_rdft super;
+     INT vl;
+     int rnk;
+     iodim d[MAXRRNK];
+     const char *nam;
+} P;
+#endif
 
 static void destroy(problem *ego_)
 {
@@ -39,6 +54,29 @@ static void kind_hash(md5 *m, const rdft_kind *kind, int rnk)
 	  X(md5int)(m, kind[i]);
 }
 
+#ifdef AMD_FAST_PLANNER
+static int fill_iodim(P *pln, const problem_rdft *p)
+{
+     int i;
+     const tensor *vecsz = p->vecsz;
+
+     pln->vl = 1;
+     pln->rnk = 0;
+     for (i = 0; i < vecsz->rnk; ++i) {
+	  /* extract contiguous dimensions */
+	  if (pln->vl == 1 &&
+	      vecsz->dims[i].is == 1 && vecsz->dims[i].os == 1) 
+	       pln->vl = vecsz->dims[i].n;
+	  else if (pln->rnk == MAXRRNK) 
+	       return 0;
+	  else 
+	       pln->d[pln->rnk++] = vecsz->dims[i];
+     }
+
+     return 1;
+}
+#endif
+
 static void hash(const problem *p_, md5 *m)
 {
      const problem_rdft *p = (const problem_rdft *) p_;
@@ -47,8 +85,80 @@ static void hash(const problem *p_, md5 *m)
      kind_hash(m, p->kind, p->sz->rnk);
      X(md5int)(m, X(ialignment_of)(p->I));
      X(md5int)(m, X(ialignment_of)(p->O));
+#ifdef AMD_FAST_PLANNER
+     X(md5int)(m, p->sz->rnk);
+     if (FINITE_RNK(p->sz->rnk)) {
+          int x1, x2, x3, x4, x5, x6, x7, x8, x9, x10;
+	  if (p->sz->rnk > 0)
+	  {
+		  x8 = 1;
+		  x10 = X(is_prime)(p->sz->dims[0].n);
+	  }
+	  else
+	  {
+		  x8 = 0;
+		  x10 = 0;
+	  }
+	  for (int i = 0; i < p->sz->rnk; ++i) {
+	       X(md5INT)(m, p->sz->dims[i].n);
+	       x1 = (p->sz->dims[i].is == p->sz->dims[i].os);
+	       x2 = (p->sz->dims[i].is == 2);
+	       x3 = (p->sz->dims[i].os == 2);
+	       x4 = !((p->sz->dims[i].is * sizeof(R)) % ALIGNMENT);
+	       x5 = !((p->sz->dims[i].os * sizeof(R)) % ALIGNMENT);
+	       x6 = !((p->sz->dims[i].is * sizeof(R)) % ALIGNMENTA);
+	       x7 = !((p->sz->dims[i].os * sizeof(R)) % ALIGNMENTA);
+	       x8 = x8 & ((p->sz->dims[i].is <= 2) && (p->sz->dims[i].os > 2));
+	       x9 = (x8<<7) | (x7<<6) | (x6<<5) | (x5<<4) | (x4<<3) | (x3<<2) | (x2<<1) | x1;
+	       X(md5INT)(m, x9);
+	  }
+	  x10 = (x10<<1) | x8;
+	  X(md5int)(m, x10);
+     }
+     X(md5int)(m, p->vecsz->rnk);
+     if (FINITE_RNK(p->vecsz->rnk)) {
+          int x1, x2, x3, x4, x5, x6, x7, x8, x9;
+	  P pln;
+	  for (int i = 0; i < p->vecsz->rnk; ++i) {
+	       X(md5INT)(m, p->vecsz->dims[i].n);
+	       x1 = (p->vecsz->dims[i].is == p->vecsz->dims[i].os);
+	       x2 = (p->vecsz->dims[i].is == 2);
+	       x3 = (p->vecsz->dims[i].os == 2);
+	       x4 = !((p->vecsz->dims[i].is * sizeof(R)) % ALIGNMENT);
+	       x5 = !((p->vecsz->dims[i].os * sizeof(R)) % ALIGNMENT);
+	       x6 = !((p->vecsz->dims[i].is * sizeof(R)) % ALIGNMENTA);
+	       x7 = !((p->vecsz->dims[i].os * sizeof(R)) % ALIGNMENTA);
+	       x9 = (x7<<6) | (x6<<5) | (x5<<4) | (x4<<3) | (x3<<2) | (x2<<1) | x1;
+	       X(md5INT)(m, x9);
+	  }
+	  fill_iodim(&pln, p);
+	  x1 = (pln.vl > 2);
+	  if (pln.rnk >= 2)
+	  {
+		  int rnk = pln.rnk;
+		  x2 = (pln.d[rnk-2].n == pln.d[rnk-1].n &&
+	                pln.d[rnk-2].is == pln.d[rnk-1].os &&
+                        pln.d[rnk-2].os == pln.d[rnk-1].is);
+		  x3 = (X(iabs)(pln.d[rnk-2].is) <= X(iabs)(pln.d[rnk-1].is) ||
+			X(iabs)(pln.d[rnk-2].os) <= X(iabs)(pln.d[rnk-1].os));
+		  x4 = (X(compute_tilesz)(pln.vl, 1) > 4);
+		  x5 = (X(compute_tilesz)(pln.vl, 2) > 4);
+
+	  }
+	  else
+	  {
+		  x2 = 0;
+		  x3 = 0;
+		  x4 = 0;
+		  x5 = 0;
+	  }
+	  x9 = (x5<<4) | (x4<<3) | (x3<<2) | (x2<<1) | x1;
+	  X(md5int)(m, x9);
+     }
+#else
      X(tensor_md5)(m, p->sz);
      X(tensor_md5)(m, p->vecsz);
+#endif
 }
 
 static void recur(const iodim *dims, int rnk, R *I)

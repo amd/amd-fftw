@@ -877,6 +877,7 @@ enable_mpi
 enable_amd_opt
 enable_amd_trans
 enable_amd_mpifft
+enable_amd_fast_planner
 enable_fortran
 with_g77_wrappers
 enable_openmp
@@ -1586,6 +1587,9 @@ Optional Features:
   --enable-amd-opt        enable AMD cpu specific optimizations
   --enable-amd-trans      enable AMD cpu optimized Transpose
   --enable-amd-mpifft     enable AMD cpu optimized MPI FFT
+  --enable-amd-fast-planner
+                          enable AMD Fast Planner for a faster planning time
+                          on AMD cpus
   --disable-fortran       don't include Fortran-callable wrappers
   --enable-openmp         use OpenMP directives for parallelism
   --enable-threads        compile FFTW SMP threads library
@@ -3676,7 +3680,9 @@ else
   ok=no
 fi
 
+long_double_supported=no;
 if test "$ok" = "yes"; then
+	long_double_supported=yes;
 	if test "$PRECISION" = "s"; then
 		as_fn_error $? "--enable-single/--enable-long-double conflict" "$LINENO" 5
 	fi
@@ -3704,7 +3710,9 @@ else
   ok=no
 fi
 
+quad_precision_supported=no;
 if test "$ok" = "yes"; then
+	quad_precision_supported=yes;
 	if test "$PRECISION" != "d"; then
 		as_fn_error $? "conflicting precisions specified" "$LINENO" 5
 	fi
@@ -17039,11 +17047,40 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_gcc_4_6_0" >&5
 $as_echo "$ax_cv_gcc_4_6_0" >&6; }
 if test "$ax_cv_gcc_4_6_0" = yes; then
-	:
+	gcc_supported=1
 else
-	as_fn_error $? "gcc 4.6 or later required for quad precision support" "$LINENO" 5
+	gcc_supported=0
 fi
 
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we are using clang 10 or later" >&5
+$as_echo_n "checking whether we are using clang 10 or later... " >&6; }
+   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		      #ifdef __clang__
+		      #if __clang_major__ < 10
+		      #error Clang 10 or later is recommended for Quad precision
+		      #endif
+		      #else
+		      #error Other compiler unsupported
+		      #endif
+
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+		       clang_supported=1
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+		       clang_supported=0
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+   if test "$gcc_supported" = "1" || test "$clang_supported" = "1"; then
+	   :
+   else
+	as_fn_error $? "gcc 4.6 or later OR clang 10 or later required for quad precision support" "$LINENO" 5
+   fi
    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for sinq in -lquadmath" >&5
 $as_echo_n "checking for sinq in -lquadmath... " >&6; }
 if ${ac_cv_lib_quadmath_sinq+:} false; then :
@@ -17448,17 +17485,74 @@ else
   have_amd_opt=no
 fi
 
-if test "$have_amd_opt" = yes; then
+if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
+	AMDZENFAMILY=$(expr `cat /proc/cpuinfo | grep -m1 family|cut -f2 -d:`)
+	AMDZENMODEL=$(expr `cat /proc/cpuinfo | grep -m1 model|cut -f2 -d:`)
 	if test "$ac_test_CFLAGS" != "set"; then
-		if test "$CC" = "clang"; then
+		if [ "$AMD_ARCH" = "auto" ]; then
+			AMD_ARCH=""
+		fi
+		SUBSTRCLANG='clang'
+		SUBSTRGCC='gcc'
+		if grep -q "$SUBSTRCLANG" <<<"$CC"; then
 			CFLAGS="$CFLAGS -mavx2 -mfma"
-		else
-			GCCVERSION=$(expr `gcc -dumpversion | cut -f1 -d.` \>= 9)
-			AMDZEN2MODEL=$(expr `cat /proc/cpuinfo | grep -m1 model|cut -f2 -d:` \>= 48)
-			if test "$GCCVERSION" = "1"  && test "$AMDZEN2MODEL" = "1"; then
-				CFLAGS="$CFLAGS -march=znver2 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+		elif grep -q "$SUBSTRGCC" <<<"$CC"; then
+			GCCVERSION=$(expr `gcc -dumpversion | cut -f1 -d.`)
+			case "$AMDZENFAMILY" in
+				"23")
+				if [ -z "${AMD_ARCH}" ]; then
+				if [ "$GCCVERSION" -ge "9" ] && [ "$AMDZENMODEL" -ge "48" ]; then
+					CFLAGS="$CFLAGS -march=znver2 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+				else
+					CFLAGS="$CFLAGS -march=znver1 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+				fi
+				else
+					CFLAGS="$CFLAGS -march=$AMD_ARCH -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+				fi
+				;;
+				"25")
+				if [ -z "${AMD_ARCH}" ]; then
+				if [ "$GCCVERSION" -ge "9" ] && [ "$AMDZENMODEL" -le "15" ]; then
+					CFLAGS="$CFLAGS -march=znver2 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+				elif [ "$GCCVERSION" -lt "9" ] && [ "$AMDZENMODEL" -le "15" ]; then
+					CFLAGS="$CFLAGS -march=znver1 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+				else
+					CFLAGS="$CFLAGS -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+				fi
+				else
+					CFLAGS="$CFLAGS -march=$AMD_ARCH -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+				fi
+				;;
+				*)
+				if [ -z "${AMD_ARCH}" ]; then
+				CFLAGS="$CFLAGS -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+				else
+				CFLAGS="$CFLAGS -march=$AMD_ARCH -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+				fi
+				;;
+			esac
+		fi
+	else
+		if [ -n "${AMD_ARCH}" ]; then
+			if [ "$AMD_ARCH" = "auto" ]; then
+			case "$AMDZENFAMILY" in
+				"23")
+				if [ "$AMDZENMODEL" -ge "48" ]; then
+					CFLAGS="$CFLAGS -march=znver2"
+				else
+					CFLAGS="$CFLAGS -march=znver1"
+				fi
+				;;
+				"25")
+				if [ "$AMDZENMODEL" -le "15" ]; then
+					CFLAGS="$CFLAGS -march=znver2"
+				else
+					CFLAGS="$CFLAGS -mavx2"
+				fi
+				;;
+			esac
 			else
-				CFLAGS="$CFLAGS -march=znver1 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+				CFLAGS="$CFLAGS -march=$AMD_ARCH"
 			fi
 		fi
 	fi
@@ -17488,6 +17582,21 @@ fi
 if test "$have_amd_mpifft" = yes; then
 
 $as_echo "#define AMD_OPT_MPIFFT 1" >>confdefs.h
+
+fi
+
+$as_echo "#define AOCL_FFTW_VERSION \"AOCL-3.0\"" >>confdefs.h
+
+# Check whether --enable-amd-fast-planner was given.
+if test "${enable_amd_fast_planner+set}" = set; then :
+  enableval=$enable_amd_fast_planner; have_amd_fast_planner=$enableval
+else
+  have_amd_fast_planner=no
+fi
+
+if test "$have_amd_fast_planner" = yes && test "$quad_precision_supported" = no && test "$long_double_supported" = no; then
+
+$as_echo "#define AMD_OPT_FAST_PLANNER 1" >>confdefs.h
 
 fi
 

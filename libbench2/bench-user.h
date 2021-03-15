@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2001 Matteo Frigo
  * Copyright (c) 2001 Massachusetts Institute of Technology
- * Copyright (C) 2019, Advanced Micro Devices, Inc. All Rights Reserved.
+ * Copyright (C) 2019-2020, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -58,7 +58,11 @@ typedef bench_real bench_complex[2];
 #undef SINGLE_PRECISION
 #define SINGLE_PRECISION (!DOUBLE_PRECISION && sizeof(bench_real) == sizeof(float))
 #undef LDOUBLE_PRECISION
+#ifdef BENCHFFT_LDOUBLE
 #define LDOUBLE_PRECISION (!DOUBLE_PRECISION && sizeof(bench_real) == sizeof(long double))
+#else
+#define LDOUBLE_PRECISION 0
+#endif
 
 #undef QUAD_PRECISION
 #ifdef BENCHFFT_QUAD

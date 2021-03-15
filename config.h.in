@@ -3,11 +3,17 @@
 /* Define to enable AMD cpu specific optimizations. */
 #undef AMD_OPT_ALL
 
+/* Define to enable AMD Fast Planner for AMD cpus. */
+#undef AMD_OPT_FAST_PLANNER
+
 /* Define to enable AMD cpu optimized MPI FFT. */
 #undef AMD_OPT_MPIFFT
 
 /* Define to enable AMD cpu optimized Transpose. */
 #undef AMD_OPT_TRANS
+
+/* AOCL Version of AMD-FFTW */
+#undef AOCL_FFTW_VERSION
 
 /* Define if the machine architecture "naturally" prefers fused multiply-add
    instructions */
