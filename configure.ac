@@ -6,7 +6,7 @@ dnl Define the fftw version number as M4 macros, so that we can enforce
 dnl the invariant that the minor version number in FFTW-X.Y.MINOR is the same
 dnl as the revision number in SHARED_VERSION_INFO.
 define(FFTW_MAJOR_VERSION, 3.3)dnl
-define(FFTW_MINOR_VERSION, 8)dnl
+define(FFTW_MINOR_VERSION, 9)dnl
 
 dnl Version number of the FFTW source package.
 AC_INIT(fftw, FFTW_MAJOR_VERSION.FFTW_MINOR_VERSION, fftw@fftw.org)
@@ -24,10 +24,11 @@ dnl fftw-3.3.6 was 8:x:6 (8:x:6 is a bug, should have been 8:x:5.  No API change
 dnl fftw-3.3.6.1 fixes the 8:x:6 screwup
 dnl fftw-3.3.7 was 8:x:5 (No API changes)
 dnl fftw-3.3.8 was 8:x:5 (No API changes)
-SHARED_VERSION_INFO="8:FFTW_MINOR_VERSION:5" # CURRENT:REVISION:AGE
+dnl fftw-3.3.9 was 9:x:6 (added threads callback)
+SHARED_VERSION_INFO="9:FFTW_MINOR_VERSION:6" # CURRENT:REVISION:AGE
 
 AM_INIT_AUTOMAKE(1.7)
-AM_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_MACRO_DIR([m4])
 AM_MAINTAINER_MODE
 AC_SUBST(SHARED_VERSION_INFO)
@@ -334,15 +335,6 @@ dnl determine CFLAGS first
 AX_CC_MAXOPT
 
 case "${ax_cv_c_compiler_vendor}" in
-   intel) # Stop icc from defining __GNUC__, except on MacOS where this fails
-        case "${host_os}" in
-            *darwin*) ;; # icc -no-gcc fails to compile some system headers
-            *) 
-	       AX_CHECK_COMPILER_FLAGS([-no-gcc], [CC="$CC -no-gcc"])
-               ;;
-        esac
-        ;;
-
    hp) # must (sometimes) manually increase cpp limits to handle fftw3.h
         AX_CHECK_COMPILER_FLAGS([-Wp,-H128000],
         		        [CC="$CC -Wp,-H128000"])
@@ -452,6 +444,12 @@ case "${ax_cv_c_compiler_vendor}" in
             AX_CHECK_COMPILER_FLAGS(-mavx2, [AVX2_CFLAGS="-mavx2"],
                 [AC_MSG_ERROR([Need a version of clang with -mavx2])])
             AX_CHECK_COMPILER_FLAGS(-mfma, [AVX2_CFLAGS="$AVX2_CFLAGS -mfma"])
+        fi
+
+        # AVX512
+        if test "$have_avx512" = "yes" -a "x$AVX512_CFLAGS" = x; then
+            AX_CHECK_COMPILER_FLAGS(-mavx512f, [AVX512_CFLAGS="-mavx512f"],
+            [AC_MSG_ERROR([Need a version of clang with -mavx512f])])
         fi
 
         if test "$have_vsx" = "yes" -a "x$VSX_CFLAGS" = x; then

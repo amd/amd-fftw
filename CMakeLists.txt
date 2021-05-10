@@ -274,7 +274,7 @@ if (HAVE_AVX2)
   list (APPEND SOURCEFILES ${fftw_dft_simd_avx2_SOURCE} ${fftw_rdft_simd_avx2_SOURCE})
 endif ()
 
-set (FFTW_VERSION 3.3.7)
+set (FFTW_VERSION 3.3.9)
 
 set (PREC_SUFFIX)
 if (ENABLE_FLOAT)
@@ -305,7 +305,7 @@ endif ()
 
 add_library (${fftw3_lib} ${SOURCEFILES})
 target_include_directories (${fftw3_lib} INTERFACE $<INSTALL_INTERFACE:include>)
-if (MSVC)
+if (MSVC AND NOT (CMAKE_C_COMPILER_ID STREQUAL "Intel"))
   target_compile_definitions (${fftw3_lib} PRIVATE /bigobj)
 endif ()
 if (HAVE_SSE)
@@ -351,7 +351,7 @@ if (OPENMP_FOUND)
 endif ()
 
 foreach(subtarget ${subtargets})
-  set_target_properties (${subtarget} PROPERTIES SOVERSION 3.5.7 VERSION 3)
+  set_target_properties (${subtarget} PROPERTIES SOVERSION 3.6.9 VERSION 3)
   install (TARGETS ${subtarget}
 	  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 	  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -406,9 +406,9 @@ set (exec_prefix ${CMAKE_INSTALL_PREFIX})
 set (libdir ${CMAKE_INSTALL_FULL_LIBDIR})
 set (includedir ${CMAKE_INSTALL_FULL_INCLUDEDIR})
 set (VERSION ${FFTW_VERSION})
-configure_file (fftw.pc.in fftw${PREC_SUFFIX}.pc @ONLY)
+configure_file (fftw.pc.in fftw3${PREC_SUFFIX}.pc @ONLY)
 install (FILES
-          ${CMAKE_CURRENT_BINARY_DIR}/fftw${PREC_SUFFIX}.pc
+          ${CMAKE_CURRENT_BINARY_DIR}/fftw3${PREC_SUFFIX}.pc
          DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
          COMPONENT Development)
 

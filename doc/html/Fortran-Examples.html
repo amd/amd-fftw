@@ -1,7 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <!-- This manual is for FFTW
-(version 3.3.8, 24 May 2018).
+(version 3.3.9, 10 December 2020).
 
 Copyright (C) 2003 Matteo Frigo.
 
@@ -20,16 +20,16 @@ Permission is granted to copy and distribute translations of this manual
 into another language, under the above conditions for modified versions,
 except that this permission notice may be stated in a translation
 approved by the Free Software Foundation. -->
-<!-- Created by GNU Texinfo 6.3, http://www.gnu.org/software/texinfo/ -->
+<!-- Created by GNU Texinfo 6.5, http://www.gnu.org/software/texinfo/ -->
 <head>
-<title>FFTW 3.3.8: Fortran Examples</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Fortran Examples (FFTW 3.3.9)</title>
 
-<meta name="description" content="FFTW 3.3.8: Fortran Examples">
-<meta name="keywords" content="FFTW 3.3.8: Fortran Examples">
+<meta name="description" content="Fortran Examples (FFTW 3.3.9)">
+<meta name="keywords" content="Fortran Examples (FFTW 3.3.9)">
 <meta name="resource-type" content="document">
 <meta name="distribution" content="global">
 <meta name="Generator" content="makeinfo">
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <link href="index.html#Top" rel="start" title="Top">
 <link href="Concept-Index.html#Concept-Index" rel="index" title="Concept Index">
 <link href="index.html#SEC_Contents" rel="contents" title="Table of Contents">
@@ -121,6 +121,15 @@ the same thing, but using 8 threads in parallel (see <a href="Multi_002dthreaded
 <p>(You might want to check the value of <code>iret</code>: if it is zero, it
 indicates an unlikely error during thread initialization.)
 </p>
+<p>To check the number of threads currently being used by the planner, you
+can do the following:
+</p>
+<div class="example">
+<pre class="example">        integer iret
+        call dfftw_planner_nthreads(iret)
+</pre></div>
+<a name="index-dfftw_005fplanner_005fnthreads"></a>
+
 <p>To transform a three-dimensional array in-place with C, you might do:
 </p>
 <div class="example">

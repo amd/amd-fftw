@@ -8,6 +8,8 @@ $exhaustive = 0;
 $patient = 0;
 $estimate = 0;
 $wisdom = 0;
+$validate_wisdom = 0;
+$threads_callback = 0;
 $nthreads = 1;
 $rounds = 0;
 $maxsize = 60000;
@@ -32,6 +34,7 @@ sub make_options {
     $options = "-o patient $options" if $patient;
     $options = "-o estimate $options" if $estimate;
     $options = "-o wisdom $options" if $wisdom;
+    $options = "-o threads_callback $options" if $threads_callback;
     $options = "-o nthreads=$nthreads $options" if ($nthreads > 1);
     $options = "-obflag=30 $options" if $mpi_transposed_in;
     $options = "-obflag=31 $options" if $mpi_transposed_out;
@@ -40,14 +43,10 @@ sub make_options {
 
 @list_of_problems = ();
 
-sub flush_problems {
+sub run_bench {
     my $options = shift;
-    my $problist = "";
+    my $problist = shift;
 
-    if ($#list_of_problems >= 0) {
-	for (@list_of_problems) {
-	    $problist = "$problist --verify '$_'";
-	}
 	print "Executing \"$program $options $problist\"\n" 
 	    if $verbose;
 	
@@ -74,6 +73,30 @@ sub flush_problems {
 	    if ($signal_num) { print "received signal $signal_num\n"; }
 	    exit 1 unless $keepgoing;
 	}
+}
+
+sub flush_problems {
+    my $options = shift;
+    my $problist = "";
+
+    if ($#list_of_problems >= 0) {
+	for (@list_of_problems) {
+	    $problist = "$problist --verify '$_'";
+	}
+
+        if ($validate_wisdom) {
+            # start with a fresh wisdom state
+            unlink("wis.dat");
+        }
+
+        run_bench($options, $problist);
+
+        if ($validate_wisdom) {
+            # run again and validate that we can the problem in wisdom-only mode
+            print "Executing again in wisdom-only mode\n"
+                if $verbose;
+            run_bench("$options -owisdom-only", $problist);
+        }
 	@list_of_problems = ();
     }
 }
@@ -264,6 +287,8 @@ sub parse_arguments (@)
 	elsif ($arglist[0] eq '--patient') { ++$patient; }
 	elsif ($arglist[0] eq '--estimate') { ++$estimate; }
 	elsif ($arglist[0] eq '--wisdom') { ++$wisdom; }
+        elsif ($arglist[0] eq '--validate-wisdom') { ++$wisdom;  ++$validate_wisdom; }
+	elsif ($arglist[0] eq '--threads_callback') { ++$threads_callback; }
 	elsif ($arglist[0] =~ /^--nthreads=(.+)$/) { $nthreads = $1; }
 	elsif ($arglist[0] eq '-k') { ++$keepgoing; }
 	elsif ($arglist[0] eq '--keep-going') { ++$keepgoing; }

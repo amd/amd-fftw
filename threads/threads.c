@@ -33,7 +33,7 @@
 #  include <unistd.h>
 #endif
 
-/* imlementation of semaphores and mutexes: */
+/* implementation of semaphores and mutexes: */
 #if (defined(_POSIX_SEMAPHORES) && (_POSIX_SEMAPHORES >= 200112L))
 
    /* If optional POSIX semaphores are supported, use them to
@@ -399,7 +399,6 @@ int X(ithreads_init)(void)
 void X(spawn_loop)(int loopmax, int nthr, spawn_function proc, void *data)
 {
      int block_size;
-     struct work *r;
      int i;
 
      A(loopmax >= 0);
@@ -416,6 +415,22 @@ void X(spawn_loop)(int loopmax, int nthr, spawn_function proc, void *data)
      block_size = (loopmax + nthr - 1) / nthr;
      nthr = (loopmax + block_size - 1) / block_size;
 
+     if (X(spawnloop_callback)) { /* user-defined spawnloop backend */
+          spawn_data *sdata;
+          STACK_MALLOC(spawn_data *, sdata, sizeof(spawn_data) * nthr);
+          for (i = 0; i < nthr; ++i) {
+               spawn_data *d = &sdata[i];
+               d->max = (d->min = i * block_size) + block_size;
+               if (d->max > loopmax)
+                    d->max = loopmax;
+               d->thr_num = i;
+               d->data = data;
+          }
+          X(spawnloop_callback)(proc, sdata, sizeof(spawn_data), nthr, X(spawnloop_callback_data));
+          STACK_FREE(sdata);
+     }
+     else {
+          struct work *r;
      STACK_MALLOC(struct work *, r, sizeof(struct work) * nthr);
 	  
      /* distribute work: */
@@ -450,6 +465,7 @@ void X(spawn_loop)(int loopmax, int nthr, spawn_function proc, void *data)
      }
 
      STACK_FREE(r);
+}
 }
 
 void X(threads_cleanup)(void)

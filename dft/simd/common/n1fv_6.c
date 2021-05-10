@@ -19,7 +19,7 @@
  */
 
 /* This file was automatically generated --- DO NOT EDIT */
-/* Generated on Thu May 24 08:04:51 EDT 2018 */
+/* Generated on Thu Dec 10 07:04:40 EST 2020 */
 
 #include "dft/codelet-dft.h"
 
@@ -83,8 +83,7 @@ static void n1fv_6(const R *ri, const R *ii, R *ro, R *io, stride is, stride os,
 
 static const kdft_desc desc = { 6, XSIMD_STRING("n1fv_6"), {12, 2, 6, 0}, &GENUS, 0, 0, 0, 0 };
 
-void XSIMD(codelet_n1fv_6) (planner *p) {
-     X(kdft_register) (p, n1fv_6, &desc);
+void XSIMD(codelet_n1fv_6) (planner *p) { X(kdft_register) (p, n1fv_6, &desc);
 }
 
 #else
@@ -147,8 +146,7 @@ static void n1fv_6(const R *ri, const R *ii, R *ro, R *io, stride is, stride os,
 
 static const kdft_desc desc = { 6, XSIMD_STRING("n1fv_6"), {16, 2, 2, 0}, &GENUS, 0, 0, 0, 0 };
 
-void XSIMD(codelet_n1fv_6) (planner *p) {
-     X(kdft_register) (p, n1fv_6, &desc);
+void XSIMD(codelet_n1fv_6) (planner *p) { X(kdft_register) (p, n1fv_6, &desc);
 }
 
 #endif

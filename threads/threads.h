@@ -37,6 +37,10 @@ void X(spawn_loop)(int loopmax, int nthreads,
 int X(ithreads_init)(void);
 void X(threads_cleanup)(void);
 
+typedef void (*spawnloop_function)(spawn_function, spawn_data *, size_t, int, void *);
+extern spawnloop_function X(spawnloop_callback);
+extern void *X(spawnloop_callback_data);
+
 /* configurations */
 
 void X(dft_thr_vrank_geq1_register)(planner *p);

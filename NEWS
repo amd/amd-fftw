@@ -1,3 +1,22 @@
+FFTW 3.3.9:
+
+* New API fftw_planner_nthreads() returns the number of threads
+  currently being used by the planner.
+
+* Fix incorrect math in 128-bit generic SIMD
+
+* Fix wisdom for avx512.
+
+  The avx512 alignment requirement was set to 64 bytes, but this is
+  wrong.  Alignment requirements are a property of the platform (e.g.,
+  x86) and not of the instruction set (e.g., AVX).  Among other
+  things, this broke wisdom with avx512.
+
+  Note that avx512 support is still experimental because the FFTW
+  authors have no avx512 hardware available for testing.
+
+* fftw_threads_set_callback function to change the threading backend at runtime.
+
 FFTW 3.3.8:
 
 * Fixed AVX, AVX2 for gcc-8.

@@ -381,10 +381,18 @@ FFTW_EXTERN void                                                        \
 FFTW_CDECL X(plan_with_nthreads)(int nthreads);                         \
                                                                         \
 FFTW_EXTERN int                                                         \
+FFTW_CDECL X(planner_nthreads)(void);                                   \
+                                                                        \
+FFTW_EXTERN int                                                         \
 FFTW_CDECL X(init_threads)(void);                                       \
                                                                         \
 FFTW_EXTERN void                                                        \
 FFTW_CDECL X(cleanup_threads)(void);                                    \
+                                                                        \
+FFTW_EXTERN void                                                        \
+FFTW_CDECL X(threads_set_callback)(                                     \
+     void (*parallel_loop)(void *(*work)(char *),                       \
+     char *jobdata, size_t elsize, int njobs, void *data), void *data); \
                                                                         \
 FFTW_EXTERN void                                                        \
 FFTW_CDECL X(make_planner_thread_safe)(void);                           \

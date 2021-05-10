@@ -490,6 +490,10 @@
       integer(C_INT), value :: nthreads
     end subroutine fftwl_plan_with_nthreads
     
+    integer(C_INT) function fftwl_planner_nthreads() bind(C, name='fftwl_planner_nthreads')
+      import
+    end function fftwl_planner_nthreads
+    
     integer(C_INT) function fftwl_init_threads() bind(C, name='fftwl_init_threads')
       import
     end function fftwl_init_threads
@@ -498,6 +502,7 @@
       import
     end subroutine fftwl_cleanup_threads
     
+! Unable to generate Fortran interface for fftwl_threads_set_callback
     subroutine fftwl_make_planner_thread_safe() bind(C, name='fftwl_make_planner_thread_safe')
       import
     end subroutine fftwl_make_planner_thread_safe

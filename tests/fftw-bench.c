@@ -79,6 +79,15 @@ static void setup_sigfpe_handler(void)
 }
 #endif
 
+/* dummy serial threads backend for testing threads_set_callback */
+static void serial_threads(void *(*work)(char *), char *jobdata, size_t elsize, int njobs, void *data)
+{
+     int i;
+     (void) data; /* unused */
+     for (i = 0; i < njobs; ++i)
+          work(jobdata + elsize * i);
+}
+
 void useropt(const char *arg)
 {
      int x;
@@ -97,6 +106,12 @@ void useropt(const char *arg)
      else if (!strcmp(arg, "paranoid")) paranoid = 1;
      else if (!strcmp(arg, "wisdom")) usewisdom = 1;
      else if (!strcmp(arg, "amnesia")) amnesia = 1;
+     else if (!strcmp(arg, "threads_callback"))
+#ifdef HAVE_SMP
+          FFTW(threads_set_callback)(serial_threads, NULL);
+#else
+          fprintf(stderr, "Serial FFTW; ignoring threads_callback option.\n");
+#endif
      else if (sscanf(arg, "nthreads=%d", &x) == 1) nthreads = x;
 #ifdef FFTW_RANDOM_ESTIMATOR
      else if (sscanf(arg, "eseed=%d", &x) == 1) FFTW(random_estimate_seed) = x;
@@ -120,6 +135,7 @@ void rdwisdom(void)
      if (threads_ok) {
 	  BENCH_ASSERT(FFTW(init_threads)());
 	  FFTW(plan_with_nthreads)(nthreads);
+	  BENCH_ASSERT(FFTW(planner_nthreads)() == nthreads);
           FFTW(make_planner_thread_safe)();
 #ifdef _OPENMP
 	  omp_set_num_threads(nthreads);
@@ -233,7 +249,7 @@ void setup(bench_problem *p)
       * properly */
      {
           void *ptr = FFTW(malloc(42));
-          BENCH_ASSERT(FFTW(alignment_of)(ptr) == 0);
+          BENCH_ASSERT(FFTW(alignment_of)((bench_real *)ptr) == 0);
           FFTW(free(ptr));
      }
 

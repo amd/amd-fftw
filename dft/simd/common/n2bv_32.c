@@ -19,7 +19,7 @@
  */
 
 /* This file was automatically generated --- DO NOT EDIT */
-/* Generated on Thu May 24 08:05:13 EDT 2018 */
+/* Generated on Thu Dec 10 07:04:58 EST 2020 */
 
 #include "dft/codelet-dft.h"
 
@@ -437,8 +437,7 @@ static void n2bv_32(const R *ri, const R *ii, R *ro, R *io, stride is, stride os
 
 static const kdft_desc desc = { 32, XSIMD_STRING("n2bv_32"), {88, 0, 98, 0}, &GENUS, 0, 2, 0, 0 };
 
-void XSIMD(codelet_n2bv_32) (planner *p) {
-     X(kdft_register) (p, n2bv_32, &desc);
+void XSIMD(codelet_n2bv_32) (planner *p) { X(kdft_register) (p, n2bv_32, &desc);
 }
 
 #else
@@ -855,8 +854,7 @@ static void n2bv_32(const R *ri, const R *ii, R *ro, R *io, stride is, stride os
 
 static const kdft_desc desc = { 32, XSIMD_STRING("n2bv_32"), {170, 26, 16, 0}, &GENUS, 0, 2, 0, 0 };
 
-void XSIMD(codelet_n2bv_32) (planner *p) {
-     X(kdft_register) (p, n2bv_32, &desc);
+void XSIMD(codelet_n2bv_32) (planner *p) { X(kdft_register) (p, n2bv_32, &desc);
 }
 
 #endif

@@ -19,7 +19,7 @@
  */
 
 /* This file was automatically generated --- DO NOT EDIT */
-/* Generated on Thu May 24 08:07:45 EDT 2018 */
+/* Generated on Thu Dec 10 07:06:38 EST 2020 */
 
 #include "rdft/codelet-rdft.h"
 
@@ -798,8 +798,7 @@ static void r2cbIII_64(R *R0, R *R1, R *Cr, R *Ci, stride rs, stride csr, stride
 
 static const kr2c_desc desc = { 64, "r2cbIII_64", {238, 64, 196, 0}, &GENUS };
 
-void X(codelet_r2cbIII_64) (planner *p) {
-     X(kr2c_register) (p, r2cbIII_64, &desc);
+void X(codelet_r2cbIII_64) (planner *p) { X(kr2c_register) (p, r2cbIII_64, &desc);
 }
 
 #else
@@ -1580,8 +1579,7 @@ static void r2cbIII_64(R *R0, R *R1, R *Cr, R *Ci, stride rs, stride csr, stride
 
 static const kr2c_desc desc = { 64, "r2cbIII_64", {342, 116, 92, 0}, &GENUS };
 
-void X(codelet_r2cbIII_64) (planner *p) {
-     X(kr2c_register) (p, r2cbIII_64, &desc);
+void X(codelet_r2cbIII_64) (planner *p) { X(kr2c_register) (p, r2cbIII_64, &desc);
 }
 
 #endif
