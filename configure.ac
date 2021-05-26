@@ -734,16 +734,20 @@ AC_ARG_ENABLE(amd-top-n-planner, [AC_HELP_STRING([--enable-amd-top-n-planner],[e
 if test "$have_amd_fast_planner" = yes && test "$have_amd_top_n_planner" = yes; then 
 	AC_MSG_ERROR([AMD_FAST_PLANNER and AMD_TOP_N_PLANNER can not be enabled together])
 else
-        if test "$have_amd_fast_planner" = yes && test "$quad_precision_supported" = no && test "$long_double_supported" = no; then
+        if (test "$have_amd_fast_planner" = yes && (test "$quad_precision_supported" = yes || test "$long_double_supported" = yes)); then		
+		AC_MSG_ERROR([AMD_FAST_PLANNER can not be enabled for Quad or Long double])
+	elif (test "$have_amd_fast_planner" = yes); then
 	        AC_DEFINE(AMD_OPT_FAST_PLANNER,1,[Define to enable AMD Fast Planner for AMD cpus.])
         fi
 	# Check if amd-top-n-planner is enabled with mpi, openmp or threads
-	if (test "$enable_mpi" = "yes" && test "$have_amd_top_n_planner" = yes ) || (test "$enable_openmp" = "yes" && test "$have_amd_top_n_planner" = yes) || (test "$enable_threads" = "yes" && test "$have_amd_top_n_planner" = yes); then
+	if (test "$have_amd_top_n_planner" = yes && (test "$enable_threads" = yes || test "$enable_openmp" = yes || test "$enable_mpi" = yes)); then
 		AC_MSG_ERROR([AMD_TOP_N_PLANNER can not be enabled with mpi, openmp or threads as it is supported only for single threaded mode])
 	else	
-                if test "$have_amd_top_n_planner" = yes && test "$quad_precision_supported" = no && test "$long_double_supported" = no; then
-                        AC_DEFINE(AMD_OPT_TOP_N_PLANNER,1,[Define to enable AMD Top N Planner for AMD cpus.])
-                fi
+               if (test "$have_amd_top_n_planner" = yes && (test "$quad_precision_supported" = yes || test "$long_double_supported" = yes)); then 
+	 	       AC_MSG_ERROR([AMD_TOP_N_PLANNER can not be enabled for Quad or Long double])
+	       elif (test "$have_amd_top_n_planner" = yes); then
+                       AC_DEFINE(AMD_OPT_TOP_N_PLANNER,1,[Define to enable AMD Top N Planner for AMD cpus.])
+               fi
         fi		
 fi
 

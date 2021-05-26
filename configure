@@ -17623,20 +17623,24 @@ fi
 if test "$have_amd_fast_planner" = yes && test "$have_amd_top_n_planner" = yes; then
 	as_fn_error $? "AMD_FAST_PLANNER and AMD_TOP_N_PLANNER can not be enabled together" "$LINENO" 5
 else
-        if test "$have_amd_fast_planner" = yes && test "$quad_precision_supported" = no && test "$long_double_supported" = no; then
+        if (test "$have_amd_fast_planner" = yes && (test "$quad_precision_supported" = yes || test "$long_double_supported" = yes)); then
+		as_fn_error $? "AMD_FAST_PLANNER can not be enabled for Quad or Long double" "$LINENO" 5
+	elif (test "$have_amd_fast_planner" = yes); then
 
 $as_echo "#define AMD_OPT_FAST_PLANNER 1" >>confdefs.h
 
         fi
 	# Check if amd-top-n-planner is enabled with mpi, openmp or threads
-	if (test "$enable_mpi" = "yes" && test "$have_amd_top_n_planner" = yes ) || (test "$enable_openmp" = "yes" && test "$have_amd_top_n_planner" = yes) || (test "$enable_threads" = "yes" && test "$have_amd_top_n_planner" = yes); then
+	if (test "$have_amd_top_n_planner" = yes && (test "$enable_threads" = yes || test "$enable_openmp" = yes || test "$enable_mpi" = yes)); then
 		as_fn_error $? "AMD_TOP_N_PLANNER can not be enabled with mpi, openmp or threads as it is supported only for single threaded mode" "$LINENO" 5
 	else
-                if test "$have_amd_top_n_planner" = yes && test "$quad_precision_supported" = no && test "$long_double_supported" = no; then
+               if (test "$have_amd_top_n_planner" = yes && (test "$quad_precision_supported" = yes || test "$long_double_supported" = yes)); then
+	 	       as_fn_error $? "AMD_TOP_N_PLANNER can not be enabled for Quad or Long double" "$LINENO" 5
+	       elif (test "$have_amd_top_n_planner" = yes); then
 
 $as_echo "#define AMD_OPT_TOP_N_PLANNER 1" >>confdefs.h
 
-                fi
+               fi
         fi
 fi
 
