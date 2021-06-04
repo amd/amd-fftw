@@ -218,7 +218,7 @@ if (MSVC)
   add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif(MSVC)
 
-add_compile_definitions(AOCL_FFTW_VERSION="AOCL FFTW 3.1")
+add_compile_definitions(AOCL_FFTW_VERSION="AOCL FFTW 3.0.1")
 
 find_library (LIBM_LIBRARY NAMES m)
 if (LIBM_LIBRARY)

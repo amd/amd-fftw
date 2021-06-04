@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
- * Copyright (C) 2019, Advanced Micro Devices, Inc. All Rights Reserved.
+ * Copyright (C) 2019-2021, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -604,7 +604,6 @@ void X(cpy2d)(R *I, R *O,
 	      INT vl)
 {
      INT i0, i1, v;
-     
      switch (vl) {
 	 case 1:
 	      for (i1 = 0; i1 < n1; ++i1)
@@ -649,16 +648,23 @@ void X(cpy2d)(R *I, R *O,
 				  *(double *)&I[i0 * is0 + i1 * is1];
 			}
 	      } else {
+#ifdef AMD_OPT_UNROLL_CPY2D
+		      __m256d in1, in2, in3, in4, in5, in6, in7, in8;
+#else
 		      __m256d in1, in2, in3, in4;
+#endif
 		      __m256d out1, out2;
 		      __m128d in1_128, in2_128;
 		      INT t0, t1, t2, t3;
 		      INT n0_rem = n0&0x1, n1_rem = n1&0x1;
+#ifdef AMD_OPT_UNROLL_CPY2D
+			  INT n0_8, n0_8_rem, n0_16, n0_16_rem;
+#endif
 		      t0 = (is0==2);
 		      t1 = (os0==2);
 		      t2 = (is1==2);
 		      t3 = (os1==2);
-		      
+			  
 		      switch(t0 | (t1 << 1) | (t2 << 2) | (t3 << 3))
 		      {
 			      case 1://only is0 is 2. 256-bit contiguous read possible
@@ -768,8 +774,79 @@ void X(cpy2d)(R *I, R *O,
 			      break;
 			      
 			      case 9://is0=2 and os1=2. Both 256-bit read and 256-bit write possible
+#ifdef AMD_OPT_UNROLL_CPY2D
+			      n0_8_rem = n0&0x7;
+			      n0_8 = n0 - n0_8_rem;
+#endif
 			      n0 = n0 - n0_rem;
 			      n1 = n1 - n1_rem;
+#ifdef AMD_OPT_UNROLL_CPY2D
+			      for (i1 = 0; i1 < n1; i1+=2)
+			      {
+				      for (i0 = 0; i0 < n0_8; i0+=8) {
+					      in1 = _mm256_loadu_pd((double const *)&I[i0 * is0 + i1 * is1]);
+					      in2 = _mm256_loadu_pd((double const *)&I[i0 * is0 + (i1+1) * is1]);
+					      in3 = _mm256_loadu_pd((double const *)&I[(i0+2) * is0 + i1 * is1]);
+					      in4 = _mm256_loadu_pd((double const *)&I[(i0+2) * is0 + (i1+1) * is1]);
+					      in5 = _mm256_loadu_pd((double const *)&I[(i0+4) * is0 + i1 * is1]);
+					      in6 = _mm256_loadu_pd((double const *)&I[(i0+4) * is0 + (i1+1) * is1]);
+					      in7 = _mm256_loadu_pd((double const *)&I[(i0+6) * is0 + i1 * is1]);
+					      in8 = _mm256_loadu_pd((double const *)&I[(i0+6) * is0 + (i1+1) * is1]);
+
+					      //out1 = _mm256_shuffle_pd(in1, in2, 0x33);
+					      //out2 = _mm256_shuffle_pd(in1, in2, 0x11);
+					      out1 = _mm256_permute2f128_pd(in1, in2, 0x20);
+					      out2 = _mm256_permute2f128_pd(in1, in2, 0x31);
+					      in1 = _mm256_permute2f128_pd(in3, in4, 0x20);
+					      in2 = _mm256_permute2f128_pd(in3, in4, 0x31);
+					      in3 = _mm256_permute2f128_pd(in5, in6, 0x20);
+					      in4 = _mm256_permute2f128_pd(in5, in6, 0x31);
+					      in5 = _mm256_permute2f128_pd(in7, in8, 0x20);
+					      in6 = _mm256_permute2f128_pd(in7, in8, 0x31);
+
+					      _mm256_storeu_pd((double *)&O[i0 * os0 + i1 * os1], out1);
+					      _mm256_storeu_pd((double *)&O[(i0+1) * os0 + i1 * os1], out2);
+					      _mm256_storeu_pd((double *)&O[(i0+2) * os0 + i1 * os1], in1);
+					      _mm256_storeu_pd((double *)&O[(i0+3) * os0 + i1 * os1], in2);
+					      _mm256_storeu_pd((double *)&O[(i0+4) * os0 + i1 * os1], in3);
+					      _mm256_storeu_pd((double *)&O[(i0+5) * os0 + i1 * os1], in4);
+					      _mm256_storeu_pd((double *)&O[(i0+6) * os0 + i1 * os1], in5);
+					      _mm256_storeu_pd((double *)&O[(i0+7) * os0 + i1 * os1], in6);
+				      }
+				      for (; i0 < n0; i0+=2) {
+					      in1 = _mm256_loadu_pd((double const *)&I[i0 * is0 + i1 * is1]);
+					      in2 = _mm256_loadu_pd((double const *)&I[i0 * is0 + (i1+1) * is1]);
+
+					      //out1 = _mm256_shuffle_pd(in1, in2, 0x33);
+					      //out2 = _mm256_shuffle_pd(in1, in2, 0x11);
+					      out1 = _mm256_permute2f128_pd(in1, in2, 0x20);
+					      out2 = _mm256_permute2f128_pd(in1, in2, 0x31);
+					      _mm256_storeu_pd((double *)&O[i0 * os0 + i1 * os1], out1);
+					      _mm256_storeu_pd((double *)&O[(i0+1) * os0 + i1 * os1], out2);
+				      }
+				      if (n0_rem)
+				      {
+					      R x0 = I[i0 * is0 + i1 * is1];
+					      R x1 = I[i0 * is0 + i1 * is1 + 1];
+					      R x2 = I[i0 * is0 + (i1+1) * is1];
+					      R x3 = I[i0 * is0 + (i1+1) * is1 + 1];
+					      O[i0 * os0 + i1 * os1] = x0;
+					      O[i0 * os0 + i1 * os1 + 1] = x1;
+					      O[i0 * os0 + (i1+1) * os1] = x2;
+					      O[i0 * os0 + (i1+1) * os1 + 1] = x3;
+				      }
+			      }
+			      if (n1_rem)
+			      {
+				      n0 += n0_rem;
+				      for (i0 = 0; i0 < n0; ++i0) {
+					      R x0 = I[i0 * is0 + i1 * is1];
+					      R x1 = I[i0 * is0 + i1 * is1 + 1];
+					      O[i0 * os0 + i1 * os1] = x0;
+					      O[i0 * os0 + i1 * os1 + 1] = x1;
+				      }
+			      }
+#else
 			      for (i1 = 0; i1 < n1; i1+=2)
 			      {
 				      for (i0 = 0; i0 < n0; i0+=2) {
@@ -805,19 +882,49 @@ void X(cpy2d)(R *I, R *O,
 					      O[i0 * os0 + i1 * os1 + 1] = x1;
 				      }
 			      }
+#endif
 			      break;
 
 			      case 3://is0=2 and os0=2. Both 256-bit read and 256-bit write possible
 			      case 7://is0=2 and os0=2. Also is1=2. Both 256-bit read and 256-bit write possible
 			      case 11://is0=2 and os0=2. Also os1=2. Both 256-bit read and 256-bit write possible
 			      case 15://is0=2 and os0=2. Also is1=2, os1=2. Both 256-bit read and 256-bit write possible
+#ifdef AMD_OPT_UNROLL_CPY2D
+			      n0_16_rem = n0&0xF;
+			      n0_16 = n0 - n0_16_rem;
+#endif
 			      n0 = n0 - n0_rem;
 			      for (i1 = 0; i1 < n1; ++i1)
 			      {
+#ifdef AMD_OPT_UNROLL_CPY2D
+				      for (i0 = 0; i0 < n0_16; i0+=16) {
+					      in1 = _mm256_loadu_pd((double const *)&I[i0 * is0 + i1 * is1]);
+					      in2 = _mm256_loadu_pd((double const *)&I[(i0+2) * is0 + i1 * is1]);
+					      in3 = _mm256_loadu_pd((double const *)&I[(i0+4) * is0 + i1 * is1]);
+					      in4 = _mm256_loadu_pd((double const *)&I[(i0+6) * is0 + i1 * is1]);
+					      in5 = _mm256_loadu_pd((double const *)&I[(i0+8) * is0 + i1 * is1]);
+					      in6 = _mm256_loadu_pd((double const *)&I[(i0+10) * is0 + i1 * is1]);
+					      in7 = _mm256_loadu_pd((double const *)&I[(i0+12) * is0 + i1 * is1]);
+					      in8 = _mm256_loadu_pd((double const *)&I[(i0+14) * is0 + i1 * is1]);
+					      _mm256_storeu_pd((double *)&O[i0 * os0 + i1 * os1], in1);
+					      _mm256_storeu_pd((double *)&O[(i0+2) * os0 + i1 * os1], in2);
+					      _mm256_storeu_pd((double *)&O[(i0+4) * os0 + i1 * os1], in3);
+					      _mm256_storeu_pd((double *)&O[(i0+6) * os0 + i1 * os1], in4);
+					      _mm256_storeu_pd((double *)&O[(i0+8) * os0 + i1 * os1], in5);
+					      _mm256_storeu_pd((double *)&O[(i0+10) * os0 + i1 * os1], in6);
+					      _mm256_storeu_pd((double *)&O[(i0+12) * os0 + i1 * os1], in7);
+					      _mm256_storeu_pd((double *)&O[(i0+14) * os0 + i1 * os1], in8);
+				      }
+				      for (; i0 < n0; i0+=2) {
+					      in1 = _mm256_loadu_pd((double const *)&I[i0 * is0 + i1 * is1]);
+					      _mm256_storeu_pd((double *)&O[i0 * os0 + i1 * os1], in1);
+				      }
+#else
 				      for (i0 = 0; i0 < n0; i0+=2) {
 					      in1 = _mm256_loadu_pd((double const *)&I[i0 * is0 + i1 * is1]);
 					      _mm256_storeu_pd((double *)&O[i0 * os0 + i1 * os1], in1);
 				      }
+#endif
 				      if (n0_rem)
 				      {
 					      R x0 = I[i0 * is0 + i1 * is1];

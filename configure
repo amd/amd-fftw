@@ -875,6 +875,7 @@ with_sysroot
 enable_libtool_lock
 enable_mpi
 enable_amd_opt
+enable_amd_mpi_vader_limit
 enable_amd_trans
 enable_amd_mpifft
 enable_openmp
@@ -1586,6 +1587,9 @@ Optional Features:
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --enable-mpi            compile FFTW MPI library
   --enable-amd-opt        enable AMD cpu specific optimizations
+  --enable-amd-mpi-vader-limit
+                          enable setting of VADER LIMIT that controls enabling
+                          of new AMD MPI transpose algorithms
   --enable-amd-trans      enable AMD cpu optimized Transpose
   --enable-amd-mpifft     enable AMD cpu optimized MPI FFT
   --enable-openmp         use OpenMP directives for parallelism
@@ -17563,6 +17567,20 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
 
 $as_echo "#define AMD_OPT_ALL 1" >>confdefs.h
 
+
+		# Check whether --enable-amd-mpi-vader-limit was given.
+if test "${enable_amd_mpi_vader_limit+set}" = set; then :
+  enableval=$enable_amd_mpi_vader_limit; have_amd_mpi_vl=$enableval
+else
+  have_amd_mpi_vl=no
+fi
+
+	if test "$have_amd_mpi_vl" = yes ; then
+
+$as_echo "#define AMD_MPI_VADER_LIMIT_SET 1" >>confdefs.h
+
+	fi
+
 fi
 # Check whether --enable-amd-trans was given.
 if test "${enable_amd_trans+set}" = set; then :
@@ -17603,7 +17621,7 @@ else
 fi
 
 
-$as_echo "#define AOCL_FFTW_VERSION \"AOCL-3.0\"" >>confdefs.h
+$as_echo "#define AOCL_FFTW_VERSION \"AOCL FFTW 3.0.1\"" >>confdefs.h
 
 # Check whether --enable-amd-fast-planner was given.
 if test "${enable_amd_fast_planner+set}" = set; then :

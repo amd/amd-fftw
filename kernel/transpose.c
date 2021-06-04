@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
- * Copyright (C) 2019, Advanced Micro Devices, Inc. All Rights Reserved.
+ * Copyright (C) 2019-2021, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,10 +21,22 @@
 
 #include "kernel/ifftw.h"
 
+#if defined(AMD_OPT_IN_PLACE_SQU_TRANS) && (!defined(FFTW_LDOUBLE) && !defined(FFTW_QUAD))
+#include "immintrin.h"
+#endif
+
 /* in place square transposition, iterative */
 void X(transpose)(R *I, INT n, INT s0, INT s1, INT vl)
 {
      INT i0, i1, v;
+#if defined(AMD_OPT_IN_PLACE_SQU_TRANS) && (!defined(FFTW_LDOUBLE) && !defined(FFTW_QUAD))
+	 int vl_8factor = vl - (vl & 0xF);
+#ifdef FFTW_SINGLE
+ 	 __m256 in1, in2, in3, in4, in5, in6, in7, in8;
+#else
+	 __m256d in1, in2, in3, in4, in5, in6, in7, in8;
+#endif
+#endif
 
      switch (vl) {
 	 case 1:
@@ -52,6 +64,59 @@ void X(transpose)(R *I, INT n, INT s0, INT s1, INT vl)
 	      }
 	      break;
 	 default:
+#if defined(AMD_OPT_IN_PLACE_SQU_TRANS) && (!defined(FFTW_LDOUBLE) && !defined(FFTW_QUAD))
+#ifdef FFTW_SINGLE
+	      for (i1 = 1; i1 < n; ++i1) {
+		      for (i0 = 0; i0 < i1; ++i0) {
+			      for (v = 0; v < vl_8factor; v+=16) {
+				      in1 = _mm256_loadu_ps((float const *)&I[i1 * s0 + i0 * s1 + v + 0]);
+				      in2 = _mm256_loadu_ps((float const *)&I[i1 * s1 + i0 * s0 + v + 0]);
+				      in3 = _mm256_loadu_ps((float const *)&I[i1 * s0 + i0 * s1 + v + 8]);
+				      in4 = _mm256_loadu_ps((float const *)&I[i1 * s1 + i0 * s0 + v + 8]);
+				      _mm256_storeu_ps((double *)&I[i1 * s1 + i0 * s0 + v + 0], in1);
+				      _mm256_storeu_ps((double *)&I[i1 * s0 + i0 * s1 + v + 0], in2);
+				      _mm256_storeu_ps((double *)&I[i1 * s1 + i0 * s0 + v + 8], in3);
+				      _mm256_storeu_ps((double *)&I[i1 * s0 + i0 * s1 + v + 8], in4);
+			      }
+			      for (; v < vl; ++v) {
+				      R x0 = I[i1 * s0 + i0 * s1 + v];
+				      R y0 = I[i1 * s1 + i0 * s0 + v];
+				      I[i1 * s1 + i0 * s0 + v] = x0;
+				      I[i1 * s0 + i0 * s1 + v] = y0;
+			      }
+		      }
+	      }
+#else
+	      for (i1 = 1; i1 < n; ++i1) {
+		      for (i0 = 0; i0 < i1; ++i0) {
+			      for (v = 0; v < vl_8factor; v+=16) {
+				      in1 = _mm256_loadu_pd((double const *)&I[i1 * s0 + i0 * s1 + v + 0]);
+				      in2 = _mm256_loadu_pd((double const *)&I[i1 * s1 + i0 * s0 + v + 0]);
+				      in3 = _mm256_loadu_pd((double const *)&I[i1 * s0 + i0 * s1 + v + 4]);
+				      in4 = _mm256_loadu_pd((double const *)&I[i1 * s1 + i0 * s0 + v + 4]);
+				      in5 = _mm256_loadu_pd((double const *)&I[i1 * s0 + i0 * s1 + v + 8]);
+				      in6 = _mm256_loadu_pd((double const *)&I[i1 * s1 + i0 * s0 + v + 8]);
+				      in7 = _mm256_loadu_pd((double const *)&I[i1 * s0 + i0 * s1 + v + 12]);
+				      in8 = _mm256_loadu_pd((double const *)&I[i1 * s1 + i0 * s0 + v + 12]);
+				      _mm256_storeu_pd((double *)&I[i1 * s1 + i0 * s0 + v + 0], in1);
+				      _mm256_storeu_pd((double *)&I[i1 * s0 + i0 * s1 + v + 0], in2);
+				      _mm256_storeu_pd((double *)&I[i1 * s1 + i0 * s0 + v + 4], in3);
+				      _mm256_storeu_pd((double *)&I[i1 * s0 + i0 * s1 + v + 4], in4);
+				      _mm256_storeu_pd((double *)&I[i1 * s1 + i0 * s0 + v + 8], in5);
+				      _mm256_storeu_pd((double *)&I[i1 * s0 + i0 * s1 + v + 8], in6);
+				      _mm256_storeu_pd((double *)&I[i1 * s1 + i0 * s0 + v + 12], in7);
+				      _mm256_storeu_pd((double *)&I[i1 * s0 + i0 * s1 + v + 12], in8);
+			      }
+			      for (; v < vl; ++v) {
+				      R x0 = I[i1 * s0 + i0 * s1 + v];
+				      R y0 = I[i1 * s1 + i0 * s0 + v];
+				      I[i1 * s1 + i0 * s0 + v] = x0;
+				      I[i1 * s0 + i0 * s1 + v] = y0;
+			      }
+		      }
+	      }
+#endif
+#else
 	      for (i1 = 1; i1 < n; ++i1) {
 		   for (i0 = 0; i0 < i1; ++i0) {
 			for (v = 0; v < vl; ++v) {
@@ -62,6 +127,7 @@ void X(transpose)(R *I, INT n, INT s0, INT s1, INT vl)
 			}
 		   }
 	      }
+#endif
 	      break;
      }
 }

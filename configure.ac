@@ -711,6 +711,13 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
 		fi
 	fi
 	AC_DEFINE(AMD_OPT_ALL,1,[Define to enable AMD cpu specific optimizations.])
+	
+	dnl amd switch for VADER LIMIT that controls enabling of AMD's new MPI transpose algorithms --enable-amd-mpi-vader-limit
+	AC_ARG_ENABLE(amd-mpi-vader-limit, [AC_HELP_STRING([--enable-amd-mpi-vader-limit],[enable setting of VADER LIMIT that controls enabling of new AMD MPI transpose algorithms])], have_amd_mpi_vl=$enableval, have_amd_mpi_vl=no)
+	if test "$have_amd_mpi_vl" = yes ; then
+		AC_DEFINE(AMD_MPI_VADER_LIMIT_SET,1,[Set VADER LIMIT in order to enable new AMD MPI transpose algorithms.])
+	fi
+
 fi
 dnl amd optimization switch to enable amd cpu optimized transpose --enable-amd-trans
 AC_ARG_ENABLE(amd-trans, [AC_HELP_STRING([--enable-amd-trans],[enable AMD cpu optimized Transpose])], have_amd_trans=$enableval, have_amd_trans=no)
@@ -725,7 +732,7 @@ fi
 AC_ARG_ENABLE(openmp, [AC_HELP_STRING([--enable-openmp],[use OpenMP directives for parallelism])], enable_openmp=$enableval, enable_openmp=no)
 AC_ARG_ENABLE(threads, [AC_HELP_STRING([--enable-threads],[compile FFTW SMP threads library])], enable_threads=$enableval, enable_threads=no)
 dnl aocl version number of amd-fftw
-AC_DEFINE(AOCL_FFTW_VERSION,"AOCL-3.0",[AOCL Version of AMD-FFTW])
+AC_DEFINE(AOCL_FFTW_VERSION,"AOCL FFTW 3.0.1",[AOCL Version of AMD-FFTW])
 dnl amd optimization switch to enable AMD Fast Planner for AMD cpus --enable-amd-fast-planner
 AC_ARG_ENABLE(amd-fast-planner, [AC_HELP_STRING([--enable-amd-fast-planner],[enable AMD Fast Planner for a faster planning time on AMD cpus])], have_amd_fast_planner=$enableval, have_amd_fast_planner=no)
 dnl amd optimization switch to enable AMD Top N Planner for AMD cpus --enable-amd-top-n-planner
