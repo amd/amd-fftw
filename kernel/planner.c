@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2000 Matteo Frigo
  * Copyright (c) 2000 Massachusetts Institute of Technology
- * Copyright (C) 2019-2020, Advanced Micro Devices, Inc. All Rights Reserved.
+ * Copyright (C) 2019-2021, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,9 @@
 #include "dft/dft.h"
 #endif
 #include <string.h>
+#ifdef AMD_TOP_N_PLANNER
+int wisp_set; //Referring to extern variable declared in kernel/ifftw.h
+#endif
 
 /* GNU Coding Standards, Sec. 5.2: "Please write the comments in a GNU
    program in English, because English is the one language that nearly

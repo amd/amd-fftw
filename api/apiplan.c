@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
- * Copyright (C) 2019, Advanced Micro Devices, Inc. All Rights Reserved.
+ * Copyright (C) 2019-2021, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,17 +33,17 @@ void X(set_planner_hooks)(planner_hook_t before, planner_hook_t after)
 plan *plans[AMD_OPT_TOP_N];
 static int find_lowcost_plan()
 {
-    int i, lowcost, lowcost_idx;
+    int i, lowcost, lowcost_id;
     lowcost = plans[0]->pcost;
-    lowcost_idx = 0;
+    lowcost_id = 0;
 
     for (i = 1; i < AMD_OPT_TOP_N; i++) {
          if (plans[i]->pcost < lowcost) {
               lowcost = plans[i]->pcost;
-              lowcost_idx = i;
+              lowcost_id = i;
          }
     }
-    return lowcost_idx;
+    return lowcost_id;
 }
 #endif
 
@@ -52,6 +52,7 @@ static plan *mkplan0(planner *plnr, unsigned flags,
 		     wisdom_state_t wisdom_state)
 {
 #ifdef AMD_TOP_N_PLANNER
+     static int lowcost_idx;	/* to hold the index of the plan which has the least pcost among the top N plans*/     
 /* map API flags into FFTW flags */
      X(mapflags)(plnr, flags);
 

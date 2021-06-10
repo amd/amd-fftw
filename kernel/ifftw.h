@@ -864,8 +864,7 @@ struct planner_s {
 };
 
 #ifdef AMD_TOP_N_PLANNER
-     int wisp_set;     /* flag to identify if the plans for an input problem size is found in the wisdom file or not*/
-     int lowcost_idx;  /* to hold the index of the plan which has the least pcost among the top N plans*/
+     extern int wisp_set;     /* flag to identify if the plans for an input problem size is found in the wisdom file or not*/
 #endif
 
 planner *X(mkplanner)(void);
