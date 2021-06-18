@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
+ * Copyright (C) 2021, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +19,8 @@
  *
  */
 
+#ifndef _AMD64_CPUID_H
+#define _AMD64_CPUID_H
 
 #ifdef _MSC_VER
 #ifndef inline
@@ -146,3 +149,4 @@ static inline int xgetbv_eax(int op)
      return eax;
 #endif
 }
+#endif

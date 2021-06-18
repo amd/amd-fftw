@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
- * Copyright (C) 2019, Advanced Micro Devices, Inc. All Rights Reserved.
+ * Copyright (C) 2019-2021, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,7 +53,12 @@ int X(have_simd_avx)(void)
 
 #endif
 
-#ifdef AMD_OPT_AUTO_TUNED_TRANS_BLK_SIZE
+#ifdef AMD_OPT_TRANS
+#if defined(__x86_64__) || defined(_M_X64) || defined(_M_AMD64)
+#    include "amd64-cpuid.h"
+#else
+#    include "x86-cpuid.h"
+#endif
 void X(enquire_L1DcacheSize) (void)
 {
 	int eax, ebx, ecx, edx;

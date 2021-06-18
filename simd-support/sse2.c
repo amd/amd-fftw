@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
+ * Copyright (C) 2021, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,7 +31,9 @@
 #if HAVE_SSE2
 
 # if defined(__x86_64__) || defined(_M_X64) || defined(_M_AMD64)
-
+#ifdef AMD_OPT_TRANS
+#    include "amd64-cpuid.h"
+#endif
   int X(have_simd_sse2)(void)
   {
        return 1;

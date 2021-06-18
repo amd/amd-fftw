@@ -25,6 +25,10 @@
 #include "immintrin.h"
 #endif
 
+#if defined(AMD_OPT_AUTO_TUNED_RASTER_TILED_TRANS_METHOD)
+unsigned int L1D_blk_size;// = CACHESIZE;
+#endif
+
 /* in place square transposition, iterative */
 void X(transpose)(R *I, INT n, INT s0, INT s1, INT vl)
 {

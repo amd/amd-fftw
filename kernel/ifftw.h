@@ -107,9 +107,15 @@ extern "C"
 #if defined(HAVE_MPI) || defined(HAVE_OPENMP)
 #undef AMD_OPT_TRANS
 #endif
+#if defined(HAVE_SSE) || defined(HAVE_SSE2) || \
+    defined(HAVE_AVX) || defined(HAVE_AVX_128_FMA) || \
+    defined(HAVE_AVX2) || defined(HAVE_AVX512) 
 #ifdef AMD_OPT_TRANS
 #define AMD_OPT_AUTO_TUNED_TRANS_BLK_SIZE
 #define AMD_OPT_AUTO_TUNED_RASTER_TILED_TRANS_METHOD
+#endif
+#else
+#undef AMD_OPT_TRANS
 #endif
 //Here they are again provided for manual override to enable them.
 //(i) enables auto-tuned block sized tiling as per CPU's L1D cache size (applicable for both original 
@@ -148,10 +154,17 @@ extern "C"
 //UNBLESSED HASH table is kept alive till the process/thread life like the BLESSED HASH table.
 //Since UNBLESSED HASH table keeps growing, so it is cleared smartly beyond a MAX SIZE by swapping with BLESSED table.
 #ifdef AMD_OPT_FAST_PLANNER
+
+#if defined(HAVE_SSE) || defined(HAVE_SSE2) || \
+    defined(HAVE_AVX) || defined(HAVE_AVX_128_FMA) || \
+    defined(HAVE_AVX2) || defined(HAVE_AVX512) 
+
 #define AMD_FAST_PLANNER
 #define AMD_FAST_PLANNING_HASH_V1
 //#define AMD_FAST_PLANNING_HASH_V2
 #define AMD_HASH_UNBLESS_MAX_SIZE 10485760
+
+#endif
 #endif
 //--------------------------------
 //NEW TOP N PLANNER feature for AMD CPUs can be enabled with the below switch AMD_TOP_N_PLANNER.
@@ -1068,8 +1081,8 @@ void X(rader_tl_delete)(R *W, rader_tl **tl);
 /* upper bound to the cache size based on latest CPU architectures, for AMD optimized tiled routines */
 #define CACHESIZE 32768
 #define BLK_SIZE 32
-unsigned int L1D_blk_size;// = CACHESIZE;
-unsigned int L1Dsize;// = BLK_SIZE;
+extern unsigned int L1D_blk_size;// = CACHESIZE;
+extern unsigned int L1Dsize;// = BLK_SIZE;
 #else
 /* lower bound to the cache size, for tiled routines */
 #define CACHESIZE 8192
