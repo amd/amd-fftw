@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
- * Copyright (C) 2020, Advanced Micro Devices, Inc. All Rights Reserved.
+ * Copyright (C) 2020-2021, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * The following statement of license applies *only* to this header file,
  * and *not* to the other files distributed with FFTW or derived therefrom:
@@ -92,6 +92,11 @@ extern "C"
 #  define FFTW_CDECL __cdecl
 #else
 #  define FFTW_CDECL
+#endif
+
+/* to avoid symbol conflict with MSVS SDK for 'complex' (Windows only) */
+#if defined(_WIN32) || defined(_WIN64)
+#undef complex
 #endif
 
 enum fftw_r2r_kind_do_not_use_me {
@@ -464,7 +469,8 @@ FFTW_DEFINE_API(FFTW_MANGLE_LONG_DOUBLE, long double, fftwl_complex)
    for gcc >= 4.6 (compiled in FFTW with --enable-quad-precision) */
 #if (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6) || (__clang__ && __clang_major__ >= 10)) \
  && !(defined(__ICC) || defined(__INTEL_COMPILER) || defined(__CUDACC__) || defined(__PGI)) \
- && (defined(__i386__) || defined(__x86_64__) || defined(__ia64__))
+ && (defined(__i386__) || defined(__x86_64__) || defined(__ia64__)) \
+ && !(defined(_WIN32) || defined(_WIN64))
 #  if !defined(FFTW_NO_Complex) && defined(_Complex_I) && defined(complex) && defined(I)
 /* note: __float128 is a typedef, which is not supported with the _Complex
          keyword in gcc, so instead we use this ugly __attribute__ version.

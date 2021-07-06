@@ -32,7 +32,7 @@
 /* #undef FC_DUMMY_MAIN_EQ_F77 */
 
 /* C compiler name and flags */
-#define FFTW_CC "@CMAKE_C_COMPILER@"
+#define FFTW_CC "@CMAKE_C_COMPILER_FLAGS@"
 
 /* Define to enable extra FFTW debugging code. */
 /* #undef FFTW_DEBUG */
@@ -197,7 +197,7 @@
 /* #undef HAVE_MIPS_ZBUS_TIMER */
 
 /* Define if you have the MPI library. */
-/* #undef HAVE_MPI */
+#cmakedefine HAVE_MPI
 
 /* Define to enable ARM NEON optimizations. */
 /* #undef HAVE_NEON */

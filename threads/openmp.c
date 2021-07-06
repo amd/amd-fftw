@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
+ * Copyright (C) 2021, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,7 +23,8 @@
 
 #include "threads/threads.h"
 
-#if !defined(_OPENMP)
+//_OPENMP is not defined for clang compiler
+#if !defined(_OPENMP) && !defined(__clang__)
 #error OpenMP enabled but not using an OpenMP compiler
 #endif
 

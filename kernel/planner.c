@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2000 Matteo Frigo
  * Copyright (c) 2000 Massachusetts Institute of Technology
- * Copyright (C) 2019-2020, Advanced Micro Devices, Inc. All Rights Reserved.
+ * Copyright (C) 2019-2021, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,9 @@
 #include "dft/dft.h"
 #endif
 #include <string.h>
+#ifdef AMD_TOP_N_PLANNER
+int wisp_set; //Referring to extern variable declared in kernel/ifftw.h
+#endif
 
 /* GNU Coding Standards, Sec. 5.2: "Please write the comments in a GNU
    program in English, because English is the one language that nearly
@@ -243,9 +246,15 @@ static solution *htab_lookup(hashtab *ht, const md5sig s,
 static solution *hlookup(planner *ego, const md5sig s, 
 			 const flags_t *flagsp)
 {
+#ifdef AMD_TOP_N_PLANNER    
+     solution *sol = htab_lookup(&ego->htab_blessed[ego->index], s, flagsp);
+     if (!sol) sol = htab_lookup(&ego->htab_unblessed[ego->index], s, flagsp);
+     return sol;	
+#else	
      solution *sol = htab_lookup(&ego->htab_blessed, s, flagsp);
      if (!sol) sol = htab_lookup(&ego->htab_unblessed, s, flagsp);
      return sol;
+#endif     
 }
 
 static void fill_slot(hashtab *ht, const md5sig s, const flags_t *flagsp,
@@ -393,8 +402,13 @@ static void htab_insert(hashtab *ht, const md5sig s, const flags_t *flagsp,
 static void hinsert(planner *ego, const md5sig s, const flags_t *flagsp, 
 		    unsigned slvndx)
 {
+#ifdef AMD_TOP_N_PLANNER
+     htab_insert(BLISS(*flagsp) ? &ego->htab_blessed[ego->index] : &ego->htab_unblessed[ego->index],
+		 s, flagsp, slvndx );
+#else	
      htab_insert(BLISS(*flagsp) ? &ego->htab_blessed : &ego->htab_unblessed,
 		 s, flagsp, slvndx );
+#endif     
 }
 
 
@@ -522,6 +536,189 @@ static int timeout_p(planner *ego, const problem *p)
 static plan *search0(planner *ego, const problem *p, unsigned *slvndx, 
 		     const flags_t *flagsp)
 {
+#ifdef AMD_TOP_N_PLANNER
+     wisp_set = 0;
+     if (ego->index == 0) {
+          plan *best = 0;
+          int best_not_yet_timed = 1;
+
+          /* Do not start a search if the planner timed out. This check is
+	     necessary, lest the relaxation mechanism kick in */ 
+          if (timeout_p(ego, p))
+	       return 0;
+
+          FORALL_SOLVERS_OF_KIND(p->adt->problem_kind, ego, s, sp, {
+	       plan *pln;
+
+	       pln = invoke_solver(ego, p, s, flagsp);
+
+	       if (ego->need_timeout_check) 
+	            if (timeout_p(ego, p)) {
+		         X(plan_destroy_internal)(pln);
+		         X(plan_destroy_internal)(best);
+		         return 0;
+	            }
+
+	       if (pln) {
+	            /* read COULD_PRUNE_NOW_P because PLN may be destroyed
+		       before we use COULD_PRUNE_NOW_P */
+	            int could_prune_now_p = pln->could_prune_now_p;
+
+	            if (best) {
+		         if (best_not_yet_timed) {
+			      evaluate_plan(ego, best, p);
+			      best_not_yet_timed = 0;
+		         }
+		         evaluate_plan(ego, pln, p);
+		         if (pln->pcost < best->pcost) {
+			      X(plan_destroy_internal)(best);
+			      best = pln;
+                              *slvndx = (unsigned)(sp - ego->slvdescs);
+		         } else {
+			      X(plan_destroy_internal)(pln);
+		         }
+	            } else {
+		         best = pln;
+                         *slvndx = (unsigned)(sp - ego->slvdescs);                    
+	            }
+
+	            if (ALLOW_PRUNINGP(ego) && could_prune_now_p) 
+		         break;
+	       } 
+          });
+
+          return best;
+     }     
+     else {          
+          plan *best = 0;
+          int best_not_yet_timed = 1;
+    
+          plan *best2 = 0;
+          plan *best3 = 0;
+
+          int slvndx2 = 0;
+          int slvndx3 = 0;
+
+          int best2_not_yet_timed = 1;
+          int best3_not_yet_timed = 1;
+
+          if (timeout_p(ego, p))
+               return 0;
+
+          FORALL_SOLVERS_OF_KIND(p->adt->problem_kind, ego, s, sp, {
+               plan *pln;
+
+               pln = invoke_solver(ego, p, s, flagsp);
+
+               if (ego->need_timeout_check)
+                    if (timeout_p(ego, p)) {
+                         X(plan_destroy_internal)(pln);
+                         X(plan_destroy_internal)(best);
+                         X(plan_destroy_internal)(best2);
+                         X(plan_destroy_internal)(best3);
+
+                         return 0;
+                    }
+			   
+               if (pln) {
+                    int could_prune_now_p = pln->could_prune_now_p;
+
+                    if (best && best2 && best3) {
+                         if (best_not_yet_timed) {
+                              evaluate_plan(ego, best, p);
+                              best_not_yet_timed = 0;
+                         }
+                         if (best2_not_yet_timed) {
+                              evaluate_plan(ego, best2, p);
+                              best2_not_yet_timed = 0;
+                         }
+                         if (best3_not_yet_timed) {
+                              evaluate_plan(ego, best3, p);
+                              best3_not_yet_timed = 0;
+                         }
+                         evaluate_plan(ego, pln, p);
+
+                         if (pln->pcost < best->pcost) {                        
+                              best3 = best2;                      
+                              best2 = best;
+                              slvndx3 = slvndx2;
+                              slvndx2 = *slvndx;                       
+                              best = pln;
+                              *slvndx = (unsigned)(sp - ego->slvdescs);
+                         }
+                         else if (pln->pcost < best2->pcost) {                       
+                              best3 = best2;
+                              slvndx3 = slvndx2;                       
+                              best2 = pln;
+                              slvndx2 = (unsigned)(sp - ego->slvdescs);
+                         }
+                         else if (pln->pcost < best3->pcost) {                      
+                              best3 = pln;
+                              slvndx3 = (unsigned)(sp - ego->slvdescs);
+                         }
+		         else {
+                              X(plan_destroy_internal)(pln);
+                         }
+                    } 
+                    else if (!best) {
+                         best = pln;
+                         *slvndx = (unsigned)(sp - ego->slvdescs);
+                    }
+                    else if (!best2) {
+                         if (pln->pcost < best->pcost) {
+                              best2 = best;
+                              slvndx2 = *slvndx;						
+                              best = pln;
+                              *slvndx =  (unsigned)(sp - ego->slvdescs);
+                         }
+                         else {
+                              best2 = pln;
+                              slvndx2 = (unsigned)(sp - ego->slvdescs);
+                         }
+                    }
+                    else if (!best3) {
+                         if (pln->pcost < best->pcost) {
+                              best3 = best2;
+                              slvndx3 = slvndx2;
+                              best2 = best;
+                              slvndx2 = *slvndx;
+                              best = pln;
+                              *slvndx = (unsigned)(sp - ego->slvdescs);
+                         }
+		         else if (pln->pcost < best2->pcost) {
+                              best3 = best2;
+                              slvndx3 = slvndx2;
+                              best2 = pln;
+                              slvndx2 = (unsigned)(sp - ego->slvdescs);
+                         }
+                         else {
+                              best3 = pln;
+                              slvndx3 = (unsigned)(sp - ego->slvdescs);
+                         }
+                   }
+                   if (ALLOW_PRUNINGP(ego) && could_prune_now_p)
+                        break;
+              }
+          });
+
+          if (ego->index == 1) {
+               if (best2) {
+                    *slvndx = slvndx2;
+                    return best2;
+               }
+               else
+                    return best;
+          }
+          else if (ego->index == 2) {
+               if (best3) {
+                    *slvndx = slvndx3;
+                    return best3;
+               }
+               else
+                    return best;
+          }   
+     }
+#else	
      plan *best = 0;
      int best_not_yet_timed = 1;
 
@@ -571,6 +768,7 @@ static plan *search0(planner *ego, const problem *p, unsigned *slvndx,
      });
 
      return best;
+#endif     
 }
 
 static plan *search(planner *ego, const problem *p, unsigned *slvndx, 
@@ -640,8 +838,16 @@ static plan *mkplan(planner *ego, const problem *p)
 
 
 #ifdef FFTW_DEBUG
-     check(&ego->htab_blessed);
-     check(&ego->htab_unblessed);
+    #ifdef AMD_TOP_N_PLANNER
+
+    for (int pln_idx = 0; pln_idx < AMD_OPT_TOP_N ; pln_idx ++) {
+         check(&ego->htab_blessed[pln_idx]);
+         check(&ego->htab_unblessed[pln_idx]);
+    }
+    #else
+         check(&ego->htab_blessed);
+         check(&ego->htab_unblessed);
+    #endif
 #endif
 
      pln = 0;
@@ -711,7 +917,11 @@ static plan *mkplan(planner *ego, const problem *p)
 	       }
 	       
 	       ego->wisdom_state = owisdom_state;
-	       
+
+#ifdef AMD_TOP_N_PLANNER
+	       if (wisp_set && AMD_OPT_TOP_N > 1)
+		    evaluate_plan(ego, pln, p);
+#endif	       	       
 	       goto skip_search;
 	  }
 	  else if (ego->nowisdom_hook) /* for MPI, make sure lack of wisdom */
@@ -822,6 +1032,26 @@ static void forget(planner *ego, amnesia a)
 	      break;
      }
 }
+#elif defined (AMD_TOP_N_PLANNER)
+static void forget(planner *ego, amnesia a)
+{
+     switch (a) {
+	 case FORGET_EVERYTHING:
+              for (int pln_idx = 0; pln_idx < AMD_OPT_TOP_N ; pln_idx ++) {
+	           htab_destroy(&ego->htab_blessed[pln_idx]);
+	           mkhashtab(&ego->htab_blessed[pln_idx]);
+	      }     
+	      /* fall through */
+	 case FORGET_ACCURSED:
+              for (int pln_idx = 0; pln_idx < AMD_OPT_TOP_N ; pln_idx ++) {
+	           htab_destroy(&ego->htab_unblessed[pln_idx]);
+	           mkhashtab(&ego->htab_unblessed[pln_idx]);
+              }
+	      break;
+	 default:
+	      break;
+     }
+}
 #else
 static void forget(planner *ego, amnesia a)
 {
@@ -848,14 +1078,20 @@ static const char stimeout[] = "TIMEOUT";
 static void exprt(planner *ego, printer *p)
 {
      unsigned h;
-     hashtab *ht = &ego->htab_blessed;
+     hashtab *ht;
      md5 m;
 
+#ifdef AMD_TOP_N_PLANNER
+     for (int plan_cnt = 0; plan_cnt < AMD_OPT_TOP_N; plan_cnt++) { 
+          ht = &ego->htab_blessed[plan_cnt];
+#else
+     ht = &ego->htab_blessed;
+#endif     
      signature_of_configuration(&m, ego);
 
      p->print(p, 
 	      "(" WISDOM_PREAMBLE " #x%M #x%M #x%M #x%M\n",
-	      m.s[0], m.s[1], m.s[2], m.s[3]);
+	       m.s[0], m.s[1], m.s[2], m.s[3]);
 
      for (h = 0; h < ht->hashsiz; ++h) {
 	  solution *l = ht->solutions + h;
@@ -873,7 +1109,7 @@ static void exprt(planner *ego, printer *p)
 	       }
 
 	       /* qui salvandos salvas gratis
-		  salva me fons pietatis */
+                  salva me fons pietatis */
 	       p->print(p, "  (%s %d #x%x #x%x #x%x #x%M #x%M #x%M #x%M)\n",
 			reg_nam, reg_id, 
 			l->flags.l, l->flags.u, l->flags.timelimit_impatience, 
@@ -881,6 +1117,9 @@ static void exprt(planner *ego, printer *p)
 	  }
      }
      p->print(p, ")\n");
+#ifdef AMD_TOP_N_PLANNER     
+     } 
+#endif     
 }
 
 /* mors stupebit et natura
@@ -893,10 +1132,17 @@ static int imprt(planner *ego, scanner *sc)
      flags_t flags;
      int reg_id;
      unsigned slvndx;
-     hashtab *ht = &ego->htab_blessed;
+     hashtab *ht;
      hashtab old;
      md5 m;
 
+#ifdef AMD_TOP_N_PLANNER
+     int wis_read = 0;
+     for (int plan_cnt = 0; plan_cnt < AMD_OPT_TOP_N; plan_cnt++) {
+          ht = &ego->htab_blessed[plan_cnt];
+#else
+     ht = &ego->htab_blessed;
+#endif     
      if (!sc->scan(sc, 
 		   "(" WISDOM_PREAMBLE " #x%M #x%M #x%M #x%M\n",
 		   sig + 0, sig + 1, sig + 2, sig + 3))
@@ -949,18 +1195,35 @@ static int imprt(planner *ego, scanner *sc)
 	  CK(flags.u == u);
 	  CK(flags.timelimit_impatience == timelimit_impatience);
 
+#ifdef AMD_TOP_N_PLANNER
+	  ego->index = plan_cnt;
+#endif	  
 	  if (!hlookup(ego, sig, &flags))
 	       hinsert(ego, sig, &flags, slvndx);
      }
 
-     X(ifree0)(old.solutions);
-     return 1;
+    X(ifree0)(old.solutions);
+#ifdef AMD_TOP_N_PLANNER
+    wis_read+=1;    
+    goto wis_read;
+#else    
+    return 1;
+#endif    
 
  bad:
      /* ``The wisdom of FFTW must be above suspicion.'' */
      X(ifree0)(ht->solutions);
      *ht = old;
      return 0;
+
+#ifdef AMD_TOP_N_PLANNER     
+ wis_read:
+          if (wis_read == AMD_OPT_TOP_N) {
+               wisp_set = 1;
+               return 1;          
+	  }											
+     }     
+#endif    
 }
 
 /*
@@ -998,8 +1261,15 @@ planner *X(mkplanner)(void)
      p->need_timeout_check = 1;
      p->timelimit = -1;
 
+#ifdef AMD_TOP_N_PLANNER
+     for (int pln_idx = 0; pln_idx < AMD_OPT_TOP_N ; pln_idx ++) {
+          mkhashtab(&p->htab_blessed[pln_idx]);
+          mkhashtab(&p->htab_unblessed[pln_idx]);
+     }
+#else     
      mkhashtab(&p->htab_blessed);
      mkhashtab(&p->htab_unblessed);
+#endif
 
      for (i = 0; i < PROBLEM_LAST; ++i)
 	  p->slvdescs_for_problem_kind[i] = -1;
@@ -1010,9 +1280,15 @@ planner *X(mkplanner)(void)
 void X(planner_destroy)(planner *ego)
 {
      /* destroy hash table */
+#ifdef AMD_TOP_N_PLANNER
+     for (int pln_idx = 0; pln_idx < AMD_OPT_TOP_N ; pln_idx ++) {
+          htab_destroy(&ego->htab_blessed[pln_idx]);
+          htab_destroy(&ego->htab_unblessed[pln_idx]);
+     }
+#else	
      htab_destroy(&ego->htab_blessed);
      htab_destroy(&ego->htab_unblessed);
-
+#endif
      /* destroy solvdesc table */
      FORALL_SOLVERS(ego, s, sp, {
 	  UNUSED(sp);

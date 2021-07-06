@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
- * Copyright (C) 2019-2020, Advanced Micro Devices, Inc. All Rights Reserved.
+ * Copyright (C) 2019-2021, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -96,6 +96,10 @@ extern "C"
 #define AMD_OPT_IN_PLACE_1D_CPY2D_STABLE_INTRIN
 //Below switch enables the use of memcpy function in cpy2d_pair routine instead of SIMD 256-bit load and store
 #define AMD_OPT_USE_MEMCPY_TO_CPY
+//Below switch enables the unrolling of memory read and write SIMD operations in cpy2d routine.
+#if (!defined(FFTW_LDOUBLE) && !defined(FFTW_QUAD) && !defined(FFTW_SINGLE))
+#define AMD_OPT_UNROLL_CPY2D
+#endif
 //--------------------------------
 //In-place Transpose related optimization switches :-
 //The below switches are defined through config.h using configure script run-time feature arg --enable-amd-trans
@@ -103,9 +107,15 @@ extern "C"
 #if defined(HAVE_MPI) || defined(HAVE_OPENMP)
 #undef AMD_OPT_TRANS
 #endif
+#if defined(HAVE_SSE) || defined(HAVE_SSE2) || \
+    defined(HAVE_AVX) || defined(HAVE_AVX_128_FMA) || \
+    defined(HAVE_AVX2) || defined(HAVE_AVX512) 
 #ifdef AMD_OPT_TRANS
 #define AMD_OPT_AUTO_TUNED_TRANS_BLK_SIZE
 #define AMD_OPT_AUTO_TUNED_RASTER_TILED_TRANS_METHOD
+#endif
+#else
+#undef AMD_OPT_TRANS
 #endif
 //Here they are again provided for manual override to enable them.
 //(i) enables auto-tuned block sized tiling as per CPU's L1D cache size (applicable for both original 
@@ -114,6 +124,10 @@ extern "C"
 //(ii) enables new auto-tuned cache-efficient raster order tiled transpose for squared sized matrix
 //     (for this optimization switch, AMD_OPT_AUTO_TUNED_TRANS_BLK_SIZE should also be enabled)
 //#define AMD_OPT_AUTO_TUNED_RASTER_TILED_TRANS_METHOD
+//The below switch enables AMD optimizations for the in-place square transpose routine.
+#define AMD_OPT_IN_PLACE_SQU_TRANS
+//The below switch enables AMD optimizations for the in-situ Toms513 algorithm.
+#define AMD_OPT_TOMS513_TRANS
 //--------------------------------
 //Kernel new implementations and optimization enable/disable switch by AMD_OPT_KERNEL_256SIMD_PERF
 #define AMD_OPT_KERNEL_256SIMD_PERF
@@ -126,6 +140,10 @@ extern "C"
 //#define AMD_MPI_MALLOC_ONCE
 //Enables debug logs for MPI FFT/Transpose solvers
 //#define AMD_MPI_TRANSPOSE_LOGS
+#ifdef AMD_MPI_VADER_LIMIT_SET
+//Below switch enables new MPI fast in-place transpose algorithms and solvers.
+#define AMD_OPT_MPIFFT_FAST_BLK_BASED_TRANSPOSE
+#endif
 #endif
 //--------------------------------
 //NEW FAST PLANNER for AMD CPUs can be enabled with the below switch AMD_FAST_PLANNER.
@@ -136,13 +154,33 @@ extern "C"
 //UNBLESSED HASH table is kept alive till the process/thread life like the BLESSED HASH table.
 //Since UNBLESSED HASH table keeps growing, so it is cleared smartly beyond a MAX SIZE by swapping with BLESSED table.
 #ifdef AMD_OPT_FAST_PLANNER
+
+#if defined(HAVE_SSE) || defined(HAVE_SSE2) || \
+    defined(HAVE_AVX) || defined(HAVE_AVX_128_FMA) || \
+    defined(HAVE_AVX2) || defined(HAVE_AVX512) 
+
 #define AMD_FAST_PLANNER
 #define AMD_FAST_PLANNING_HASH_V1
 //#define AMD_FAST_PLANNING_HASH_V2
 #define AMD_HASH_UNBLESS_MAX_SIZE 10485760
-#endif
 
-#endif//#ifdef AMD_OPT_ALL
+#endif
+#endif
+//--------------------------------
+//NEW TOP N PLANNER feature for AMD CPUs can be enabled with the below switch AMD_TOP_N_PLANNER.
+//The new Top N planner improves the run-to-run variations by using a dynamic wisdom (preset) plan functionality.
+//This feature implements the mechanism to search and store top N plans into the wisdom file and then use these plans to find the best plan for execution in the consecutive runs.
+//AMD_TOP_N_PLANNER can not be used with AMD_FAST_PLANNER. Only one of them can be enabled at a time. 
+#ifdef AMD_OPT_TOP_N_PLANNER 
+#define AMD_TOP_N_PLANNER
+#define AMD_OPT_TOP_N 3 //The value of AMD_OPT_TOP_N is fixed as 3, enabling the search, store and re-use of Top 3 plans. This value should not be changed by the user.
+#endif
+//--------------------------------
+#endif//#ifdef AMD_OPT_ALL  
+//Below is a manual switch to control VADER LIMIT
+//This is upper limit that each process/rank can send in bytes to the receiver process/rank with buffers for receiving them
+//without any synchronization on completion status.
+#define VADER_LIMIT 8000//8000//4000//500
 //============================================================
 //AMD OPTIMIZATIONS :- end
 
@@ -813,8 +851,14 @@ struct planner_s {
 
      wisdom_state_t wisdom_state;
 
+#ifdef AMD_TOP_N_PLANNER
+     hashtab htab_blessed[AMD_OPT_TOP_N];
+     hashtab htab_unblessed[AMD_OPT_TOP_N];
+     int index;
+#else
      hashtab htab_blessed;
      hashtab htab_unblessed;
+#endif
 
      int nthr;
      flags_t flags;
@@ -831,6 +875,10 @@ struct planner_s {
      double pcost, epcost; /* total pcost of measured/estimated plans */
      int nprob;    /* number of problems evaluated */
 };
+
+#ifdef AMD_TOP_N_PLANNER
+     extern int wisp_set;     /* flag to identify if the plans for an input problem size is found in the wisdom file or not*/
+#endif
 
 planner *X(mkplanner)(void);
 void X(planner_destroy)(planner *ego);
@@ -1033,8 +1081,8 @@ void X(rader_tl_delete)(R *W, rader_tl **tl);
 /* upper bound to the cache size based on latest CPU architectures, for AMD optimized tiled routines */
 #define CACHESIZE 32768
 #define BLK_SIZE 32
-unsigned int L1D_blk_size;// = CACHESIZE;
-unsigned int L1Dsize;// = BLK_SIZE;
+extern unsigned int L1D_blk_size;// = CACHESIZE;
+extern unsigned int L1Dsize;// = BLK_SIZE;
 #else
 /* lower bound to the cache size, for tiled routines */
 #define CACHESIZE 8192

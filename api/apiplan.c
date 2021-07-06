@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
- * Copyright (C) 2019, Advanced Micro Devices, Inc. All Rights Reserved.
+ * Copyright (C) 2019-2021, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,10 +29,60 @@ void X(set_planner_hooks)(planner_hook_t before, planner_hook_t after)
      after_planner_hook = after;
 }
 
+#ifdef AMD_TOP_N_PLANNER
+plan *plans[AMD_OPT_TOP_N];
+static int find_lowcost_plan()
+{
+    int i, lowcost, lowcost_id;
+    lowcost = plans[0]->pcost;
+    lowcost_id = 0;
+
+    for (i = 1; i < AMD_OPT_TOP_N; i++) {
+         if (plans[i]->pcost < lowcost) {
+              lowcost = plans[i]->pcost;
+              lowcost_id = i;
+         }
+    }
+    return lowcost_id;
+}
+#endif
+
 static plan *mkplan0(planner *plnr, unsigned flags,
 		     const problem *prb, unsigned hash_info,
 		     wisdom_state_t wisdom_state)
 {
+#ifdef AMD_TOP_N_PLANNER
+     static int lowcost_idx;	/* to hold the index of the plan which has the least pcost among the top N plans*/     
+/* map API flags into FFTW flags */
+     X(mapflags)(plnr, flags);
+
+     plnr->flags.hash_info = hash_info;
+     plnr->wisdom_state = wisdom_state;
+     
+     /* create plan */
+
+     if (AMD_OPT_TOP_N > 1) {
+          if (wisp_set == 1) {
+               for (int pln_idx = 0; pln_idx < AMD_OPT_TOP_N ; pln_idx ++) {
+                    plnr->index = pln_idx;
+	            plans[pln_idx] = plnr->adt->mkplan(plnr, prb);
+               }
+               lowcost_idx = find_lowcost_plan(plans);
+               return plans[lowcost_idx];
+          }
+          else {        
+               for (int pln_idx = 0; pln_idx < AMD_OPT_TOP_N ; pln_idx ++) {
+                    plnr->index = pln_idx;
+	            plans[pln_idx] = plnr->adt->mkplan(plnr, prb);
+               }	   
+	       return plans[0];
+          }
+     }   
+     else {
+          plnr->index = 0;
+          return plnr->adt->mkplan(plnr, prb);
+     }	
+#else	
      /* map API flags into FFTW flags */
      X(mapflags)(plnr, flags);
 
@@ -41,6 +91,7 @@ static plan *mkplan0(planner *plnr, unsigned flags,
 
      /* create plan */
      return plnr->adt->mkplan(plnr, prb);
+#endif     
 }
 
 static unsigned force_estimator(unsigned flags)

@@ -1,5 +1,8 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Set VADER LIMIT in order to enable new AMD MPI transpose algorithms. */
+#undef AMD_MPI_VADER_LIMIT_SET
+
 /* Define to enable AMD cpu specific optimizations. */
 #undef AMD_OPT_ALL
 
@@ -8,6 +11,9 @@
 
 /* Define to enable AMD cpu optimized MPI FFT. */
 #undef AMD_OPT_MPIFFT
+
+/* Define to enable AMD Top N Planner for AMD cpus. */
+#undef AMD_OPT_TOP_N_PLANNER
 
 /* Define to enable AMD cpu optimized Transpose. */
 #undef AMD_OPT_TRANS
