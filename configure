@@ -875,13 +875,15 @@ with_sysroot
 enable_libtool_lock
 enable_mpi
 enable_amd_opt
+enable_amd_mpi_vader_limit
 enable_amd_trans
 enable_amd_mpifft
-enable_amd_fast_planner
-enable_fortran
-with_g77_wrappers
 enable_openmp
 enable_threads
+enable_amd_fast_planner
+enable_amd_top_n_planner
+enable_fortran
+with_g77_wrappers
 with_combined_threads
 '
       ac_precious_vars='build_alias
@@ -1585,14 +1587,20 @@ Optional Features:
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --enable-mpi            compile FFTW MPI library
   --enable-amd-opt        enable AMD cpu specific optimizations
+  --enable-amd-mpi-vader-limit
+                          enable setting of VADER LIMIT that controls enabling
+                          of new AMD MPI transpose algorithms
   --enable-amd-trans      enable AMD cpu optimized Transpose
   --enable-amd-mpifft     enable AMD cpu optimized MPI FFT
+  --enable-openmp         use OpenMP directives for parallelism
+  --enable-threads        compile FFTW SMP threads library
   --enable-amd-fast-planner
                           enable AMD Fast Planner for a faster planning time
                           on AMD cpus
+  --enable-amd-top-n-planner
+                          enable AMD Top N Planner feature to search, save and
+                          reuse top N plans using wisdom file on AMD cpus
   --disable-fortran       don't include Fortran-callable wrappers
-  --enable-openmp         use OpenMP directives for parallelism
-  --enable-threads        compile FFTW SMP threads library
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -17559,6 +17567,20 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
 
 $as_echo "#define AMD_OPT_ALL 1" >>confdefs.h
 
+
+		# Check whether --enable-amd-mpi-vader-limit was given.
+if test "${enable_amd_mpi_vader_limit+set}" = set; then :
+  enableval=$enable_amd_mpi_vader_limit; have_amd_mpi_vl=$enableval
+else
+  have_amd_mpi_vl=no
+fi
+
+	if test "$have_amd_mpi_vl" = yes ; then
+
+$as_echo "#define AMD_MPI_VADER_LIMIT_SET 1" >>confdefs.h
+
+	fi
+
 fi
 # Check whether --enable-amd-trans was given.
 if test "${enable_amd_trans+set}" = set; then :
@@ -17584,8 +17606,22 @@ if test "$have_amd_mpifft" = yes; then
 $as_echo "#define AMD_OPT_MPIFFT 1" >>confdefs.h
 
 fi
+# Check whether --enable-openmp was given.
+if test "${enable_openmp+set}" = set; then :
+  enableval=$enable_openmp; enable_openmp=$enableval
+else
+  enable_openmp=no
+fi
 
-$as_echo "#define AOCL_FFTW_VERSION \"AOCL-3.0\"" >>confdefs.h
+# Check whether --enable-threads was given.
+if test "${enable_threads+set}" = set; then :
+  enableval=$enable_threads; enable_threads=$enableval
+else
+  enable_threads=no
+fi
+
+
+$as_echo "#define AOCL_FFTW_VERSION \"AOCL FFTW 3.0.1\"" >>confdefs.h
 
 # Check whether --enable-amd-fast-planner was given.
 if test "${enable_amd_fast_planner+set}" = set; then :
@@ -17594,10 +17630,36 @@ else
   have_amd_fast_planner=no
 fi
 
-if test "$have_amd_fast_planner" = yes && test "$quad_precision_supported" = no && test "$long_double_supported" = no; then
+# Check whether --enable-amd-top-n-planner was given.
+if test "${enable_amd_top_n_planner+set}" = set; then :
+  enableval=$enable_amd_top_n_planner; have_amd_top_n_planner=$enableval
+else
+  have_amd_top_n_planner=no
+fi
+
+# Check if both amd-fast-planner and amd-top-n-planner are enabled together
+if test "$have_amd_fast_planner" = yes && test "$have_amd_top_n_planner" = yes; then
+	as_fn_error $? "AMD_FAST_PLANNER and AMD_TOP_N_PLANNER can not be enabled together" "$LINENO" 5
+else
+        if (test "$have_amd_fast_planner" = yes && (test "$quad_precision_supported" = yes || test "$long_double_supported" = yes)); then
+		as_fn_error $? "AMD_FAST_PLANNER can not be enabled for Quad or Long double" "$LINENO" 5
+	elif (test "$have_amd_fast_planner" = yes); then
 
 $as_echo "#define AMD_OPT_FAST_PLANNER 1" >>confdefs.h
 
+        fi
+	# Check if amd-top-n-planner is enabled with mpi, openmp or threads
+	if (test "$have_amd_top_n_planner" = yes && (test "$enable_threads" = yes || test "$enable_openmp" = yes || test "$enable_mpi" = yes)); then
+		as_fn_error $? "AMD_TOP_N_PLANNER can not be enabled with mpi, openmp or threads as it is supported only for single threaded mode" "$LINENO" 5
+	else
+               if (test "$have_amd_top_n_planner" = yes && (test "$quad_precision_supported" = yes || test "$long_double_supported" = yes)); then
+	 	       as_fn_error $? "AMD_TOP_N_PLANNER can not be enabled for Quad or Long double" "$LINENO" 5
+	       elif (test "$have_amd_top_n_planner" = yes); then
+
+$as_echo "#define AMD_OPT_TOP_N_PLANNER 1" >>confdefs.h
+
+               fi
+        fi
 fi
 
 if test "$USE_MAINTAINER_MODE" = yes; then
@@ -21604,13 +21666,6 @@ $as_echo "#define WITH_G77_WRAPPERS 1" >>confdefs.h
 fi
 
 have_smp="no"
-# Check whether --enable-openmp was given.
-if test "${enable_openmp+set}" = set; then :
-  enableval=$enable_openmp; enable_openmp=$enableval
-else
-  enable_openmp=no
-fi
-
 
 if test "$enable_openmp" = "yes"; then
 
@@ -21686,14 +21741,6 @@ fi
 
 
 fi
-
-# Check whether --enable-threads was given.
-if test "${enable_threads+set}" = set; then :
-  enableval=$enable_threads; enable_threads=$enableval
-else
-  enable_threads=no
-fi
-
 
 if test "$enable_threads" = "yes"; then
 

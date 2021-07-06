@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
+ * Copyright (C) 2019-2021, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +24,10 @@
    (see rank0.c for square transposition)  */
 
 #include "rdft/rdft.h"
+
+#if defined(AMD_OPT_TOMS513_TRANS) && (!defined(FFTW_LDOUBLE) && !defined(FFTW_QUAD) && !defined(FFTW_SINGLE))
+#include "immintrin.h"
+#endif
 
 #ifdef HAVE_STRING_H
 #include <string.h>		/* for memcpy() */
@@ -520,6 +525,11 @@ static void transpose_toms513(R *a, INT nx, INT ny, INT N,
      R *b, *c, *d;
      INT ncount;
      INT k;
+#if defined(AMD_OPT_TOMS513_TRANS) && (!defined(FFTW_LDOUBLE) && !defined(FFTW_QUAD) && !defined(FFTW_SINGLE))
+     INT mod16 = (N & 0xF), mod8 = (mod16 & 0x7);
+     INT ii, N_16mod = N - mod16, N_8mod = mod16 - mod8, N_4mod = mod8 - (mod8 & 0x3);
+     __m256d in1, in2, in3, in4, in5, in6, in7, in8;
+#endif
      
      /* check arguments and initialize: */
      A(ny > 0 && nx > 0 && N > 0 && move_size > 0);
@@ -543,8 +553,14 @@ static void transpose_toms513(R *a, INT nx, INT ny, INT N,
      im = ny;
      
      while (1) {
+#if defined(AMD_OPT_TOMS513_TRANS) && (!defined(FFTW_LDOUBLE) && !defined(FFTW_QUAD) && !defined(FFTW_SINGLE))
+	  INT i1, i2, i1c, i2c, i1_2;
+	  INT kmi;
+	  INT N_i1, N_i1c, N_i2, N_i2c;
+#else
 	  INT i1, i2, i1c, i2c;
 	  INT kmi;
+#endif
 	  
 	  /** Rearrange the elements of a loop
 	      and its companion loop: **/
@@ -552,6 +568,9 @@ static void transpose_toms513(R *a, INT nx, INT ny, INT N,
 	  i1 = i;
 	  kmi = k - i;
 	  i1c = kmi;
+#if defined(AMD_OPT_TOMS513_TRANS) && (!defined(FFTW_LDOUBLE) && !defined(FFTW_QUAD) && !defined(FFTW_SINGLE))
+	  i1_2 = i1 / nx;
+#endif
 	  switch (N) {
 	      case 1:
 		   b[0] = a[i1];
@@ -564,12 +583,73 @@ static void transpose_toms513(R *a, INT nx, INT ny, INT N,
 		   c[1] = a[2*i1c+1];
 		   break;
 	      default:
+#if defined(AMD_OPT_TOMS513_TRANS) && (!defined(FFTW_LDOUBLE) && !defined(FFTW_QUAD) && !defined(FFTW_SINGLE))
+		   N_i1 = N * i1;
+		   N_i1c = N * i1c;
+		   ii = 0;
+		   for (; ii < N_16mod; ii += 16)
+		   {
+			   in1 = _mm256_loadu_pd((double const *)&a[N_i1 + ii]);
+			   in2 = _mm256_loadu_pd((double const *)&a[N_i1 + ii + 4]);
+			   in3 = _mm256_loadu_pd((double const *)&a[N_i1 + ii + 8]);
+			   in4 = _mm256_loadu_pd((double const *)&a[N_i1 + ii + 12]);
+			   in5 = _mm256_loadu_pd((double const *)&a[N_i1c + ii]);
+			   in6 = _mm256_loadu_pd((double const *)&a[N_i1c + ii + 4]);
+			   in7 = _mm256_loadu_pd((double const *)&a[N_i1c + ii + 8]);
+			   in8 = _mm256_loadu_pd((double const *)&a[N_i1c + ii + 12]);
+			   
+			   _mm256_storeu_pd((double *)&b[ii], in1);
+			   _mm256_storeu_pd((double *)&b[ii+4], in2);
+			   _mm256_storeu_pd((double *)&b[ii+8], in3);
+			   _mm256_storeu_pd((double *)&b[ii+12], in4);
+			   _mm256_storeu_pd((double *)&c[ii], in5);
+			   _mm256_storeu_pd((double *)&c[ii+4], in6);
+			   _mm256_storeu_pd((double *)&c[ii+8], in7);
+			   _mm256_storeu_pd((double *)&c[ii+12], in8);
+		   }
+		   
+		   if (N_8mod)
+		   {
+			   in1 = _mm256_loadu_pd((double const *)&a[N_i1 + ii]);
+			   in2 = _mm256_loadu_pd((double const *)&a[N_i1 + ii + 4]);
+			   in5 = _mm256_loadu_pd((double const *)&a[N_i1c + ii]);
+			   in6 = _mm256_loadu_pd((double const *)&a[N_i1c + ii + 4]);
+			   
+			   _mm256_storeu_pd((double *)&b[ii], in1);
+			   _mm256_storeu_pd((double *)&b[ii+4], in2);
+			   _mm256_storeu_pd((double *)&c[ii], in5);
+			   _mm256_storeu_pd((double *)&c[ii+4], in6);
+			    ii += 8;
+		   }
+		   
+		   if (N_4mod)
+		   {
+			   in1 = _mm256_loadu_pd((double const *)&a[N_i1 + ii]);
+			   in5 = _mm256_loadu_pd((double const *)&a[N_i1c + ii]);
+			   
+			   _mm256_storeu_pd((double *)&b[ii], in1);
+			   _mm256_storeu_pd((double *)&c[ii], in5);
+			    ii += 4;
+		   }
+		   
+		   for (; ii < N; ii++)
+		   {
+			   b[ii] = a[N_i1 + ii];
+			   c[ii] = a[N_i1c + ii];
+		   }
+#else
 		   memcpy(b, &a[N * i1], N * sizeof(R));
 		   memcpy(c, &a[N * i1c], N * sizeof(R));
+#endif
 	  }
+	  
 	  while (1) {
+#if defined(AMD_OPT_TOMS513_TRANS) && (!defined(FFTW_LDOUBLE) && !defined(FFTW_QUAD) && !defined(FFTW_SINGLE))
+	       i2 = ny * i1 - k * (i1_2);
+#else
 	       i2 = ny * i1 - k * (i1 / nx);
 	       i2c = k - i2;
+#endif
 	       if (i1 < move_size)
 		    move[i1] = 1;
 	       if (i1c < move_size)
@@ -583,6 +663,10 @@ static void transpose_toms513(R *a, INT nx, INT ny, INT N,
 		    c = d;
 		    break;
 	       }
+#if defined(AMD_OPT_TOMS513_TRANS) && (!defined(FFTW_LDOUBLE) && !defined(FFTW_QUAD) && !defined(FFTW_SINGLE))
+	       i1_2 = i2 / nx;
+	       i2c = k - i2;
+#endif
 	       switch (N) {
 		   case 1:
 			a[i1] = a[i2];
@@ -595,10 +679,68 @@ static void transpose_toms513(R *a, INT nx, INT ny, INT N,
 			a[2*i1c+1] = a[2*i2c+1];
 			break;
 		   default:
+#if defined(AMD_OPT_TOMS513_TRANS) && (!defined(FFTW_LDOUBLE) && !defined(FFTW_QUAD) && !defined(FFTW_SINGLE))
+			N_i1 = N * i1;
+			N_i1c = N * i1c;
+			N_i2 = N * i2;
+			N_i2c = N * i2c;
+			ii = 0;
+			for (; ii < N_16mod; ii += 16)
+			{
+				in1 = _mm256_loadu_pd((double const *)&a[N_i2 + ii]);
+				in2 = _mm256_loadu_pd((double const *)&a[N_i2 + ii + 4]);
+				in3 = _mm256_loadu_pd((double const *)&a[N_i2 + ii + 8]);
+				in4 = _mm256_loadu_pd((double const *)&a[N_i2 + ii + 12]);
+				in5 = _mm256_loadu_pd((double const *)&a[N_i2c + ii]);
+				in6 = _mm256_loadu_pd((double const *)&a[N_i2c + ii + 4]);
+				in7 = _mm256_loadu_pd((double const *)&a[N_i2c + ii + 8]);
+				in8 = _mm256_loadu_pd((double const *)&a[N_i2c + ii + 12]);
+
+				_mm256_storeu_pd((double *)&a[N_i1 + ii], in1);
+				_mm256_storeu_pd((double *)&a[N_i1 + ii+4], in2);
+				_mm256_storeu_pd((double *)&a[N_i1 + ii+8], in3);
+				_mm256_storeu_pd((double *)&a[N_i1 + ii+12], in4);
+				_mm256_storeu_pd((double *)&a[N_i1c + ii], in5);
+				_mm256_storeu_pd((double *)&a[N_i1c + ii+4], in6);
+				_mm256_storeu_pd((double *)&a[N_i1c + ii+8], in7);
+				_mm256_storeu_pd((double *)&a[N_i1c + ii+12], in8);
+			}
+
+			if (N_8mod)
+			{
+				in1 = _mm256_loadu_pd((double const *)&a[N_i2 + ii]);
+				in2 = _mm256_loadu_pd((double const *)&a[N_i2 + ii + 4]);
+				in5 = _mm256_loadu_pd((double const *)&a[N_i2c + ii]);
+				in6 = _mm256_loadu_pd((double const *)&a[N_i2c + ii + 4]);
+
+				_mm256_storeu_pd((double *)&a[N_i1 + ii], in1);
+				_mm256_storeu_pd((double *)&a[N_i1 + ii+4], in2);
+				_mm256_storeu_pd((double *)&a[N_i1c + ii], in5);
+				_mm256_storeu_pd((double *)&a[N_i1c + ii+4], in6);
+				ii += 8;
+			}
+
+			if (N_4mod)
+			{
+				in1 = _mm256_loadu_pd((double const *)&a[N_i2 + ii]);
+				in5 = _mm256_loadu_pd((double const *)&a[N_i2c + ii]);
+
+				_mm256_storeu_pd((double *)&a[N_i1 + ii], in1);
+				_mm256_storeu_pd((double *)&a[N_i1c + ii], in5);
+				ii += 4;
+			}
+
+			for (; ii < N; ii++)
+			{
+				a[N_i1 + ii] = a[N_i2 + ii];
+				a[N_i1c + ii] = a[N_i2c + ii];
+			}
+#else
 			memcpy(&a[N * i1], &a[N * i2], 
 			       N * sizeof(R));
 			memcpy(&a[N * i1c], &a[N * i2c], 
 			       N * sizeof(R));
+#endif
 	       }
 	       i1 = i2;
 	       i1c = i2c;
@@ -615,8 +757,64 @@ static void transpose_toms513(R *a, INT nx, INT ny, INT N,
 		   a[2*i1c+1] = c[1];
 		   break;
 	      default:
+#if defined(AMD_OPT_TOMS513_TRANS) && (!defined(FFTW_LDOUBLE) && !defined(FFTW_QUAD) && !defined(FFTW_SINGLE))
+		  N_i1 = N * i1;
+		  N_i1c = N * i1c;
+		  ii = 0;
+		  for (; ii < N_16mod; ii += 16)
+		  {
+			   in1 = _mm256_loadu_pd((double const *)&b[ii]);
+			   in2 = _mm256_loadu_pd((double const *)&b[ii+4]);
+			   in3 = _mm256_loadu_pd((double const *)&b[ii+8]);
+			   in4 = _mm256_loadu_pd((double const *)&b[ii+12]);
+			   in5 = _mm256_loadu_pd((double const *)&c[ii]);
+			   in6 = _mm256_loadu_pd((double const *)&c[ii+4]);
+			   in7 = _mm256_loadu_pd((double const *)&c[ii+8]);
+			   in8 = _mm256_loadu_pd((double const *)&c[ii+12]);
+
+			   _mm256_storeu_pd((double *)&a[N_i1 + ii], in1);
+			   _mm256_storeu_pd((double *)&a[N_i1 + ii + 4], in2);
+			   _mm256_storeu_pd((double *)&a[N_i1 + ii + 8], in3);
+			   _mm256_storeu_pd((double *)&a[N_i1 + ii + 12], in4);
+			   _mm256_storeu_pd((double *)&a[N_i1c + ii], in5);
+			   _mm256_storeu_pd((double *)&a[N_i1c + ii + 4], in6);
+			   _mm256_storeu_pd((double *)&a[N_i1c + ii + 8], in7);
+			   _mm256_storeu_pd((double *)&a[N_i1c + ii + 12], in8);
+		  }
+
+		  if (N_8mod)
+		  {
+			   in1 = _mm256_loadu_pd((double const *)&b[ii]);
+			   in2 = _mm256_loadu_pd((double const *)&b[ii+4]);
+			   in5 = _mm256_loadu_pd((double const *)&c[ii]);
+			   in6 = _mm256_loadu_pd((double const *)&c[ii+4]);
+
+			   _mm256_storeu_pd((double *)&a[N_i1 + ii], in1);
+			   _mm256_storeu_pd((double *)&a[N_i1 + ii + 4], in2);
+			   _mm256_storeu_pd((double *)&a[N_i1c + ii], in5);
+			   _mm256_storeu_pd((double *)&a[N_i1c + ii + 4], in6);
+			    ii += 8;
+		  }
+
+		  if (N_4mod)
+		  {
+			   in1 = _mm256_loadu_pd((double const *)&b[ii]);
+			   in5 = _mm256_loadu_pd((double const *)&c[ii]);
+
+			   _mm256_storeu_pd((double *)&a[N_i1 + ii], in1);
+			   _mm256_storeu_pd((double *)&a[N_i1c + ii], in5);
+			    ii += 4;
+		  }
+		  
+		  for (; ii < N; ii++)
+		  {
+			   a[N_i1 + ii] = b[ii];
+			   a[N_i1c + ii] = c[ii];
+		  }
+#else
 		   memcpy(&a[N * i1], b, N * sizeof(R));
 		   memcpy(&a[N * i1c], c, N * sizeof(R));
+#endif		   
 	  }
 	  if (ncount >= mn)
 	       break;	/* we've moved all elements */
@@ -652,8 +850,11 @@ static void apply_toms513(const plan *ego_, R *I, R *O)
      INT n = ego->n, m = ego->m;
      INT vl = ego->vl;
      R *buf = (R *)MALLOC(sizeof(R) * ego->nbuf, BUFFERS);
+	 //R *buf = (R *)MALLOC((sizeof(R) * ego->nbuf)+32, BUFFERS);
+	 //R *buf_aligned = (R *)((ptrdiff_t)buf + (32 - ((ptrdiff_t)buf & 0x1F)));
      UNUSED(O);
      transpose_toms513(I, n, m, vl, (char *) (buf + 2*vl), (n+m)/2, buf);
+	 //transpose_toms513(I, n, m, vl, (char *) (buf_aligned + 2*vl), (n+m)/2, buf_aligned);
      X(ifree)(buf);
 }
 

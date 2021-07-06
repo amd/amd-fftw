@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
- * Copyright (C) 2020, Advanced Micro Devices, Inc. All Rights Reserved.
+ * Copyright (C) 2020-2021, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,6 +32,9 @@ static const solvtab s =
      SOLVTAB(XM(transpose_recurse_register)),
 #ifdef AMD_OPT_MPIFFT_OVERLAP_MEMCPY_MPICOMM
      SOLVTAB(XM(transpose_pairwise_omc_register)),
+#endif
+#ifdef AMD_OPT_MPIFFT_FAST_BLK_BASED_TRANSPOSE
+     SOLVTAB(XM(transpose_blk_based_scheme1_register)),
 #endif
      SOLVTAB(XM(dft_rank_geq2_register)),
      SOLVTAB(XM(dft_rank_geq2_transposed_register)),

@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2000 Matteo Frigo
  * Copyright (c) 2000 Massachusetts Institute of Technology
+ * Copyright (C) 2019-2021, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -204,9 +205,11 @@ void *bench_malloc(size_t n)
         The bug seems to have been fixed as of glibc 2.3.1. */
      if (posix_memalign(&p, MIN_ALIGNMENT, n))
 	  p = (void*) 0;
-#elif defined(__ICC) || defined(__INTEL_COMPILER) || defined(HAVE__MM_MALLOC)
-     /* Intel's C compiler defines _mm_malloc and _mm_free intrinsics */
-     p = (void *) _mm_malloc(n, MIN_ALIGNMENT);
+#elif defined(__ICC) || defined(__INTEL_COMPILER) || defined(HAVE__MM_MALLOC) || (defined(_WIN32) || defined(_WIN64))
+     /* Intel's C compiler defines _mm_malloc and _mm_free intrinsics 
+	 Use "_mm_malloc" for aligned memory allocation on Windows which is supported with clang/VC++. */
+	 p = (void *) _mm_malloc(n, MIN_ALIGNMENT);
+	 
 #    undef real_free
 #    define real_free _mm_free
 #else

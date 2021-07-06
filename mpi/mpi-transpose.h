@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
- * Copyright (C) 2020, Advanced Micro Devices, Inc. All Rights Reserved.
+ * Copyright (C) 2020-2021, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -58,6 +58,7 @@ int XM(mkplans_posttranspose)(const problem_mpi_transpose *p, planner *plnr,
 			      INT *rest_Ioff, INT *rest_Ooff);
 /* various solvers */
 void XM(transpose_pairwise_omc_register)(planner *p);
+void XM(transpose_blk_based_scheme1_register)(planner *p);
 void XM(transpose_pairwise_register)(planner *p);
 void XM(transpose_alltoall_register)(planner *p);
 void XM(transpose_recurse_register)(planner *p);

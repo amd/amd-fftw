@@ -41,11 +41,12 @@ void speed(const char *param, int setup_only)
 	  t[k] = 0;
 
      p = problem_parse(param);
-     BENCH_ASSERT(can_do(p));
      if (!no_speed_allocation) {
 	  problem_alloc(p);
 	  problem_zero(p);
      }
+     BENCH_ASSERT(can_do(p)); /* Calling can_do after problem allocation to enable buffer allocation for use in evaluate_plan. This is
+                                 required for the evaluation of Top N plans from the wisdom file during single threaded execution */
 
      timer_start(LIBBENCH_TIMER);
      setup(p);

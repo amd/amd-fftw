@@ -711,6 +711,13 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
 		fi
 	fi
 	AC_DEFINE(AMD_OPT_ALL,1,[Define to enable AMD cpu specific optimizations.])
+	
+	dnl amd switch for VADER LIMIT that controls enabling of AMD's new MPI transpose algorithms --enable-amd-mpi-vader-limit
+	AC_ARG_ENABLE(amd-mpi-vader-limit, [AC_HELP_STRING([--enable-amd-mpi-vader-limit],[enable setting of VADER LIMIT that controls enabling of new AMD MPI transpose algorithms])], have_amd_mpi_vl=$enableval, have_amd_mpi_vl=no)
+	if test "$have_amd_mpi_vl" = yes ; then
+		AC_DEFINE(AMD_MPI_VADER_LIMIT_SET,1,[Set VADER LIMIT in order to enable new AMD MPI transpose algorithms.])
+	fi
+
 fi
 dnl amd optimization switch to enable amd cpu optimized transpose --enable-amd-trans
 AC_ARG_ENABLE(amd-trans, [AC_HELP_STRING([--enable-amd-trans],[enable AMD cpu optimized Transpose])], have_amd_trans=$enableval, have_amd_trans=no)
@@ -722,12 +729,33 @@ AC_ARG_ENABLE(amd-mpifft, [AC_HELP_STRING([--enable-amd-mpifft],[enable AMD cpu 
 if test "$have_amd_mpifft" = yes; then
 	AC_DEFINE(AMD_OPT_MPIFFT,1,[Define to enable AMD cpu optimized MPI FFT.])
 fi
+AC_ARG_ENABLE(openmp, [AC_HELP_STRING([--enable-openmp],[use OpenMP directives for parallelism])], enable_openmp=$enableval, enable_openmp=no)
+AC_ARG_ENABLE(threads, [AC_HELP_STRING([--enable-threads],[compile FFTW SMP threads library])], enable_threads=$enableval, enable_threads=no)
 dnl aocl version number of amd-fftw
-AC_DEFINE(AOCL_FFTW_VERSION,"AOCL-3.0",[AOCL Version of AMD-FFTW])
+AC_DEFINE(AOCL_FFTW_VERSION,"AOCL FFTW 3.0.1",[AOCL Version of AMD-FFTW])
 dnl amd optimization switch to enable AMD Fast Planner for AMD cpus --enable-amd-fast-planner
 AC_ARG_ENABLE(amd-fast-planner, [AC_HELP_STRING([--enable-amd-fast-planner],[enable AMD Fast Planner for a faster planning time on AMD cpus])], have_amd_fast_planner=$enableval, have_amd_fast_planner=no)
-if test "$have_amd_fast_planner" = yes && test "$quad_precision_supported" = no && test "$long_double_supported" = no; then
-	AC_DEFINE(AMD_OPT_FAST_PLANNER,1,[Define to enable AMD Fast Planner for AMD cpus.])
+dnl amd optimization switch to enable AMD Top N Planner for AMD cpus --enable-amd-top-n-planner
+AC_ARG_ENABLE(amd-top-n-planner, [AC_HELP_STRING([--enable-amd-top-n-planner],[enable AMD Top N Planner feature to search, save and reuse top N plans using wisdom file on AMD cpus])], have_amd_top_n_planner=$enableval, have_amd_top_n_planner=no)
+# Check if both amd-fast-planner and amd-top-n-planner are enabled together 
+if test "$have_amd_fast_planner" = yes && test "$have_amd_top_n_planner" = yes; then 
+	AC_MSG_ERROR([AMD_FAST_PLANNER and AMD_TOP_N_PLANNER can not be enabled together])
+else
+        if (test "$have_amd_fast_planner" = yes && (test "$quad_precision_supported" = yes || test "$long_double_supported" = yes)); then		
+		AC_MSG_ERROR([AMD_FAST_PLANNER can not be enabled for Quad or Long double])
+	elif (test "$have_amd_fast_planner" = yes); then
+	        AC_DEFINE(AMD_OPT_FAST_PLANNER,1,[Define to enable AMD Fast Planner for AMD cpus.])
+        fi
+	# Check if amd-top-n-planner is enabled with mpi, openmp or threads
+	if (test "$have_amd_top_n_planner" = yes && (test "$enable_threads" = yes || test "$enable_openmp" = yes || test "$enable_mpi" = yes)); then
+		AC_MSG_ERROR([AMD_TOP_N_PLANNER can not be enabled with mpi, openmp or threads as it is supported only for single threaded mode])
+	else	
+               if (test "$have_amd_top_n_planner" = yes && (test "$quad_precision_supported" = yes || test "$long_double_supported" = yes)); then 
+	 	       AC_MSG_ERROR([AMD_TOP_N_PLANNER can not be enabled for Quad or Long double])
+	       elif (test "$have_amd_top_n_planner" = yes); then
+                       AC_DEFINE(AMD_OPT_TOP_N_PLANNER,1,[Define to enable AMD Top N Planner for AMD cpus.])
+               fi
+        fi		
 fi
 
 dnl check for a proper indent in maintainer mode
@@ -789,14 +817,11 @@ fi
 
 dnl -----------------------------------------------------------------------
 have_smp="no"
-AC_ARG_ENABLE(openmp, [AC_HELP_STRING([--enable-openmp],[use OpenMP directives for parallelism])], enable_openmp=$enableval, enable_openmp=no)
 
 if test "$enable_openmp" = "yes"; then
    AC_DEFINE(HAVE_OPENMP,1,[Define to enable OpenMP])
    AX_OPENMP([], [AC_MSG_ERROR([don't know how to enable OpenMP])])
 fi
-
-AC_ARG_ENABLE(threads, [AC_HELP_STRING([--enable-threads],[compile FFTW SMP threads library])], enable_threads=$enableval, enable_threads=no)
 
 if test "$enable_threads" = "yes"; then
    AC_DEFINE(HAVE_THREADS,1,[Define to enable SMP threads])
