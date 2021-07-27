@@ -47,7 +47,8 @@ option (ENABLE_AVX "Compile with AVX instruction set support" OFF)
 option (ENABLE_AVX2 "Compile with AVX2 instruction set support" ON)
 
 option (ENABLE_AMD_OPT "Enable AMD specific optimization" OFF)
-option (ENABLE_AMD_MPIFFT "Compile with AMD MPIFFT support" OFF)
+option (ENABLE_AMD_MPIFFT "Enable AMD MPI FFT optimizations" OFF)
+option (ENABLE_AMD_MPI_VADER_LIMIT "Enable advanced AMD MPI optimizations for in-place transpose based on VADER LIMIT" OFF)
 option (ENABLE_MPI "compile FFTW MPI library" OFF)
 
 option (ENABLE_AMD_TRANS "Enable amd optimized transpose" OFF)
@@ -85,6 +86,10 @@ endif()
 
 if(ENABLE_AMD_MPIFFT)
   add_definitions(-DAMD_OPT_MPIFFT)
+endif()
+
+if(ENABLE_AMD_MPI_VADER_LIMIT)
+  add_definitions(-DAMD_MPI_VADER_LIMIT_SET)
 endif()
 
 if(ENABLE_MPI)
@@ -127,6 +132,7 @@ message(ENABLE_AVX : ${ENABLE_AVX})
 message(ENABLE_AVX2 : ${ENABLE_AVX2})
 message(ENABLE_AMD_OPT : ${ENABLE_AMD_OPT})
 message(ENABLE_AMD_MPIFFT : ${ENABLE_AMD_MPIFFT})
+message(ENABLE_AMD_MPI_VADER_LIMIT : ${ENABLE_AMD_MPI_VADER_LIMIT})
 message(ENABLE_MPI : ${ENABLE_MPI})
 message(ENABLE_AMD_TRANS : ${ENABLE_AMD_TRANS})
 message(DISABLE_FORTRAN : ${DISABLE_FORTRAN})

@@ -24,7 +24,6 @@
 
 #include "mpi-transpose.h"
 #include <string.h>
-#include <stdio.h>
 
 typedef struct {
      solver super;
@@ -59,7 +58,6 @@ static void transpose_chunks(int *sched, int n_pes, int my_pe,
 		int other, size, bufSize_s, blksize_s, totSize_s, bufSize_r, blksize_r, totSize_r;
 		R *sendbuf, *recvbuf;
 		MPI_Status status;
-		struct timeval t1,t2;
 
 		//n_pes is the no. of ranks tp paralelly communicate -> blocksize
 		//blksize = VADER_LIMIT;//(n_pes*VADER_LIMIT)/(bufSize*sizeof(R));;

@@ -98,7 +98,7 @@ extern "C"
 #define AMD_OPT_USE_MEMCPY_TO_CPY
 //Below switch enables the unrolling of memory read and write SIMD operations in cpy2d routine.
 #if (!defined(FFTW_LDOUBLE) && !defined(FFTW_QUAD) && !defined(FFTW_SINGLE))
-#define AMD_OPT_UNROLL_CPY2D
+//#define AMD_OPT_UNROLL_CPY2D
 #endif
 //--------------------------------
 //In-place Transpose related optimization switches :-
@@ -125,7 +125,7 @@ extern "C"
 //     (for this optimization switch, AMD_OPT_AUTO_TUNED_TRANS_BLK_SIZE should also be enabled)
 //#define AMD_OPT_AUTO_TUNED_RASTER_TILED_TRANS_METHOD
 //The below switch enables AMD optimizations for the in-place square transpose routine.
-#define AMD_OPT_IN_PLACE_SQU_TRANS
+//#define AMD_OPT_IN_PLACE_SQU_TRANS
 //The below switch enables AMD optimizations for the in-situ Toms513 algorithm.
 #define AMD_OPT_TOMS513_TRANS
 //--------------------------------
