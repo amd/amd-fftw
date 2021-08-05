@@ -1,5 +1,8 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Enable AMD application optimization layer. */
+#undef AMD_APP_OPT_LAYER
+
 /* Set VADER LIMIT in order to enable new AMD MPI transpose algorithms. */
 #undef AMD_MPI_VADER_LIMIT_SET
 

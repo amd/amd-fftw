@@ -876,6 +876,7 @@ enable_libtool_lock
 enable_mpi
 enable_amd_opt
 enable_amd_mpi_vader_limit
+enable_amd_app_opt
 enable_amd_trans
 enable_amd_mpifft
 enable_openmp
@@ -1590,6 +1591,10 @@ Optional Features:
   --enable-amd-mpi-vader-limit
                           enable setting of VADER LIMIT that controls enabling
                           of new AMD MPI transpose algorithms
+  --enable-amd-app-opt    enable AMD application optimization layer to achieve
+                          best FFT performance with a negligibly small
+                          planning time targeted for HPC and scientific
+                          applications
   --enable-amd-trans      enable AMD cpu optimized Transpose
   --enable-amd-mpifft     enable AMD cpu optimized MPI FFT
   --enable-openmp         use OpenMP directives for parallelism
@@ -17581,6 +17586,18 @@ $as_echo "#define AMD_MPI_VADER_LIMIT_SET 1" >>confdefs.h
 
 	fi
 
+		# Check whether --enable-amd-app-opt was given.
+if test "${enable_amd_app_opt+set}" = set; then :
+  enableval=$enable_amd_app_opt; have_amd_app_opt=$enableval
+else
+  have_amd_app_opt=no
+fi
+
+	if test "$have_amd_app_opt" = yes ; then
+
+$as_echo "#define AMD_APP_OPT_LAYER 1" >>confdefs.h
+
+	fi
 fi
 # Check whether --enable-amd-trans was given.
 if test "${enable_amd_trans+set}" = set; then :

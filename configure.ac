@@ -718,6 +718,11 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
 		AC_DEFINE(AMD_MPI_VADER_LIMIT_SET,1,[Set VADER LIMIT in order to enable new AMD MPI transpose algorithms.])
 	fi
 
+	dnl amd switch to enable AMD's application optimization layer to achieve best FFT performance with a negligibly small planning time targeted for HPC and scientific applications.
+	AC_ARG_ENABLE(amd-app-opt, [AC_HELP_STRING([--enable-amd-app-opt],[enable AMD application optimization layer to achieve best FFT performance with a negligibly small planning time targeted for HPC and scientific applications])], have_amd_app_opt=$enableval, have_amd_app_opt=no)
+	if test "$have_amd_app_opt" = yes ; then
+		AC_DEFINE(AMD_APP_OPT_LAYER,1,[Enable AMD application optimization layer.])
+	fi
 fi
 dnl amd optimization switch to enable amd cpu optimized transpose --enable-amd-trans
 AC_ARG_ENABLE(amd-trans, [AC_HELP_STRING([--enable-amd-trans],[enable AMD cpu optimized Transpose])], have_amd_trans=$enableval, have_amd_trans=no)

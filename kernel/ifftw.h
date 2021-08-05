@@ -176,11 +176,24 @@ extern "C"
 #define AMD_OPT_TOP_N 3 //The value of AMD_OPT_TOP_N is fixed as 3, enabling the search, store and re-use of Top 3 plans. This value should not be changed by the user.
 #endif
 //--------------------------------
+//Below switches and flags enable/disable and control AMD's separate optimization layer for Applications like QE, VASP, etc.
+//With this optimization layer, the fastest FFT execution is achieved by using OPATIENT plan wherein the associated planning cost is kept minimal with the use of in-memory HASH table.
+//This optimization layer also implements a separate memory region for planner to deal with OPATIENT planning of in-place problems.
+#ifdef AMD_APP_OPT_LAYER //AMD's application optimization layer
+//Enable/disable separate memory even for output buffer in case of out-of-place FFT
+//#define AMD_APP_OPT_OUT_BUFFER_MEM
+//Enable this switch to generate wisdom file for the first time for the application.
+#define AMD_APP_OPT_GENERATE_WISDOM
+//Debug print logs for the application optimization layer
+//#define AMD_APP_LAYER_API_LOGS
+#endif
+//--------------------------------
 #endif//#ifdef AMD_OPT_ALL  
 //Below is a manual switch to control VADER LIMIT
 //This is upper limit that each process/rank can send in bytes to the receiver process/rank with buffers for receiving them
 //without any synchronization on completion status.
 #define VADER_LIMIT 8000//8000//4000//500
+
 //============================================================
 //AMD OPTIMIZATIONS :- end
 
