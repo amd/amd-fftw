@@ -56,6 +56,8 @@ option (ENABLE_AMD_TRANS "Enable amd optimized transpose" OFF)
 option (ENABLE_AMD_FAST_PLANNER "Enable for a faster planning time on AMD cpus" OFF)
 option (ENABLE_AMD_TOP_N_planner "Enable AMD Top N Planner for AMD cpus" OFF)
 
+option (ENABLE_AMD_APP_OPT "Enable AMD application optimization layer for HPC and scientific applications" OFF)
+
 if(ENABLE_VERBOSE_MODE)
   if(CMAKE_C_COMPILER_ID MATCHES MSVC)
     set(CMAKE_VERBOSE_MAKEFILE ON CACHE BOOL "ON" FORCE)
@@ -104,6 +106,14 @@ if(ENABLE_AMD_TRANS)
   add_definitions(-DAMD_OPT_TRANS)
 endif()
 
+if (ENABLE_AMD_APP_OPT)
+  if (NOT (ENABLE_MPI OR  ENABLE_QUAD_PRECISION OR ENABLE_LONG_DOUBLE))
+    add_definitions(-DAMD_APP_OPT_LAYER)
+  else ()
+    message(FATAL_ERROR "AMD application optimization layer is not supported for MPI execution and in Quad or Long double precisions.")
+  endif ()
+endif ()
+
 option (DISABLE_FORTRAN "Disable Fortran wrapper routines" OFF)
 
 if (CMAKE_C_COMPILER_ID MATCHES MSVC OR CMAKE_C_COMPILER_ID MATCHES Clang)
@@ -142,6 +152,7 @@ message(CMAKE_C_FLAGS_RELEASE : ${CMAKE_C_FLAGS_RELEASE})
 message(CMAKE_C_COMPILER_FLAGS : ${CMAKE_C_COMPILER_FLAGS})
 message(ENABLE_AMD_FAST_PLANNER : ${ENABLE_AMD_FAST_PLANNER})
 message(ENABLE_AMD_TOP_N_planner : ${ENABLE_AMD_TOP_N_planner})
+message(ENABLE_AMD_APP_OPT : ${ENABLE_AMD_APP_OPT})
 
 include(GNUInstallDirs)
 
@@ -224,7 +235,7 @@ if (MSVC)
   add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif(MSVC)
 
-add_compile_definitions(AOCL_FFTW_VERSION="AOCL FFTW 3.0.1")
+add_compile_definitions(AOCL_FFTW_VERSION="AOCL FFTW 3.1")
 
 find_library (LIBM_LIBRARY NAMES m)
 if (LIBM_LIBRARY)
@@ -494,7 +505,7 @@ endif ()
 
 if (ENABLE_AMD_FAST_PLANNER)
   if (NOT (ENABLE_QUAD_PRECISION OR ENABLE_LONG_DOUBLE))
-    set (AMD_OPT_FAST_PLANNER TRUE)
+    add_definitions(-DAMD_OPT_FAST_PLANNER)
   else ()
     message(FATAL_ERROR "AMD_FAST_PLANNER cannot be set for Quad and Long Double precision")
   endif ()
@@ -507,7 +518,7 @@ if (ENABLE_AMD_TOP_N_planner)
 	if (NOT (ENABLE_AMD_FAST_PLANNER))
 		# Check if amd-top-n-planner is enabled with mpi, openmp or threads
 		if (NOT (ENABLE_MPI OR ENABLE_OPENMP OR ENABLE_THREADS))
-			set (AMD_OPT_TOP_N_PLANNER TRUE)
+			add_definitions(-DAMD_OPT_TOP_N_PLANNER)
 		else ()
 			message(FATAL_ERROR "AMD_TOP_N_PLANNER can not be enabled with mpi, openmp or threads as it is supported only for single threaded mode")
 		endif ()

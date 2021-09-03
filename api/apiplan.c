@@ -142,37 +142,44 @@ static plan *mkplan(planner *plnr, unsigned flags,
      return pln;
 }
 
-apiplan *X(mkapiplan)(int sign, unsigned flags, problem *prb)
-{
-     apiplan *p = 0;
-     plan *pln;
-     unsigned flags_used_for_planning;
-     planner *plnr;
-     static const unsigned int pats[] = {FFTW_ESTIMATE, FFTW_MEASURE,
-                                         FFTW_PATIENT, FFTW_EXHAUSTIVE};
-     int pat, pat_max;
-     double pcost = 0;
 #ifdef AMD_APP_OPT_LAYER
-     R *ri, *ii, *ro, *io;
-     int isz, osz, inplace = 0;
-     int align_bytes = 0, in_alignment = 1, cur_alloc_alignment = 1, iaddr_changed = 0, oaddr_changed = 0;
-     
-     flags &= ~(FFTW_ESTIMATE | FFTW_MEASURE | FFTW_PATIENT | FFTW_EXHAUSTIVE);
-     flags |= FFTW_PATIENT;
-     if (wisdom_one_time_read == 0)
-     {
+/** AMD's application optimization layer - Starts
+  *  It uses a separate data structure "app_layer_data" to create separate planner memory region
+  *  and save/restore the application input and output pointers.
+  *  It uses new functions to create and destroy the separate planner memory region, 
+  *  set planning mode to OPATIENT and OWISDOM, and save/restore application input and output pointers.
+  */
+typedef struct app_layer_data_s
+{
+	R *inPtr;
+	R *outPtr;
+	R *ri;
+	R *ii;
+	R *ro;
+	R *io;
+} app_layer_data;
+
+static int create_amd_app_layer(int sign, unsigned *flags, problem *prb, app_layer_data *app_layer)
+{
+	int isz, osz, inplace = 0;
+	int align_bytes = 0, in_alignment = 1, cur_alloc_alignment = 1, iaddr_changed = 0, oaddr_changed = 0;
+
+	*flags &= ~(FFTW_ESTIMATE | FFTW_MEASURE | FFTW_PATIENT | FFTW_EXHAUSTIVE);
+	*flags |= FFTW_PATIENT;
+	if (wisdom_one_time_read == 0)
+	{
 		if (!X(import_wisdom_from_filename)("wis.dat"))
 		{
-			fprintf(stderr, "apiplan: ERROR reading wisdom wis.dat\n");
+			//fprintf(stderr, "apiplan: ERROR reading wisdom wis.dat\n");
 		}
-#ifndef AMD_APP_OPT_GENERATE_WISDOM
+#ifdef AMD_APP_OPT_GENERATE_WISDOM
 		wisdom_one_time_read = 1;
 #endif
-     }
-     
-     if(prb->adt->problem_kind == PROBLEM_DFT)
-     {
-     	problem_dft *pdft = (problem_dft *) prb;
+	}
+
+	if(prb->adt->problem_kind == PROBLEM_DFT)
+	{
+		problem_dft *pdft = (problem_dft *) prb;
 		isz = 1;
 		osz = 1;
 		if (FINITE_RNK(pdft->sz->rnk)) 
@@ -194,28 +201,38 @@ apiplan *X(mkapiplan)(int sign, unsigned flags, problem *prb)
 			}
 		}
 #ifdef AMD_APP_LAYER_API_LOGS
-		printf("start-QE: %d*%d*%d*%d\n", pdft->sz->rnk, pdft->vecsz->rnk, pdft->sz->dims->n, pdft->vecsz->dims->n);
-		printf("start-QE: %x, %x; %x, %x\n", pdft->ri, pdft->ii, pdft->ro, pdft->io);
+		printf("start-App: %d*%d*%d*%d\n", pdft->sz->rnk, pdft->vecsz->rnk, pdft->sz->dims->n, pdft->vecsz->dims->n);
+		printf("start-App: %x, %x; %x, %x\n", pdft->ri, pdft->ii, pdft->ro, pdft->io);
 #endif
+		app_layer->inPtr = ((sign == FFT_SIGN) ? pdft->ri : pdft->ii);
 		align_bytes = (2 * sizeof(R))-1;
-		if (((ptrdiff_t)pdft->ri) & align_bytes)
+		if (((ptrdiff_t)(app_layer->inPtr)) & align_bytes)
 			in_alignment = 0;
-	
-		ri = pdft->ri;
-		ii = pdft->ii;
+
+		app_layer->ri = pdft->ri;
+		app_layer->ii = pdft->ii;
 		inplace = (pdft->ri == pdft->ro);
-		pdft->ri = (R *) malloc((isz * sizeof(R) * 2) + sizeof(R));
-	
-		if (((ptrdiff_t)pdft->ri) & align_bytes)
+		app_layer->inPtr = (R *) malloc((isz * sizeof(R) * 2) + sizeof(R));
+
+		if (((ptrdiff_t)(app_layer->inPtr)) & align_bytes)
 			cur_alloc_alignment = 0;
 		if ((in_alignment == 0 && cur_alloc_alignment == 1) ||
-			(in_alignment == 1 && cur_alloc_alignment == 0))
+				(in_alignment == 1 && cur_alloc_alignment == 0))
 		{
-			pdft->ri += 1;
 			iaddr_changed = 1;
 		}
-	
-		pdft->ii = pdft->ri + 1;
+
+		if (sign == FFT_SIGN) 
+		{
+			pdft->ri = app_layer->inPtr + iaddr_changed;
+			pdft->ii = pdft->ri + 1;
+		}
+		else
+		{
+			pdft->ii = app_layer->inPtr + iaddr_changed;
+			pdft->ri = pdft->ii + 1;
+		}
+
 		if (inplace)
 		{
 			pdft->ro = pdft->ri;
@@ -224,34 +241,106 @@ apiplan *X(mkapiplan)(int sign, unsigned flags, problem *prb)
 		else 
 		{
 #ifdef AMD_APP_OPT_OUT_BUFFER_MEM
-		ro = pdft->ro;
-		io = pdft->io;
-		in_alignment = 1;
-		cur_alloc_alignment = 1;
-		if (((ptrdiff_t)pdft->ro) & align_bytes)
-			in_alignment = 0;
-		pdft->ro = (R *) malloc((osz * sizeof(R) * 2) + sizeof(R));
-		if (((ptrdiff_t)pdft->ro) & align_bytes)
-			cur_alloc_alignment = 0;
-		if ((in_alignment == 0 && cur_alloc_alignment == 1) ||
-		    (in_alignment == 1 && cur_alloc_alignment == 0))
-		{
-			pdft->ro += 1;
-			oaddr_changed = 1;
-		}
-		pdft->io = pdft->ro + 1;
+			app_layer->ro = pdft->ro;
+			app_layer->io = pdft->io;
+			in_alignment = 1;
+			cur_alloc_alignment = 1;
+			app_layer->outPtr = ((sign == FFT_SIGN) ? pdft->ro : pdft->io);
+			if (((ptrdiff_t)(app_layer->outPtr)) & align_bytes)
+				in_alignment = 0;
+			app_layer->outPtr = (R *) malloc((osz * sizeof(R) * 2) + sizeof(R));
+
+			if (((ptrdiff_t)(app_layer->outPtr)) & align_bytes)
+				cur_alloc_alignment = 0;
+			if ((in_alignment == 0 && cur_alloc_alignment == 1) ||
+					(in_alignment == 1 && cur_alloc_alignment == 0))
+			{
+				oaddr_changed = 1;
+			}
+
+			if (sign == FFT_SIGN) 
+			{
+				pdft->ro = app_layer->outPtr + oaddr_changed;
+				pdft->io = pdft->ro + 1;
+			}
+			else
+			{
+				pdft->io = app_layer->outPtr + oaddr_changed;
+				pdft->ro = pdft->io + 1;
+			}
 #endif
 		}
 #ifdef AMD_APP_LAYER_API_LOGS		
 		printf("start-FFTW: (in-place:%d), %x, %x; %x, %x\n", inplace, pdft->ri, pdft->ii, pdft->ro, pdft->io);
-		printf("%x, %x; %x, %x\n", ri, ii, ro, io);
+		printf("start-FFTW: %x, %x; %x, %x\n", app_layer->ri, app_layer->ii, app_layer->ro, app_layer->io);
+		printf("FFTW app_layer: %x, %x; %x, %x\n", app_layer->ri, app_layer->ii, app_layer->ro, app_layer->io);
 #endif
-     }
-     else
-     {
+	}
+	else
+	{
 		fprintf(stderr, "apiplan: UNSUPPORTED problem type/kind\n");
-		return NULL;
-     }
+		return -1;
+	}
+	return 0;
+}
+
+static void destroy_amd_app_layer(problem *prb, app_layer_data *app_layer)
+{
+	int inplace = 0;
+	problem_dft *pdft = (problem_dft *) prb;
+
+	if (wisdom_one_time_read == 0)
+	{
+#ifdef AMD_APP_OPT_GENERATE_WISDOM
+		wisdom_one_time_read = 1;
+#endif
+		X(export_wisdom_to_filename)("wis.dat");
+	}
+
+	inplace = (pdft->ri == pdft->ro);
+	if(prb->adt->problem_kind == PROBLEM_DFT)
+	{
+		problem_dft *pdft = (problem_dft *) prb;
+		free(app_layer->inPtr);
+		pdft->ri = app_layer->ri;
+		pdft->ii = app_layer->ii;
+		if (inplace)
+		{
+			pdft->ro = app_layer->ri;
+			pdft->io = app_layer->ii;
+		}
+		else
+		{
+#ifdef AMD_APP_OPT_OUT_BUFFER_MEM
+			free(app_layer->outPtr);
+			pdft->ro = app_layer->ro;
+			pdft->io = app_layer->io;
+#endif
+		}
+#ifdef AMD_APP_LAYER_API_LOGS
+		printf("end-App: %x, %x; %x, %x\n", pdft->ri, pdft->ii, pdft->ro, pdft->io);
+#endif
+	}
+}
+/** AMD's application optimization layer - Ends 
+ */
+#endif
+
+apiplan *X(mkapiplan)(int sign, unsigned flags, problem *prb)
+{
+     apiplan *p = 0;
+     plan *pln;
+     unsigned flags_used_for_planning;
+     planner *plnr;
+     static const unsigned int pats[] = {FFTW_ESTIMATE, FFTW_MEASURE,
+                                         FFTW_PATIENT, FFTW_EXHAUSTIVE};
+     int pat, pat_max;
+     double pcost = 0;
+	 
+#ifdef AMD_APP_OPT_LAYER
+     app_layer_data app_layer;
+     if (create_amd_app_layer(sign, &flags, prb, &app_layer))
+	     return NULL;
 #endif
      if (before_planner_hook)
           before_planner_hook();
@@ -333,41 +422,7 @@ apiplan *X(mkapiplan)(int sign, unsigned flags, problem *prb)
           after_planner_hook();
      
 #ifdef AMD_APP_OPT_LAYER
-     if (wisdom_one_time_read == 0)
-     {
-#ifndef AMD_APP_OPT_GENERATE_WISDOM
-	     wisdom_one_time_read = 1;
-#endif
-             X(export_wisdom_to_filename)("wis.dat");
-     }
- 
-     if(prb->adt->problem_kind == PROBLEM_DFT)
-     {
-     	problem_dft *pdft = (problem_dft *) prb;
-		if (iaddr_changed)
-			pdft->ri -= 1;
-		free(pdft->ri);
-		pdft->ri = ri;
-		pdft->ii = ii;
-		if (inplace)
-		{
-			pdft->ro = ri;
-			pdft->io = ii;
-		}
-		else
-		{
-#ifdef AMD_APP_OPT_OUT_BUFFER_MEM
-			if (oaddr_changed)
-				pdft->ro -= 1;
-			free(pdft->ro);
-			pdft->ro = ro;
-			pdft->io = io;
-#endif
-		}
-#ifdef AMD_APP_LAYER_API_LOGS
-		printf("end-QE: %x, %x; %x, %x\n", pdft->ri, pdft->ii, pdft->ro, pdft->io);
-#endif
-     }
+     destroy_amd_app_layer(prb, &app_layer);
 #endif
      return p;
 }
@@ -383,106 +438,11 @@ apiplan *X(mkapiplan_ex)(int sign, unsigned flags, int n, problem *prb)
                                          FFTW_PATIENT, FFTW_EXHAUSTIVE};
      int pat, pat_max;
      double pcost = 0;
+	 
 #ifdef AMD_APP_OPT_LAYER
-     R *ri, *ii, *ro, *io;
-     int isz, osz, inplace = 0;
-     int align_bytes = 0, in_alignment = 1, cur_alloc_alignment = 1, iaddr_changed = 0, oaddr_changed = 0;
-     
-     flags &= ~(FFTW_ESTIMATE | FFTW_MEASURE | FFTW_PATIENT | FFTW_EXHAUSTIVE);
-     flags |= FFTW_PATIENT;
-     if (wisdom_one_time_read == 0)
-     {
-		if (!X(import_wisdom_from_filename)("wis.dat"))
-		{
-			fprintf(stderr, "apiplan_ex: ERROR reading wisdom wis.dat\n");
-		}
-#ifndef AMD_APP_OPT_GENERATE_WISDOM
-		wisdom_one_time_read = 1;
-#endif
-     }
-     
-     if(prb->adt->problem_kind == PROBLEM_DFT)
-     {
-     	problem_dft *pdft = (problem_dft *) prb;
-		isz = 1;
-		osz = 1;
-		if (FINITE_RNK(pdft->sz->rnk)) 
-		{
-			for (int i = 0; i < pdft->sz->rnk; ++i) 
-			{
-				const iodim *q = pdft->sz->dims + i;
-				isz *= (q->n);
-				osz *= (q->n);
-			}
-		}
-		if (FINITE_RNK(pdft->vecsz->rnk)) 
-		{
-			for (int i = 0; i < pdft->vecsz->rnk; ++i) 
-			{
-				const iodim *q = pdft->vecsz->dims + i;
-				isz *= (q->n);
-				osz *= (q->n);
-			}
-		}
-#ifdef AMD_APP_LAYER_API_LOGS
-		printf("start_ex-QE: %d*%d*%d*%d\n", pdft->sz->rnk, pdft->vecsz->rnk, pdft->sz->dims->n, pdft->vecsz->dims->n);
-		printf("start_ex-QE: %x, %x; %x, %x\n", pdft->ri, pdft->ii, pdft->ro, pdft->io);
-#endif
-		align_bytes = (2 * sizeof(R))-1;
-		if (((ptrdiff_t)pdft->ri) & align_bytes)
-			in_alignment = 0;
-	
-		ri = pdft->ri;
-		ii = pdft->ii;
-		inplace = (pdft->ri == pdft->ro);
-		pdft->ri = (R *) malloc((isz * sizeof(R) * 2) + sizeof(R));
-	
-		if (((ptrdiff_t)pdft->ri) & align_bytes)
-			cur_alloc_alignment = 0;
-		if ((in_alignment == 0 && cur_alloc_alignment == 1) ||
-			(in_alignment == 1 && cur_alloc_alignment == 0))
-		{
-			pdft->ri += 1;
-			iaddr_changed = 1;
-		}
-	
-		pdft->ii = pdft->ri + 1;
-		if (inplace)
-		{
-			pdft->ro = pdft->ri;
-			pdft->io = pdft->ii;
-		}
-		else 
-		{
-#ifdef AMD_APP_OPT_OUT_BUFFER_MEM
-		ro = pdft->ro;
-		io = pdft->io;
-		in_alignment = 1;
-		cur_alloc_alignment = 1;
-		if (((ptrdiff_t)pdft->ro) & align_bytes)
-			in_alignment = 0;
-		pdft->ro = (R *) malloc((osz * sizeof(R) * 2) + sizeof(R));
-		if (((ptrdiff_t)pdft->ro) & align_bytes)
-			cur_alloc_alignment = 0;
-		if ((in_alignment == 0 && cur_alloc_alignment == 1) ||
-		    (in_alignment == 1 && cur_alloc_alignment == 0))
-		{
-			pdft->ro += 1;
-			oaddr_changed = 1;
-		}
-		pdft->io = pdft->ro + 1;
-#endif
-		}
-#ifdef AMD_APP_LAYER_API_LOGS		
-		printf("start_ex-FFTW: (in-place:%d), %x, %x; %x, %x\n", inplace, pdft->ri, pdft->ii, pdft->ro, pdft->io);
-		printf("%x, %x; %x, %x\n", ri, ii, ro, io);
-#endif
-     }
-     else
-     {
-		fprintf(stderr, "apiplan: UNSUPPORTED problem type/kind\n");
-		return NULL;
-     }
+     app_layer_data app_layer;
+     if (create_amd_app_layer(sign, &flags, prb, &app_layer))
+	     return NULL;
 #endif
      if (before_planner_hook)
           before_planner_hook();
@@ -563,41 +523,7 @@ apiplan *X(mkapiplan_ex)(int sign, unsigned flags, int n, problem *prb)
      if (after_planner_hook)
           after_planner_hook();
 #ifdef AMD_APP_OPT_LAYER
-     if (wisdom_one_time_read == 0)
-     {
-#ifndef AMD_APP_OPT_GENERATE_WISDOM
-	     wisdom_one_time_read = 1;
-#endif
-             X(export_wisdom_to_filename)("wis.dat");
-     }
- 
-     if(prb->adt->problem_kind == PROBLEM_DFT)
-     {
-     	problem_dft *pdft = (problem_dft *) prb;
-		if (iaddr_changed)
-			pdft->ri -= 1;
-		free(pdft->ri);
-		pdft->ri = ri;
-		pdft->ii = ii;
-		if (inplace)
-		{
-			pdft->ro = ri;
-			pdft->io = ii;
-		}
-		else
-		{
-#ifdef AMD_APP_OPT_OUT_BUFFER_MEM
-			if (oaddr_changed)
-				pdft->ro -= 1;
-			free(pdft->ro);
-			pdft->ro = ro;
-			pdft->io = io;
-#endif
-		}
-#ifdef AMD_APP_LAYER_API_LOGS
-		printf("end_ex-QE: %x, %x; %x, %x\n", pdft->ri, pdft->ii, pdft->ro, pdft->io);
-#endif
-     }
+     destroy_amd_app_layer(prb, &app_layer);
 #endif
      return p;
 }

@@ -3,6 +3,7 @@
 
 FFTW is Copyright @copyright{} 2003, 2007-11 Matteo Frigo, Copyright
 @copyright{} 2003, 2007-11 Massachusetts Institute of Technology.
+@copyright{} 2019-2021, Advanced Micro Devices, Inc. All Rights Reserved.
 
 FFTW is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

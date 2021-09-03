@@ -17525,13 +17525,17 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
 				;;
 				"25")
 				if [ -z "${AMD_ARCH}" ]; then
-				if [ "$GCCVERSION" -ge "9" ] && [ "$AMDZENMODEL" -le "15" ]; then
-					CFLAGS="$CFLAGS -march=znver2 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
-				elif [ "$GCCVERSION" -lt "9" ] && [ "$AMDZENMODEL" -le "15" ]; then
-					CFLAGS="$CFLAGS -march=znver1 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
-				else
-					CFLAGS="$CFLAGS -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
-				fi
+					if [ "$AMDZENMODEL" -le "15" ] || ( [ "$AMDZENMODEL" -ge "48" ] && [ "$AMDZENMODEL" -le "63" ] ); then
+						if [ "$GCCVERSION" -ge "11" ]; then
+							CFLAGS="$CFLAGS -march=znver3 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+						elif [ "$GCCVERSION" -ge "9" ]; then
+							CFLAGS="$CFLAGS -march=znver2 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+						else
+							CFLAGS="$CFLAGS -march=znver1 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+						fi
+					else
+						CFLAGS="$CFLAGS -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+					fi
 				else
 					CFLAGS="$CFLAGS -march=$AMD_ARCH -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
 				fi
@@ -17557,8 +17561,8 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
 				fi
 				;;
 				"25")
-				if [ "$AMDZENMODEL" -le "15" ]; then
-					CFLAGS="$CFLAGS -march=znver2"
+				if [ "$AMDZENMODEL" -le "15" ] || ( [ "$AMDZENMODEL" -ge "48" ] && [ "$AMDZENMODEL" -le "63" ] ); then
+					CFLAGS="$CFLAGS -march=znver3"
 				else
 					CFLAGS="$CFLAGS -mavx2"
 				fi
@@ -17594,9 +17598,13 @@ else
 fi
 
 	if test "$have_amd_app_opt" = yes ; then
+		if (test "$enable_mpi" = yes || test "$quad_precision_supported" = yes || test "$long_double_supported" = yes); then
+			as_fn_error $? "AMD application optimization layer is not supported for MPI execution and in Quad or Long double precisions." "$LINENO" 5
+		else
 
 $as_echo "#define AMD_APP_OPT_LAYER 1" >>confdefs.h
 
+		fi
 	fi
 fi
 # Check whether --enable-amd-trans was given.
@@ -17638,7 +17646,7 @@ else
 fi
 
 
-$as_echo "#define AOCL_FFTW_VERSION \"AOCL FFTW 3.0.1\"" >>confdefs.h
+$as_echo "#define AOCL_FFTW_VERSION \"AOCL FFTW 3.1\"" >>confdefs.h
 
 # Check whether --enable-amd-fast-planner was given.
 if test "${enable_amd_fast_planner+set}" = set; then :

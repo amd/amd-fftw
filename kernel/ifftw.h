@@ -183,9 +183,11 @@ extern "C"
 //Enable/disable separate memory even for output buffer in case of out-of-place FFT
 //#define AMD_APP_OPT_OUT_BUFFER_MEM
 //Enable this switch to generate wisdom file for the first time for the application.
-#define AMD_APP_OPT_GENERATE_WISDOM
+//#define AMD_APP_OPT_GENERATE_WISDOM
 //Debug print logs for the application optimization layer
 //#define AMD_APP_LAYER_API_LOGS
+//Maximum size of Unblessed Hash table kept alive to reuse the saved plans directly from it.
+#define AMD_APP_OPT_HASH_UNBLESS_MAX_SIZE 16777216
 #endif
 //--------------------------------
 #endif//#ifdef AMD_OPT_ALL  
