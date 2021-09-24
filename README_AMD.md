@@ -49,7 +49,10 @@ generation architectures.
      make install
 
 The configure option "--enable-amd-opt" enables all the improvements and 
-optimizations targeted for AMD EPYC CPUs.
+optimizations targeted for AMD EPYC CPUs. For enabling various optional
+configure options provided for AMD EPYC CPUs, the master optimization switch
+"--enable-amd-opt" must be kept enabled.
+
 When enabling configure option "--enable-amd-opt", do not use the 
 configure option "--enable-generic-simd128" or "--enable-generic-simd256".
 

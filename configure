@@ -17508,7 +17508,11 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
 		SUBSTRCLANG='clang'
 		SUBSTRGCC='gcc'
 		if grep -q "$SUBSTRCLANG" <<<"$CC"; then
-			CFLAGS="$CFLAGS -mavx2 -mfma"
+			if [ -z "${AMD_ARCH}" ]; then
+				CFLAGS="$CFLAGS -mavx2 -mfma"
+			else
+				CFLAGS="$CFLAGS -march=$AMD_ARCH -mavx2 -mfma"
+			fi
 		elif grep -q "$SUBSTRGCC" <<<"$CC"; then
 			GCCVERSION=$(expr `gcc -dumpversion | cut -f1 -d.`)
 			case "$AMDZENFAMILY" in
@@ -17606,31 +17610,34 @@ $as_echo "#define AMD_APP_OPT_LAYER 1" >>confdefs.h
 
 		fi
 	fi
-fi
-# Check whether --enable-amd-trans was given.
+
+		# Check whether --enable-amd-trans was given.
 if test "${enable_amd_trans+set}" = set; then :
   enableval=$enable_amd_trans; have_amd_trans=$enableval
 else
   have_amd_trans=no
 fi
 
-if test "$have_amd_trans" = yes; then
+	if test "$have_amd_trans" = yes; then
 
 $as_echo "#define AMD_OPT_TRANS 1" >>confdefs.h
 
-fi
-# Check whether --enable-amd-mpifft was given.
+	fi
+		# Check whether --enable-amd-mpifft was given.
 if test "${enable_amd_mpifft+set}" = set; then :
   enableval=$enable_amd_mpifft; have_amd_mpifft=$enableval
 else
   have_amd_mpifft=no
 fi
 
-if test "$have_amd_mpifft" = yes; then
+	if test "$have_amd_mpifft" = yes; then
 
 $as_echo "#define AMD_OPT_MPIFFT 1" >>confdefs.h
 
+	fi
+
 fi
+
 # Check whether --enable-openmp was given.
 if test "${enable_openmp+set}" = set; then :
   enableval=$enable_openmp; enable_openmp=$enableval

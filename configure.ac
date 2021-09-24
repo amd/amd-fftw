@@ -649,7 +649,11 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
 		SUBSTRCLANG='clang'
 		SUBSTRGCC='gcc'
 		if grep -q "$SUBSTRCLANG" <<<"$CC"; then
-			CFLAGS="$CFLAGS -mavx2 -mfma"
+			if [[ -z "${AMD_ARCH}" ]]; then
+				CFLAGS="$CFLAGS -mavx2 -mfma"
+			else
+				CFLAGS="$CFLAGS -march=$AMD_ARCH -mavx2 -mfma"
+			fi
 		elif grep -q "$SUBSTRGCC" <<<"$CC"; then
 			GCCVERSION=$(expr `gcc -dumpversion | cut -f1 -d.`)
 			case "$AMDZENFAMILY" in
@@ -731,17 +735,20 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
 			AC_DEFINE(AMD_APP_OPT_LAYER,1,[Enable AMD application optimization layer.])
 		fi
 	fi
+
+	dnl amd optimization switch to enable amd cpu optimized transpose --enable-amd-trans
+	AC_ARG_ENABLE(amd-trans, [AC_HELP_STRING([--enable-amd-trans],[enable AMD cpu optimized Transpose])], have_amd_trans=$enableval, have_amd_trans=no)
+	if test "$have_amd_trans" = yes; then
+		AC_DEFINE(AMD_OPT_TRANS,1,[Define to enable AMD cpu optimized Transpose.])
+	fi
+	dnl amd optimization switch to enable MPI FFT improvements for AMD cpus --enable-amd-mpifft
+	AC_ARG_ENABLE(amd-mpifft, [AC_HELP_STRING([--enable-amd-mpifft],[enable AMD cpu optimized MPI FFT])], have_amd_mpifft=$enableval, have_amd_mpifft=no)
+	if test "$have_amd_mpifft" = yes; then
+		AC_DEFINE(AMD_OPT_MPIFFT,1,[Define to enable AMD cpu optimized MPI FFT.])
+	fi
+
 fi
-dnl amd optimization switch to enable amd cpu optimized transpose --enable-amd-trans
-AC_ARG_ENABLE(amd-trans, [AC_HELP_STRING([--enable-amd-trans],[enable AMD cpu optimized Transpose])], have_amd_trans=$enableval, have_amd_trans=no)
-if test "$have_amd_trans" = yes; then
-	AC_DEFINE(AMD_OPT_TRANS,1,[Define to enable AMD cpu optimized Transpose.])
-fi
-dnl amd optimization switch to enable MPI FFT improvements for AMD cpus --enable-amd-mpifft
-AC_ARG_ENABLE(amd-mpifft, [AC_HELP_STRING([--enable-amd-mpifft],[enable AMD cpu optimized MPI FFT])], have_amd_mpifft=$enableval, have_amd_mpifft=no)
-if test "$have_amd_mpifft" = yes; then
-	AC_DEFINE(AMD_OPT_MPIFFT,1,[Define to enable AMD cpu optimized MPI FFT.])
-fi
+
 AC_ARG_ENABLE(openmp, [AC_HELP_STRING([--enable-openmp],[use OpenMP directives for parallelism])], enable_openmp=$enableval, enable_openmp=no)
 AC_ARG_ENABLE(threads, [AC_HELP_STRING([--enable-threads],[compile FFTW SMP threads library])], enable_threads=$enableval, enable_threads=no)
 dnl aocl version number of amd-fftw
