@@ -159,13 +159,24 @@ typedef struct app_layer_data_s
 	R *io;
 } app_layer_data;
 
+static inline INT imax(INT a, INT b)
+{
+     return (a > b) ? a : b;
+}
+
+static inline INT imin(INT a, INT b)
+{
+     return (a < b) ? a : b;
+}
+
 static int create_amd_app_layer(int sign, unsigned *flags, problem *prb, app_layer_data *app_layer)
 {
-	int isz, osz, inplace = 0;
+	INT isz, osz, inplace = 0;
 	int align_bytes = 0, in_alignment = 1, cur_alloc_alignment = 1, iaddr_changed = 0, oaddr_changed = 0;
 
 	*flags &= ~(FFTW_ESTIMATE | FFTW_MEASURE | FFTW_PATIENT | FFTW_EXHAUSTIVE);
 	*flags |= FFTW_PATIENT;
+#ifdef AMD_APP_OPT_USE_WISDOM
 	if (wisdom_one_time_read == 0)
 	{
 		if (!X(import_wisdom_from_filename)("wis.dat"))
@@ -176,6 +187,7 @@ static int create_amd_app_layer(int sign, unsigned *flags, problem *prb, app_lay
 		wisdom_one_time_read = 1;
 #endif
 	}
+#endif
 
 	if(prb->adt->problem_kind == PROBLEM_DFT)
 	{
@@ -276,9 +288,133 @@ static int create_amd_app_layer(int sign, unsigned *flags, problem *prb, app_lay
 		printf("FFTW app_layer: %x, %x; %x, %x\n", app_layer->ri, app_layer->ii, app_layer->ro, app_layer->io);
 #endif
 	}
+	else if(prb->adt->problem_kind == PROBLEM_RDFT2) //R2C(forward) and C2R(backward) cases only
+	{
+		problem_rdft2 *pdft = (problem_rdft2 *) prb;
+		INT lb = 0, ub = 1, lb2 = 0, ub2 = 1, stridedLen, stridedLen2, is = 0, os = 0;
+		int rType = (R2HC_KINDP(pdft->kind));//1: r2c, 0: c2r
+		isz = 1;
+		osz = 1;
+		if (FINITE_RNK(pdft->sz->rnk)) 
+		{
+			int i, rnkGtr1 = 0;
+			for (i = 0; i < pdft->sz->rnk-1; ++i) 
+			{
+				const iodim *q = pdft->sz->dims + i;
+				is = q->is;
+				os = q->os;
+				stridedLen = (is>>!rType) * (q->n - 1);
+				stridedLen2 = (os>>rType) * (q->n - 1);
+				lb = imin(lb, lb + stridedLen);	
+				ub = imax(ub, ub + stridedLen);
+				lb2 = imin(lb2, lb2 + stridedLen2);
+				ub2 = imax(ub2, ub2 + stridedLen2);
+				rnkGtr1 = 1;
+			}
+			if (i < pdft->sz->rnk) 
+			{
+				const iodim *q = pdft->sz->dims + i;
+				is = q->is>>1;
+				os = q->os>>1;
+				stridedLen = is * (q->n - 1);
+				stridedLen2 = os * (q->n - 1);
+				lb = imin(lb, lb + stridedLen);	
+				ub = imax(ub, ub + stridedLen);
+				lb2 = imin(lb2, lb2 + stridedLen2);
+				ub2 = imax(ub2, ub2 + stridedLen2);
+			}
+
+		}
+		if (FINITE_RNK(pdft->vecsz->rnk)) 
+		{
+			for (int i = 0; i < pdft->vecsz->rnk; ++i) 
+			{
+				const iodim *q = pdft->vecsz->dims + i;
+				stridedLen = (q->is>>!rType) * (q->n - 1);
+				stridedLen2 = (q->os>>rType) * (q->n - 1);
+				lb = imin(lb, lb + stridedLen);	
+				ub = imax(ub, ub + stridedLen);
+				lb2 = imin(lb2, lb2 + stridedLen2);
+				ub2 = imax(ub2, ub2 + stridedLen2);
+			}
+		}
+		isz = ub - lb;
+		osz = ub2 - lb2;
+#ifdef AMD_APP_LAYER_API_LOGS
+		printf("start-App (real): %d*%d*%d*%d\n", pdft->sz->rnk, pdft->vecsz->rnk, pdft->sz->dims->n, pdft->vecsz->dims->n);
+		printf("start-App (real): %x, %x; %x, %x; %d, %d\n", pdft->r0, pdft->r1, pdft->cr, pdft->ci, isz, osz);
+#endif
+		if (R2HC_KINDP(pdft->kind))
+		{
+			isz = isz > (osz<<1) ? isz : (osz<<1);
+			app_layer->ri = pdft->r0;
+			app_layer->ii = pdft->r1;
+			app_layer->ro = pdft->cr;
+			app_layer->io = pdft->ci;
+			inplace = (pdft->r0 == pdft->cr);
+			app_layer->inPtr = (R *) malloc((isz * sizeof(R)) + sizeof(R));
+			if (((ptrdiff_t)(pdft->r0)) & align_bytes)
+				in_alignment = 0;
+			if (((ptrdiff_t)(app_layer->inPtr)) & align_bytes)
+				cur_alloc_alignment = 0;
+
+			if ((in_alignment == 0 && cur_alloc_alignment == 1) ||
+					(in_alignment == 1 && cur_alloc_alignment == 0))
+			{
+				iaddr_changed = 1;
+			}
+			pdft->r0 = app_layer->inPtr + iaddr_changed;
+			pdft->r1 = pdft->r0 + is;
+			if (inplace)
+			{
+				pdft->cr = pdft->r0;
+				pdft->ci = pdft->cr + 1;
+			}
+		}
+		else
+		{
+			osz = osz > (isz<<1) ? osz : (isz<<1);
+			app_layer->ri = pdft->cr;
+			app_layer->ii = pdft->ci;
+			app_layer->ro = pdft->r0;
+			app_layer->io = pdft->r1;
+			inplace = (pdft->r0 == pdft->cr);
+			if (inplace)
+			{
+				app_layer->inPtr = (R *) malloc((osz * sizeof(R)) + sizeof(R));
+			}
+			else
+			{
+				app_layer->inPtr = (R *) malloc((isz * sizeof(R) * 2) + sizeof(R));
+			}
+			if (((ptrdiff_t)(pdft->cr)) & align_bytes)
+				in_alignment = 0;
+			if (((ptrdiff_t)(app_layer->inPtr)) & align_bytes)
+				cur_alloc_alignment = 0;
+
+			if ((in_alignment == 0 && cur_alloc_alignment == 1) ||
+					(in_alignment == 1 && cur_alloc_alignment == 0))
+			{
+				iaddr_changed = 1;
+			}
+			pdft->cr = app_layer->inPtr + iaddr_changed;
+			pdft->ci = pdft->cr + 1;
+			if (inplace)
+			{
+				pdft->r0 = pdft->cr;
+				pdft->r1 = pdft->r0 + os;
+			}
+		}
+
+#ifdef AMD_APP_LAYER_API_LOGS		
+		printf("start-FFTW (real): (in-place:%d), %x, %x; %x, %x\n", inplace, pdft->r0, pdft->r1, pdft->cr, pdft->ci);
+		printf("start-FFTW (real): %x, %x; %x, %x\n", app_layer->ri, app_layer->ii, app_layer->ro, app_layer->io);
+		printf("FFTW app_layer (real): %x, %x; %x, %x\n", app_layer->ri, app_layer->ii, app_layer->ro, app_layer->io);
+#endif
+	}
 	else
 	{
-		fprintf(stderr, "apiplan: UNSUPPORTED problem type/kind\n");
+		fprintf(stderr, "apiplan: UNSUPPORTED problem type/kind [%d]\n", prb->adt->problem_kind);
 		return -1;
 	}
 	return 0;
@@ -287,8 +423,8 @@ static int create_amd_app_layer(int sign, unsigned *flags, problem *prb, app_lay
 static void destroy_amd_app_layer(problem *prb, app_layer_data *app_layer)
 {
 	int inplace = 0;
-	problem_dft *pdft = (problem_dft *) prb;
 
+#ifdef AMD_APP_OPT_USE_WISDOM
 	if (wisdom_one_time_read == 0)
 	{
 #ifdef AMD_APP_OPT_GENERATE_WISDOM
@@ -296,11 +432,12 @@ static void destroy_amd_app_layer(problem *prb, app_layer_data *app_layer)
 #endif
 		X(export_wisdom_to_filename)("wis.dat");
 	}
+#endif
 
-	inplace = (pdft->ri == pdft->ro);
 	if(prb->adt->problem_kind == PROBLEM_DFT)
 	{
 		problem_dft *pdft = (problem_dft *) prb;
+		inplace = (pdft->ri == pdft->ro);
 		free(app_layer->inPtr);
 		pdft->ri = app_layer->ri;
 		pdft->ii = app_layer->ii;
@@ -319,6 +456,35 @@ static void destroy_amd_app_layer(problem *prb, app_layer_data *app_layer)
 		}
 #ifdef AMD_APP_LAYER_API_LOGS
 		printf("end-App: %x, %x; %x, %x\n", pdft->ri, pdft->ii, pdft->ro, pdft->io);
+#endif
+	}
+	else if(prb->adt->problem_kind == PROBLEM_RDFT2)
+	{
+		problem_rdft2 *pdft = (problem_rdft2 *) prb;
+		inplace = (pdft->r0 == pdft->cr);
+		free(app_layer->inPtr);
+		if (R2HC_KINDP(pdft->kind))
+		{
+			pdft->r0 = app_layer->ri;
+			pdft->r1 = app_layer->ii;
+			if (inplace)
+			{
+				pdft->cr = app_layer->ro;
+				pdft->ci = app_layer->io;
+			}
+		}
+		else
+		{
+			pdft->cr = app_layer->ri;
+			pdft->ci = app_layer->ii;
+			if (inplace)
+			{
+				pdft->r0 = app_layer->ro;
+				pdft->r1 = app_layer->io;
+			}
+		}
+#ifdef AMD_APP_LAYER_API_LOGS
+		printf("end-App: %x, %x; %x, %x\n", pdft->r0, pdft->r1, pdft->cr, pdft->ci);
 #endif
 	}
 }

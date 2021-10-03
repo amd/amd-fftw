@@ -38,7 +38,7 @@ INSTALLATION FROM AMD Optimized FFTW GIT REPOSITORY:
 
 After downloading the latest stable release from the git repository,
 https://github.com/amd/amd-fftw, follow the below steps to configure and
-build it for AMD EPYC processor based on Naples, Rome and future 
+build it for AMD EPYC processor based on Naples, Rome, Milan and future 
 generation architectures.
 
      ./configure --enable-sse2 --enable-avx --enable-avx2 
@@ -65,7 +65,11 @@ configure option, the user needs to set --mca btl_vader_eager_limit
 appropriately (current preference is 65536) in the MPIRUN command.
 
 The new fast planner can be enabled using optional configure option 
-"--enable-amd-fast-planner". It is supported for single and double precisions.
+"--enable-amd-fast-planner". It is supported in single and double precisions.
+
+Top N planner mode can be enabled using optional configure option
+"--enable-amd-top-n-planner" to minimize run-to-run variations in performance.
+It is supported in single-threaded execution in single and double precisions.
 
 An optional configure option "AMD_ARCH" is supported that can be set to CPU 
 architecture values like "auto" or "znver1" or "znver2" or "znver3" for AMD 
@@ -73,9 +77,9 @@ EPYC processors.
 
 The optional configure option "--enable-amd-app-opt" turns on AMD's application
 optimization layer to benefit performance of HPC and scientific applications.
-Currently it is developed for complex DFT problem types in double and single
-precisions. It is not supported for MPI FFTs, real DFT problem types, Quad or 
-Long double precisions, and split array format.
+Currently it is developed for complex and real (r2c and c2r) DFT problem types
+in double and single precisions. It is not supported for MPI FFTs, r2r real DFT
+problem types, Quad or Long double precisions, and split array format.
 
 An optional configure option "--enable-amd-trans" is provided that may benefit
 the performance of transpose operations in case of very large FFT problem sizes.

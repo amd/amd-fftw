@@ -182,6 +182,8 @@ extern "C"
 #ifdef AMD_APP_OPT_LAYER //AMD's application optimization layer
 //Enable/disable separate memory even for output buffer in case of out-of-place FFT
 //#define AMD_APP_OPT_OUT_BUFFER_MEM
+//Enable this switch to use wisdom feature in combination with application optimization layer.
+//#define AMD_APP_OPT_USE_WISDOM
 //Enable this switch to generate wisdom file for the first time for the application.
 //#define AMD_APP_OPT_GENERATE_WISDOM
 //Debug print logs for the application optimization layer
