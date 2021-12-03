@@ -311,26 +311,3 @@ void cleanup(void)
 
      final_cleanup();
 }
-
-/*void cleanup_ex(bench_problem *p)
-{
-	initial_cleanup();
-	//wisdat already contains wisdom file name string due to strcpy done in can_do/setup
-	wrwisdom();
-
-#ifdef HAVE_SMP
-	FFTW(cleanup_threads)();
-#else
-	FFTW(cleanup)();
-#endif
-
-#    ifdef FFTW_DEBUG_MALLOC
-	{
-		// undocumented memory checker 
-		FFTW_EXTERN void FFTW(malloc_print_minfo)(int v);
-		FFTW(malloc_print_minfo)(verbose);
-	}
-#    endif
-
-	final_cleanup();
-}*/
