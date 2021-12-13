@@ -649,7 +649,11 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
 		SUBSTRCLANG='clang'
 		SUBSTRGCC='gcc'
 		if grep -q "$SUBSTRCLANG" <<<"$CC"; then
-			CFLAGS="$CFLAGS -mavx2 -mfma"
+			if [[ -z "${AMD_ARCH}" ]]; then
+				CFLAGS="$CFLAGS -mavx2 -mfma"
+			else
+				CFLAGS="$CFLAGS -march=$AMD_ARCH -mavx2 -mfma"
+			fi
 		elif grep -q "$SUBSTRGCC" <<<"$CC"; then
 			GCCVERSION=$(expr `gcc -dumpversion | cut -f1 -d.`)
 			case "$AMDZENFAMILY" in
@@ -666,13 +670,17 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
 				;;
 				"25")
 				if [[ -z "${AMD_ARCH}" ]]; then
-				if [[ "$GCCVERSION" -ge "9" ]] && [[ "$AMDZENMODEL" -le "15" ]]; then
-					CFLAGS="$CFLAGS -march=znver2 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
-				elif [[ "$GCCVERSION" -lt "9" ]] && [[ "$AMDZENMODEL" -le "15" ]]; then
-					CFLAGS="$CFLAGS -march=znver1 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
-				else
-					CFLAGS="$CFLAGS -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
-				fi
+					if [[ "$AMDZENMODEL" -le "15" ]] || ( [[ "$AMDZENMODEL" -ge "48" ]] && [[ "$AMDZENMODEL" -le "63" ]] ); then
+						if [[ "$GCCVERSION" -ge "11" ]]; then
+							CFLAGS="$CFLAGS -march=znver3 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+						elif [[ "$GCCVERSION" -ge "9" ]]; then
+							CFLAGS="$CFLAGS -march=znver2 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+						else
+							CFLAGS="$CFLAGS -march=znver1 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+						fi
+					else
+						CFLAGS="$CFLAGS -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+					fi
 				else
 					CFLAGS="$CFLAGS -march=$AMD_ARCH -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
 				fi
@@ -698,8 +706,8 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
 				fi
 				;;
 				"25")
-				if [[ "$AMDZENMODEL" -le "15" ]]; then
-					CFLAGS="$CFLAGS -march=znver2"
+				if [[ "$AMDZENMODEL" -le "15" ]] || ( [[ "$AMDZENMODEL" -ge "48" ]] && [[ "$AMDZENMODEL" -le "63" ]] ); then
+					CFLAGS="$CFLAGS -march=znver3"
 				else
 					CFLAGS="$CFLAGS -mavx2"
 				fi
@@ -718,21 +726,33 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
 		AC_DEFINE(AMD_MPI_VADER_LIMIT_SET,1,[Set VADER LIMIT in order to enable new AMD MPI transpose algorithms.])
 	fi
 
+	dnl amd switch to enable AMD's application optimization layer to achieve best FFT performance with a negligibly small planning time targeted for HPC and scientific applications.
+	AC_ARG_ENABLE(amd-app-opt, [AC_HELP_STRING([--enable-amd-app-opt],[enable AMD application optimization layer to achieve best FFT performance with a negligibly small planning time targeted for HPC and scientific applications])], have_amd_app_opt=$enableval, have_amd_app_opt=no)
+	if test "$have_amd_app_opt" = yes ; then
+		if (test "$enable_mpi" = yes || test "$quad_precision_supported" = yes || test "$long_double_supported" = yes); then
+			AC_MSG_ERROR([AMD application optimization layer is not supported for MPI execution and in Quad or Long double precisions.])
+		else
+			AC_DEFINE(AMD_APP_OPT_LAYER,1,[Enable AMD application optimization layer.])
+		fi
+	fi
+
+	dnl amd optimization switch to enable amd cpu optimized transpose --enable-amd-trans
+	AC_ARG_ENABLE(amd-trans, [AC_HELP_STRING([--enable-amd-trans],[enable AMD cpu optimized Transpose])], have_amd_trans=$enableval, have_amd_trans=no)
+	if test "$have_amd_trans" = yes; then
+		AC_DEFINE(AMD_OPT_TRANS,1,[Define to enable AMD cpu optimized Transpose.])
+	fi
+	dnl amd optimization switch to enable MPI FFT improvements for AMD cpus --enable-amd-mpifft
+	AC_ARG_ENABLE(amd-mpifft, [AC_HELP_STRING([--enable-amd-mpifft],[enable AMD cpu optimized MPI FFT])], have_amd_mpifft=$enableval, have_amd_mpifft=no)
+	if test "$have_amd_mpifft" = yes; then
+		AC_DEFINE(AMD_OPT_MPIFFT,1,[Define to enable AMD cpu optimized MPI FFT.])
+	fi
+
 fi
-dnl amd optimization switch to enable amd cpu optimized transpose --enable-amd-trans
-AC_ARG_ENABLE(amd-trans, [AC_HELP_STRING([--enable-amd-trans],[enable AMD cpu optimized Transpose])], have_amd_trans=$enableval, have_amd_trans=no)
-if test "$have_amd_trans" = yes; then
-	AC_DEFINE(AMD_OPT_TRANS,1,[Define to enable AMD cpu optimized Transpose.])
-fi
-dnl amd optimization switch to enable MPI FFT improvements for AMD cpus --enable-amd-mpifft
-AC_ARG_ENABLE(amd-mpifft, [AC_HELP_STRING([--enable-amd-mpifft],[enable AMD cpu optimized MPI FFT])], have_amd_mpifft=$enableval, have_amd_mpifft=no)
-if test "$have_amd_mpifft" = yes; then
-	AC_DEFINE(AMD_OPT_MPIFFT,1,[Define to enable AMD cpu optimized MPI FFT.])
-fi
+
 AC_ARG_ENABLE(openmp, [AC_HELP_STRING([--enable-openmp],[use OpenMP directives for parallelism])], enable_openmp=$enableval, enable_openmp=no)
 AC_ARG_ENABLE(threads, [AC_HELP_STRING([--enable-threads],[compile FFTW SMP threads library])], enable_threads=$enableval, enable_threads=no)
 dnl aocl version number of amd-fftw
-AC_DEFINE(AOCL_FFTW_VERSION,"AOCL FFTW 3.0.1",[AOCL Version of AMD-FFTW])
+AC_DEFINE(AOCL_FFTW_VERSION,"AOCL FFTW 3.1",[AOCL Version of AMD-FFTW])
 dnl amd optimization switch to enable AMD Fast Planner for AMD cpus --enable-amd-fast-planner
 AC_ARG_ENABLE(amd-fast-planner, [AC_HELP_STRING([--enable-amd-fast-planner],[enable AMD Fast Planner for a faster planning time on AMD cpus])], have_amd_fast_planner=$enableval, have_amd_fast_planner=no)
 dnl amd optimization switch to enable AMD Top N Planner for AMD cpus --enable-amd-top-n-planner

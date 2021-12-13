@@ -98,7 +98,7 @@ extern "C"
 #define AMD_OPT_USE_MEMCPY_TO_CPY
 //Below switch enables the unrolling of memory read and write SIMD operations in cpy2d routine.
 #if (!defined(FFTW_LDOUBLE) && !defined(FFTW_QUAD) && !defined(FFTW_SINGLE))
-#define AMD_OPT_UNROLL_CPY2D
+//#define AMD_OPT_UNROLL_CPY2D
 #endif
 //--------------------------------
 //In-place Transpose related optimization switches :-
@@ -125,7 +125,7 @@ extern "C"
 //     (for this optimization switch, AMD_OPT_AUTO_TUNED_TRANS_BLK_SIZE should also be enabled)
 //#define AMD_OPT_AUTO_TUNED_RASTER_TILED_TRANS_METHOD
 //The below switch enables AMD optimizations for the in-place square transpose routine.
-#define AMD_OPT_IN_PLACE_SQU_TRANS
+//#define AMD_OPT_IN_PLACE_SQU_TRANS
 //The below switch enables AMD optimizations for the in-situ Toms513 algorithm.
 #define AMD_OPT_TOMS513_TRANS
 //--------------------------------
@@ -176,11 +176,28 @@ extern "C"
 #define AMD_OPT_TOP_N 3 //The value of AMD_OPT_TOP_N is fixed as 3, enabling the search, store and re-use of Top 3 plans. This value should not be changed by the user.
 #endif
 //--------------------------------
+//Below switches and flags enable/disable and control AMD's separate optimization layer for Applications like QE, VASP, etc.
+//With this optimization layer, the fastest FFT execution is achieved by using OPATIENT plan wherein the associated planning cost is kept minimal with the use of in-memory HASH table.
+//This optimization layer also implements a separate memory region for planner to deal with OPATIENT planning of in-place problems.
+#ifdef AMD_APP_OPT_LAYER //AMD's application optimization layer
+//Enable/disable separate memory even for output buffer in case of out-of-place FFT
+//#define AMD_APP_OPT_OUT_BUFFER_MEM
+//Enable this switch to use wisdom feature in combination with application optimization layer.
+//#define AMD_APP_OPT_USE_WISDOM
+//Enable this switch to generate wisdom file for the first time for the application.
+//#define AMD_APP_OPT_GENERATE_WISDOM
+//Debug print logs for the application optimization layer
+//#define AMD_APP_LAYER_API_LOGS
+//Maximum size of Unblessed Hash table kept alive to reuse the saved plans directly from it.
+#define AMD_APP_OPT_HASH_UNBLESS_MAX_SIZE 16777216
+#endif
+//--------------------------------
 #endif//#ifdef AMD_OPT_ALL  
 //Below is a manual switch to control VADER LIMIT
 //This is upper limit that each process/rank can send in bytes to the receiver process/rank with buffers for receiving them
 //without any synchronization on completion status.
 #define VADER_LIMIT 8000//8000//4000//500
+
 //============================================================
 //AMD OPTIMIZATIONS :- end
 

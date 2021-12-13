@@ -876,6 +876,7 @@ enable_libtool_lock
 enable_mpi
 enable_amd_opt
 enable_amd_mpi_vader_limit
+enable_amd_app_opt
 enable_amd_trans
 enable_amd_mpifft
 enable_openmp
@@ -1590,6 +1591,10 @@ Optional Features:
   --enable-amd-mpi-vader-limit
                           enable setting of VADER LIMIT that controls enabling
                           of new AMD MPI transpose algorithms
+  --enable-amd-app-opt    enable AMD application optimization layer to achieve
+                          best FFT performance with a negligibly small
+                          planning time targeted for HPC and scientific
+                          applications
   --enable-amd-trans      enable AMD cpu optimized Transpose
   --enable-amd-mpifft     enable AMD cpu optimized MPI FFT
   --enable-openmp         use OpenMP directives for parallelism
@@ -17503,7 +17508,11 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
 		SUBSTRCLANG='clang'
 		SUBSTRGCC='gcc'
 		if grep -q "$SUBSTRCLANG" <<<"$CC"; then
-			CFLAGS="$CFLAGS -mavx2 -mfma"
+			if [ -z "${AMD_ARCH}" ]; then
+				CFLAGS="$CFLAGS -mavx2 -mfma"
+			else
+				CFLAGS="$CFLAGS -march=$AMD_ARCH -mavx2 -mfma"
+			fi
 		elif grep -q "$SUBSTRGCC" <<<"$CC"; then
 			GCCVERSION=$(expr `gcc -dumpversion | cut -f1 -d.`)
 			case "$AMDZENFAMILY" in
@@ -17520,13 +17529,17 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
 				;;
 				"25")
 				if [ -z "${AMD_ARCH}" ]; then
-				if [ "$GCCVERSION" -ge "9" ] && [ "$AMDZENMODEL" -le "15" ]; then
-					CFLAGS="$CFLAGS -march=znver2 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
-				elif [ "$GCCVERSION" -lt "9" ] && [ "$AMDZENMODEL" -le "15" ]; then
-					CFLAGS="$CFLAGS -march=znver1 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
-				else
-					CFLAGS="$CFLAGS -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
-				fi
+					if [ "$AMDZENMODEL" -le "15" ] || ( [ "$AMDZENMODEL" -ge "48" ] && [ "$AMDZENMODEL" -le "63" ] ); then
+						if [ "$GCCVERSION" -ge "11" ]; then
+							CFLAGS="$CFLAGS -march=znver3 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+						elif [ "$GCCVERSION" -ge "9" ]; then
+							CFLAGS="$CFLAGS -march=znver2 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+						else
+							CFLAGS="$CFLAGS -march=znver1 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+						fi
+					else
+						CFLAGS="$CFLAGS -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
+					fi
 				else
 					CFLAGS="$CFLAGS -march=$AMD_ARCH -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
 				fi
@@ -17552,8 +17565,8 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
 				fi
 				;;
 				"25")
-				if [ "$AMDZENMODEL" -le "15" ]; then
-					CFLAGS="$CFLAGS -march=znver2"
+				if [ "$AMDZENMODEL" -le "15" ] || ( [ "$AMDZENMODEL" -ge "48" ] && [ "$AMDZENMODEL" -le "63" ] ); then
+					CFLAGS="$CFLAGS -march=znver3"
 				else
 					CFLAGS="$CFLAGS -mavx2"
 				fi
@@ -17581,31 +17594,50 @@ $as_echo "#define AMD_MPI_VADER_LIMIT_SET 1" >>confdefs.h
 
 	fi
 
+		# Check whether --enable-amd-app-opt was given.
+if test "${enable_amd_app_opt+set}" = set; then :
+  enableval=$enable_amd_app_opt; have_amd_app_opt=$enableval
+else
+  have_amd_app_opt=no
 fi
-# Check whether --enable-amd-trans was given.
+
+	if test "$have_amd_app_opt" = yes ; then
+		if (test "$enable_mpi" = yes || test "$quad_precision_supported" = yes || test "$long_double_supported" = yes); then
+			as_fn_error $? "AMD application optimization layer is not supported for MPI execution and in Quad or Long double precisions." "$LINENO" 5
+		else
+
+$as_echo "#define AMD_APP_OPT_LAYER 1" >>confdefs.h
+
+		fi
+	fi
+
+		# Check whether --enable-amd-trans was given.
 if test "${enable_amd_trans+set}" = set; then :
   enableval=$enable_amd_trans; have_amd_trans=$enableval
 else
   have_amd_trans=no
 fi
 
-if test "$have_amd_trans" = yes; then
+	if test "$have_amd_trans" = yes; then
 
 $as_echo "#define AMD_OPT_TRANS 1" >>confdefs.h
 
-fi
-# Check whether --enable-amd-mpifft was given.
+	fi
+		# Check whether --enable-amd-mpifft was given.
 if test "${enable_amd_mpifft+set}" = set; then :
   enableval=$enable_amd_mpifft; have_amd_mpifft=$enableval
 else
   have_amd_mpifft=no
 fi
 
-if test "$have_amd_mpifft" = yes; then
+	if test "$have_amd_mpifft" = yes; then
 
 $as_echo "#define AMD_OPT_MPIFFT 1" >>confdefs.h
 
+	fi
+
 fi
+
 # Check whether --enable-openmp was given.
 if test "${enable_openmp+set}" = set; then :
   enableval=$enable_openmp; enable_openmp=$enableval
@@ -17621,7 +17653,7 @@ else
 fi
 
 
-$as_echo "#define AOCL_FFTW_VERSION \"AOCL FFTW 3.0.1\"" >>confdefs.h
+$as_echo "#define AOCL_FFTW_VERSION \"AOCL FFTW 3.1\"" >>confdefs.h
 
 # Check whether --enable-amd-fast-planner was given.
 if test "${enable_amd_fast_planner+set}" = set; then :

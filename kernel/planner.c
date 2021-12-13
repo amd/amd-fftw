@@ -1061,8 +1061,16 @@ static void forget(planner *ego, amnesia a)
 	      mkhashtab(&ego->htab_blessed);
 	      /* fall through */
 	 case FORGET_ACCURSED:
+#ifdef AMD_APP_OPT_LAYER
+	      if ((sizeof(struct solution_s)*ego->htab_unblessed.hashsiz) > AMD_APP_OPT_HASH_UNBLESS_MAX_SIZE)
+	      {
+	      	htab_destroy(&ego->htab_unblessed);
+	      	mkhashtab(&ego->htab_unblessed);
+	      }
+#else
 	      htab_destroy(&ego->htab_unblessed);
 	      mkhashtab(&ego->htab_unblessed);
+#endif
 	      break;
 	 default:
 	      break;
