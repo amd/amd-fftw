@@ -559,22 +559,22 @@ void X(zero1d_pair)(R *O0, R *O1, INT n0, INT os0)
 
 /* like cpy2d_pair, but read input contiguously if possible */
 void X(cpy2d_pair_ci)(R *I0, R *I1, R *O0, R *O1,
-              INT n0, INT is0, INT os0,
-              INT n1, INT is1, INT os1)
+		      INT n0, INT is0, INT os0,
+		      INT n1, INT is1, INT os1)
 {
-     if (IABS(is0) < IABS(is1)) /* inner loop is for n0 */
-      X(cpy2d_pair) (I0, I1, O0, O1, n0, is0, os0, n1, is1, os1);
+     if (IABS(is0) < IABS(is1))	/* inner loop is for n0 */
+	  X(cpy2d_pair) (I0, I1, O0, O1, n0, is0, os0, n1, is1, os1);
      else
-      X(cpy2d_pair) (I0, I1, O0, O1, n1, is1, os1, n0, is0, os0);
+	  X(cpy2d_pair) (I0, I1, O0, O1, n1, is1, os1, n0, is0, os0);
 }
 
 /* like cpy2d_pair, but write output contiguously if possible */
 void X(cpy2d_pair_co)(R *I0, R *I1, R *O0, R *O1,
-              INT n0, INT is0, INT os0,
-              INT n1, INT is1, INT os1)
+		      INT n0, INT is0, INT os0,
+		      INT n1, INT is1, INT os1)
 {
-     if (IABS(os0) < IABS(os1)) /* inner loop is for n0 */
-      X(cpy2d_pair) (I0, I1, O0, O1, n0, is0, os0, n1, is1, os1);
+     if (IABS(os0) < IABS(os1))	/* inner loop is for n0 */
+	  X(cpy2d_pair) (I0, I1, O0, O1, n0, is0, os0, n1, is1, os1);
      else
-      X(cpy2d_pair) (I0, I1, O0, O1, n1, is1, os1, n0, is0, os0);
+	  X(cpy2d_pair) (I0, I1, O0, O1, n1, is1, os1, n0, is0, os0);
 }

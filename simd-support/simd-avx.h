@@ -282,6 +282,7 @@ static inline V BYTWJB(const R *t, V sr)
 #endif
 
 #else //DOUBLE PRECISION STARTS
+
 static inline __m128d VMOVAPD_LD(const R *x)
 {
      /* gcc-4.6 miscompiles the combination _mm256_castpd128_pd256(VMOVAPD_LD(x))
@@ -368,6 +369,7 @@ static inline V VZMUL(V tx, V sr)
      sr = VBYI(sr);
      return VFMA(ti, sr, tr);
 }
+
 static inline V VZMULJ(V tx, V sr)
 {
      V tr = VDUPL(tx);
@@ -412,6 +414,7 @@ static inline V BYTWJ1(const R *t, V sr)
 {
      return VZMULJ(LDA(t, 2, t), sr);
 }
+
 /* twiddle storage #2: twice the space, faster (when in cache) */
 #ifdef FFTW_SINGLE
 # define VTW2(v,x)							\

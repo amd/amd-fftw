@@ -850,11 +850,8 @@ static void apply_toms513(const plan *ego_, R *I, R *O)
      INT n = ego->n, m = ego->m;
      INT vl = ego->vl;
      R *buf = (R *)MALLOC(sizeof(R) * ego->nbuf, BUFFERS);
-	 //R *buf = (R *)MALLOC((sizeof(R) * ego->nbuf)+32, BUFFERS);
-	 //R *buf_aligned = (R *)((ptrdiff_t)buf + (32 - ((ptrdiff_t)buf & 0x1F)));
      UNUSED(O);
      transpose_toms513(I, n, m, vl, (char *) (buf + 2*vl), (n+m)/2, buf);
-	 //transpose_toms513(I, n, m, vl, (char *) (buf_aligned + 2*vl), (n+m)/2, buf_aligned);
      X(ifree)(buf);
 }
 

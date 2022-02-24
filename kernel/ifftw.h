@@ -887,6 +887,7 @@ struct planner_s {
 #ifdef AMD_OPT_PREFER_256BIT_FPU
      int size;
 #endif
+
      /* various statistics */
      int nplan;    /* number of plans evaluated */
      double pcost, epcost; /* total pcost of measured/estimated plans */
