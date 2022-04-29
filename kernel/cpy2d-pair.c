@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
- * Copyright (C) 2019-2020, Advanced Micro Devices, Inc. All Rights Reserved.
+ * Copyright (C) 2019-2022, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,9 +30,16 @@
 
 #ifdef FFTW_SINGLE//SINGLE PRECISION
 #if defined(AMD_OPT_IN_PLACE_1D_CPY2D_STABLE_INTRIN)//SIMD optimized function
+#ifdef AMD_FMV_MANUAL
+__attribute__ ((target ("avx")))
+void X(cpy2d_pair_avx)(R *I0, R *I1, R *O0, R *O1,
+           INT n0, INT is0, INT os0,
+           INT n1, INT is1, INT os1)
+#else
 void X(cpy2d_pair)(R *I0, R *I1, R *O0, R *O1,
            INT n0, INT is0, INT os0,
            INT n1, INT is1, INT os1)
+#endif
 {
      INT i0, i1, v;
      R *I = I0, *O = O0;
@@ -232,9 +239,16 @@ void X(cpy2d_pair)(R *I0, R *I1, R *O0, R *O1,
      }
 }
 #else//Default C function
+#ifdef AMD_FMV_MANUAL
+__attribute__ ((target ("avx")))
+void X(cpy2d_pair_avx)(R *I0, R *I1, R *O0, R *O1,
+           INT n0, INT is0, INT os0,
+           INT n1, INT is1, INT os1)
+#else
 void X(cpy2d_pair)(R *I0, R *I1, R *O0, R *O1,
            INT n0, INT is0, INT os0,
            INT n1, INT is1, INT os1)
+#endif
 {
      INT i0, i1;
      for (i1 = 0; i1 < n1; ++i1)
@@ -250,9 +264,16 @@ void X(cpy2d_pair)(R *I0, R *I1, R *O0, R *O1,
 #else//DOUBLE-PRECISION
 
 #if defined(AMD_OPT_IN_PLACE_1D_CPY2D_STABLE_INTRIN)//SIMD optimized function
+#ifdef AMD_FMV_MANUAL
+__attribute__ ((target ("avx")))
+void X(cpy2d_pair_avx)(R *I0, R *I1, R *O0, R *O1,
+           INT n0, INT is0, INT os0,
+           INT n1, INT is1, INT os1)
+#else
 void X(cpy2d_pair)(R *I0, R *I1, R *O0, R *O1,
            INT n0, INT is0, INT os0,
            INT n1, INT is1, INT os1)
+#endif
 {
      INT i0, i1, v;
      R *I = I0, *O = O0;
@@ -515,9 +536,16 @@ void X(cpy2d_pair)(R *I0, R *I1, R *O0, R *O1,
      }
 }
 #else//Default C function
+#ifdef AMD_FMV_MANUAL
+__attribute__ ((target ("avx")))
+void X(cpy2d_pair_avx)(R *I0, R *I1, R *O0, R *O1,
+           INT n0, INT is0, INT os0,
+           INT n1, INT is1, INT os1)
+#else
 void X(cpy2d_pair)(R *I0, R *I1, R *O0, R *O1,
            INT n0, INT is0, INT os0,
            INT n1, INT is1, INT os1)
+#endif
 {
      INT i0, i1;
      for (i1 = 0; i1 < n1; ++i1)
@@ -533,7 +561,31 @@ void X(cpy2d_pair)(R *I0, R *I1, R *O0, R *O1,
 
 #else //Default(original)
 
+#ifdef AMD_FMV_MANUAL
+__attribute__ ((target ("avx")))
+void X(cpy2d_pair_avx)(R *I0, R *I1, R *O0, R *O1,
+           INT n0, INT is0, INT os0,
+           INT n1, INT is1, INT os1)
+#else
 void X(cpy2d_pair)(R *I0, R *I1, R *O0, R *O1,
+           INT n0, INT is0, INT os0,
+           INT n1, INT is1, INT os1)
+#endif
+{
+     INT i0, i1;
+     for (i1 = 0; i1 < n1; ++i1)
+      for (i0 = 0; i0 < n0; ++i0) {
+           R x0 = I0[i0 * is0 + i1 * is1];
+           R x1 = I1[i0 * is0 + i1 * is1];
+           O0[i0 * os0 + i1 * os1] = x0;
+           O1[i0 * os0 + i1 * os1] = x1;
+      }
+}
+#endif
+
+#ifdef AMD_FMV_MANUAL
+__attribute__ ((target ("sse2")))
+void X(cpy2d_pair_c)(R *I0, R *I1, R *O0, R *O1,
            INT n0, INT is0, INT os0,
            INT n1, INT is1, INT os1)
 {
@@ -546,7 +598,27 @@ void X(cpy2d_pair)(R *I0, R *I1, R *O0, R *O1,
            O1[i0 * os0 + i1 * os1] = x1;
       }
 }
+
+void X(cpy2d_pair)(R *I0, R *I1, R *O0, R *O1,
+           INT n0, INT is0, INT os0,
+           INT n1, INT is1, INT os1) __attribute__((ifunc ("fmv_resolver_cpy2d_pair")));
+
+static void *fmv_resolver_cpy2d_pair(void)
+{
+#if defined(HAVE_AVX) || defined(HAVE_AVX2)
+	if (X(have_simd_avx)())
+        {
+                return X(cpy2d_pair_avx);
+        }
+        else
 #endif
+        {
+                return X(cpy2d_pair_c);
+        }
+}
+
+#endif
+
 
 void X(zero1d_pair)(R *O0, R *O1, INT n0, INT os0)
 {

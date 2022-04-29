@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
- * Copyright (C) 2019-2021, Advanced Micro Devices, Inc. All Rights Reserved.
+ * Copyright (C) 2019-2022, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,8 +25,10 @@
 
 #include "rdft/rdft.h"
 
+#ifndef AMD_FMV_AUTO
 #if defined(AMD_OPT_TOMS513_TRANS) && (!defined(FFTW_LDOUBLE) && !defined(FFTW_QUAD) && !defined(FFTW_SINGLE))
 #include "immintrin.h"
+#endif
 #endif
 
 #ifdef HAVE_STRING_H
@@ -517,7 +519,141 @@ static const transpose_adt adt_cut =
  * of length 2*N.
  * 
  */
-
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+static void transpose_toms513(R *a, INT nx, INT ny, INT N,
+                              char *move, INT move_size, R *buf)
+{
+     INT i, im, mn;
+     R *b, *c, *d;
+     INT ncount;
+     INT k;
+     
+     /* check arguments and initialize: */
+     A(ny > 0 && nx > 0 && N > 0 && move_size > 0);
+     
+     b = buf;
+     
+     /* Cate & Twigg have a special case for nx == ny, but we don't
+    bother, since we already have special code for this case elsewhere. */
+    
+     c = buf + N;
+     ncount = 2;		/* always at least 2 fixed points */
+     k = (mn = ny * nx) - 1;
+     
+     for (i = 0; i < move_size; ++i)
+      move[i] = 0;
+     
+     if (ny >= 3 && nx >= 3)
+      ncount += gcd(ny - 1, nx - 1) - 1;	/* # fixed points */
+     
+     i = 1;
+     im = ny;
+     
+     while (1) {
+      INT i1, i2, i1c, i2c;
+      INT kmi;
+      
+      /** Rearrange the elements of a loop
+          and its companion loop: **/
+      
+      i1 = i;
+      kmi = k - i;
+      i1c = kmi;
+      switch (N) {
+          case 1:
+           b[0] = a[i1];
+           c[0] = a[i1c];
+           break;
+          case 2:
+           b[0] = a[2*i1];
+           b[1] = a[2*i1+1];
+           c[0] = a[2*i1c];
+           c[1] = a[2*i1c+1];
+           break;
+          default:
+           memcpy(b, &a[N * i1], N * sizeof(R));
+           memcpy(c, &a[N * i1c], N * sizeof(R));
+      }
+      while (1) {
+           i2 = ny * i1 - k * (i1 / nx);
+           i2c = k - i2;
+           if (i1 < move_size)
+            move[i1] = 1;
+           if (i1c < move_size)
+            move[i1c] = 1;
+           ncount += 2;
+           if (i2 == i)
+            break;
+           if (i2 == kmi) {
+            d = b;
+            b = c;
+            c = d;
+            break;
+           }
+           switch (N) {
+           case 1:
+            a[i1] = a[i2];
+            a[i1c] = a[i2c];
+            break;
+           case 2:
+            a[2*i1] = a[2*i2];
+            a[2*i1+1] = a[2*i2+1];
+            a[2*i1c] = a[2*i2c];
+            a[2*i1c+1] = a[2*i2c+1];
+            break;
+           default:
+        	memcpy(&a[N * i1], &a[N * i2], 
+                   N * sizeof(R));
+        	memcpy(&a[N * i1c], &a[N * i2c], 
+                   N * sizeof(R));
+           }
+           i1 = i2;
+           i1c = i2c;
+      }
+      switch (N) {
+          case 1:
+           a[i1] = b[0];
+           a[i1c] = c[0];
+           break;
+          case 2:
+           a[2*i1] = b[0];
+           a[2*i1+1] = b[1];
+           a[2*i1c] = c[0];
+           a[2*i1c+1] = c[1];
+           break;
+          default:
+           memcpy(&a[N * i1], b, N * sizeof(R));
+           memcpy(&a[N * i1c], c, N * sizeof(R));
+      }
+      if (ncount >= mn)
+           break;	/* we've moved all elements */
+      
+      /** Search for loops to rearrange: **/
+      
+      while (1) {
+           INT max = k - i;
+           ++i;
+           A(i <= max);
+           im += ny;
+           if (im > k)
+            im -= k;
+           i2 = im;
+           if (i == i2)
+            continue;
+           if (i >= move_size) {
+            while (i2 > i && i2 < max) {
+             i1 = i2;
+             i2 = ny * i1 - k * (i1 / nx);
+            }
+            if (i2 == i)
+             break;
+           } else if (!move[i])
+            break;
+      }
+     }
+}
+#else
 static void transpose_toms513(R *a, INT nx, INT ny, INT N,
                               char *move, INT move_size, R *buf)
 {
@@ -843,6 +979,7 @@ static void transpose_toms513(R *a, INT nx, INT ny, INT N,
 	  }
      }
 }
+#endif
 
 static void apply_toms513(const plan *ego_, R *I, R *O)
 {

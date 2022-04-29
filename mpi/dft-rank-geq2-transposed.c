@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
+ * Copyright (C) 2022, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -110,6 +111,9 @@ static void print(const plan *ego_, printer *p)
 	      ego->cld1, ego->cldt, ego->cld2);
 }
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static plan *mkplan(const solver *ego_, const problem *p_, planner *plnr)
 {
      const S *ego = (const S *) ego_;

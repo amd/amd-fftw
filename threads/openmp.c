@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
- * Copyright (C) 2021, Advanced Micro Devices, Inc. All Rights Reserved.
+ * Copyright (C) 2022, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,6 +40,9 @@ int X(ithreads_init)(void)
    the same as the data parameter passed to X(spawn_loop).
 
    This function returns only after all the threads have completed. */
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 void X(spawn_loop)(int loopmax, int nthr, spawn_function proc, void *data)
 {
      int block_size;

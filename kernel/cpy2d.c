@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
- * Copyright (C) 2019-2021, Advanced Micro Devices, Inc. All Rights Reserved.
+ * Copyright (C) 2019-2022, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,10 +42,18 @@
 
 #ifdef FFTW_SINGLE//SINGLE PRECISION CPY2d starts
 #ifdef AMD_OPT_IN_PLACE_1D_CPY2D_STABLE_INTRIN//SIMD optimized function
+#ifdef AMD_FMV_MANUAL
+__attribute__ ((target ("avx")))
+void X(cpy2d_avx)(R *I, R *O,
+	      INT n0, INT is0, INT os0,
+	      INT n1, INT is1, INT os1,
+	      INT vl)
+#else
 void X(cpy2d)(R *I, R *O,
 	      INT n0, INT is0, INT os0,
 	      INT n1, INT is1, INT os1,
 	      INT vl)
+#endif
 {
      INT i0, i1, v;
      switch (vl) {
@@ -245,10 +253,18 @@ void X(cpy2d)(R *I, R *O,
          }//switch (vl)
 }
 #else //Default CPY2D function
+#ifdef AMD_FMV_MANUAL
+__attribute__ ((target ("avx")))
+void X(cpy2d_avx)(R *I, R *O,
+	      INT n0, INT is0, INT os0,
+	      INT n1, INT is1, INT os1,
+	      INT vl)
+#else
 void X(cpy2d)(R *I, R *O,
 	      INT n0, INT is0, INT os0,
 	      INT n1, INT is1, INT os1,
 	      INT vl)
+#endif
 {
      INT i0, i1, v;
 
@@ -320,10 +336,18 @@ void X(cpy2d)(R *I, R *O,
 #else//DOUBLE-PRECISION CPY2D starts
 
 #ifdef AMD_OPT_IN_PLACE_1D_CPY2D_STABLE_C//C optimized function
+#ifdef AMD_FMV_MANUAL
+__attribute__ ((target ("avx")))
+void X(cpy2d_avx)(R *I, R *O,
+	      INT n0, INT is0, INT os0,
+	      INT n1, INT is1, INT os1,
+	      INT vl)
+#else
 void X(cpy2d)(R *I, R *O,
 	      INT n0, INT is0, INT os0,
 	      INT n1, INT is1, INT os1,
 	      INT vl)
+#endif
 {
      INT i0, i1, v;
 
@@ -598,10 +622,18 @@ void X(cpy2d)(R *I, R *O,
      }
 }
 #elif defined(AMD_OPT_IN_PLACE_1D_CPY2D_STABLE_INTRIN)//SIMD optimized function
+#ifdef AMD_FMV_MANUAL
+__attribute__ ((target ("avx")))
+void X(cpy2d_avx)(R *I, R *O,
+	      INT n0, INT is0, INT os0,
+	      INT n1, INT is1, INT os1,
+	      INT vl)
+#else
 void X(cpy2d)(R *I, R *O,
 	      INT n0, INT is0, INT os0,
 	      INT n1, INT is1, INT os1,
 	      INT vl)
+#endif
 {
      INT i0, i1, v;
      switch (vl) {
@@ -958,10 +990,18 @@ void X(cpy2d)(R *I, R *O,
      }
 }
 #else//Default CPY2D function
+#ifdef AMD_FMV_MANUAL
+__attribute__ ((target ("avx")))
+void X(cpy2d_avx)(R *I, R *O,
+	      INT n0, INT is0, INT os0,
+	      INT n1, INT is1, INT os1,
+	      INT vl)
+#else
 void X(cpy2d)(R *I, R *O,
 	      INT n0, INT is0, INT os0,
 	      INT n1, INT is1, INT os1,
 	      INT vl)
+#endif
 {
      INT i0, i1, v;
 
@@ -1033,7 +1073,89 @@ void X(cpy2d)(R *I, R *O,
 
 #else //Default(original) cpy2d routine
 
+#ifdef AMD_FMV_MANUAL
+__attribute__ ((target ("avx")))
+void X(cpy2d_avx)(R *I, R *O,
+	      INT n0, INT is0, INT os0,
+	      INT n1, INT is1, INT os1,
+	      INT vl)
+#else
 void X(cpy2d)(R *I, R *O,
+	      INT n0, INT is0, INT os0,
+	      INT n1, INT is1, INT os1,
+	      INT vl)
+#endif
+{
+     INT i0, i1, v;
+
+     switch (vl) {
+	 case 1:
+	      for (i1 = 0; i1 < n1; ++i1)
+		   for (i0 = 0; i0 < n0; ++i0) {
+			R x0 = I[i0 * is0 + i1 * is1];
+			O[i0 * os0 + i1 * os1] = x0;
+		   }
+	      break;
+	 case 2:
+	      if (1
+		  && (2 * sizeof(R) == sizeof(WIDE_TYPE))
+		  && (sizeof(WIDE_TYPE) > sizeof(double))
+		  && (((size_t)I) % sizeof(WIDE_TYPE) == 0)
+		  && (((size_t)O) % sizeof(WIDE_TYPE) == 0)
+		  && ((is0 & 1) == 0)
+		  && ((is1 & 1) == 0)
+		  && ((os0 & 1) == 0)
+		  && ((os1 & 1) == 0)) {
+		   /* copy R[2] as WIDE_TYPE if WIDE_TYPE is large
+		      enough to hold R[2], and if the input is
+		      properly aligned.  This is a win when R==double
+		      and WIDE_TYPE is 128 bits. */
+		   for (i1 = 0; i1 < n1; ++i1)
+			for (i0 = 0; i0 < n0; ++i0) {
+			     *(WIDE_TYPE *)&O[i0 * os0 + i1 * os1] =
+				  *(WIDE_TYPE *)&I[i0 * is0 + i1 * is1];
+			}
+	      } else if (1
+		  && (2 * sizeof(R) == sizeof(double))
+		  && (((size_t)I) % sizeof(double) == 0)
+		  && (((size_t)O) % sizeof(double) == 0)
+		  && ((is0 & 1) == 0)
+		  && ((is1 & 1) == 0)
+		  && ((os0 & 1) == 0)
+		  && ((os1 & 1) == 0)) {
+		   /* copy R[2] as double if double is large enough to
+		      hold R[2], and if the input is properly aligned.
+		      This case applies when R==float */
+		   for (i1 = 0; i1 < n1; ++i1)
+			for (i0 = 0; i0 < n0; ++i0) {
+			     *(double *)&O[i0 * os0 + i1 * os1] =
+				  *(double *)&I[i0 * is0 + i1 * is1];
+			}
+	      } else {
+		   for (i1 = 0; i1 < n1; ++i1)
+			for (i0 = 0; i0 < n0; ++i0) {
+			     R x0 = I[i0 * is0 + i1 * is1];
+			     R x1 = I[i0 * is0 + i1 * is1 + 1];
+			     O[i0 * os0 + i1 * os1] = x0;
+ 			     O[i0 * os0 + i1 * os1 + 1] = x1;
+			}
+	      }
+	      break;
+	 default:
+	      for (i1 = 0; i1 < n1; ++i1)
+		   for (i0 = 0; i0 < n0; ++i0)
+			for (v = 0; v < vl; ++v) {
+			     R x0 = I[i0 * is0 + i1 * is1 + v];
+			     O[i0 * os0 + i1 * os1 + v] = x0;
+			}
+	      break;
+     }
+}
+#endif
+
+#ifdef AMD_FMV_MANUAL
+__attribute__ ((target ("sse2")))
+void X(cpy2d_c)(R *I, R *O,
 	      INT n0, INT is0, INT os0,
 	      INT n1, INT is1, INT os1,
 	      INT vl)
@@ -1102,6 +1224,25 @@ void X(cpy2d)(R *I, R *O,
 			}
 	      break;
      }
+}
+
+void X(cpy2d)(R *I, R *O,
+	      INT n0, INT is0, INT os0,
+	      INT n1, INT is1, INT os1,
+	      INT vl) __attribute__((ifunc ("fmv_resolver_cpy2d")));
+
+static void *fmv_resolver_cpy2d(void)
+{
+#if defined(HAVE_AVX) || defined(HAVE_AVX2)
+	if (X(have_simd_avx)())
+        {
+                return X(cpy2d_avx);
+        }
+        else
+#endif
+        {
+                return X(cpy2d_c);
+        }
 }
 #endif
 

@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
+ * Copyright (C) 2022, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +36,9 @@ typedef struct {
      INT n;
 } P;
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static void apply(const plan *ego_, R *I, R *O)
 {
      const P *ego = (const P *) ego_;

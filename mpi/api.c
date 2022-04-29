@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
+ * Copyright (C) 2022, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -150,6 +151,9 @@ void XM(cleanup)(void)
 
 /*************************************************************************/
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static dtensor *mkdtensor_api(int rnk, const XM(ddim) *dims0)
 {
      dtensor *x = XM(mkdtensor)(rnk);
@@ -208,6 +212,9 @@ static dtensor *default_sz(int rnk, const XM(ddim) *dims0, int n_pes,
 }
 
 /* allocate simple local (serial) dims array corresponding to n[rnk] */
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static XM(ddim) *simple_dims(int rnk, const ptrdiff_t *n)
 {
      XM(ddim) *dims = (XM(ddim) *) MALLOC(sizeof(XM(ddim)) * rnk,
@@ -237,6 +244,9 @@ static void local_size(int my_pe, const dtensor *sz, block_kind k,
      }
 }
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static INT prod(int rnk, const ptrdiff_t *local_n) 
 {
      int i;
@@ -245,6 +255,9 @@ static INT prod(int rnk, const ptrdiff_t *local_n)
      return N;
 }
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 ptrdiff_t XM(local_size_guru)(int rnk, const XM(ddim) *dims0,
 			      ptrdiff_t howmany, MPI_Comm comm,
 			      ptrdiff_t *local_n_in,

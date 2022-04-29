@@ -122,6 +122,10 @@ if (ENABLE_AMD_APP_OPT)
   endif ()
 endif ()
 
+if(ENABLE_AMD_DYNAMIC_DISPATCHER)
+	message (FATAL_ERROR "AMD Dynamic Dispatcher feature is not available on windows.")
+endif()
+
 option (DISABLE_FORTRAN "Disable Fortran wrapper routines" OFF)
 
 if (CMAKE_C_COMPILER_ID MATCHES MSVC OR CMAKE_C_COMPILER_ID MATCHES Clang)

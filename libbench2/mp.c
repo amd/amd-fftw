@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2022, Advanced Micro Devices, Inc. All Rights Reserved.
+ *
+ */
 #include "config.h"
 #include "libbench2/bench.h"
 #include <math.h>
@@ -76,6 +80,9 @@ static void fromshort(int x, N a)
      AD[LEN - 1] = x;
 }
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static void pack(DG *d, int e, int s, int l, N a)
 {
      int i, j;
@@ -187,6 +194,9 @@ static void sub(const N a, const N b, N c)
      if (SGNA == SGNB) submag(-1, a, b, c); else addmag(-1, a, b, c);
 }
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static void mul(const N a, const N b, N c)
 {
      DG d[2 * LEN];

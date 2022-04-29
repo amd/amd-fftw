@@ -636,9 +636,25 @@ fi
 
 dnl amd optimization switch and CFLAGS setting based on config arg option --enable-amd-opt
 AC_ARG_ENABLE(amd-opt, [AC_HELP_STRING([--enable-amd-opt],[enable AMD cpu specific optimizations])], have_amd_opt=$enableval, have_amd_opt=no)
+
 if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
+
+	dnl AMD's dynamic dispatcher system to support multiple x86 CPU arch execution by a single library --enable-dynamic-dispatcher
+	AC_ARG_ENABLE(dynamic-dispatcher, [AC_HELP_STRING([--enable-dynamic-dispatcher],[enable AMD dynamic CPU dispatcher system to support execution on multiple x86 CPU arch by a single library])], have_dynamic_dispatcher=$enableval, have_dynamic_dispatcher=no)
+
 	AMDZENFAMILY=$(expr `cat /proc/cpuinfo | grep -m1 family|cut -f2 -d:`)
 	AMDZENMODEL=$(expr `cat /proc/cpuinfo | grep -m1 model|cut -f2 -d:`)
+
+	if test "$have_dynamic_dispatcher" = yes; then
+		AC_DEFINE(AMD_DYNAMIC_DISPATCHER,1,[Define to enable AMD dynamic dispatcher feature that would build a single portable optimized library which can execute on different x86 CPU architectures.])
+		
+		SUBSTRGCC='gcc'
+		if grep -q "$SUBSTRGCC" <<<"$CC"; then		
+			CFLAGS="$CFLAGS -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128"
+		else
+			AC_MSG_ERROR([AMD Dynamic Dispatcher feature is only supported for GCC build.])
+		fi
+	else
 	if test "$ac_test_CFLAGS" != "set"; then
 		if [[ "$AMD_ARCH" = "auto" ]]; then
 			AMD_ARCH=""
@@ -715,6 +731,7 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
 			fi
 		fi
 	fi
+	fi
 	AC_DEFINE(AMD_OPT_ALL,1,[Define to enable AMD cpu specific optimizations.])
 	
 	dnl amd switch for VADER LIMIT that controls enabling of AMD's new MPI transpose algorithms --enable-amd-mpi-vader-limit
@@ -743,7 +760,6 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
 	if test "$have_amd_mpifft" = yes; then
 		AC_DEFINE(AMD_OPT_MPIFFT,1,[Define to enable AMD cpu optimized MPI FFT.])
 	fi
-
 fi
 
 AC_ARG_ENABLE(openmp, [AC_HELP_STRING([--enable-openmp],[use OpenMP directives for parallelism])], enable_openmp=$enableval, enable_openmp=no)

@@ -67,6 +67,9 @@ static int compare_by_istride(const iodim *a, const iodim *b)
      return signof(sbi - sai);
 }
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static tensor *really_compress(const tensor *sz)
 {
      int i, rnk;
@@ -113,6 +116,9 @@ static int strides_contig(iodim *a, iodim *b)
 /* Like tensor_compress, but also compress into one dimension any
    group of dimensions that form a contiguous block of indices with
    some stride.  (This can safely be done for transform vector sizes.) */
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 tensor *X(tensor_compress_contiguous)(const tensor *sz)
 {
      int i, rnk;

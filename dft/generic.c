@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
+ * Copyright (C) 2022, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +32,9 @@ typedef struct {
 } P;
 
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static void cdot(INT n, const E *x, const R *w, 
 		 R *or0, R *oi0, R *or1, R *oi1)
 {
@@ -51,6 +55,9 @@ static void cdot(INT n, const E *x, const R *w,
      *oi1 = ir + ri;
 }
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static void hartley(INT n, const R *xr, const R *xi, INT xs, E *o,
 		    R *pr, R *pi)
 {
@@ -90,6 +97,9 @@ static void apply(const plan *ego_, R *ri, R *ii, R *ro, R *io)
      BUF_FREE(buf, bufsz);
 }
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static void awake(plan *ego_, enum wakefulness wakefulness)
 {
      P *ego = (P *) ego_;
@@ -109,6 +119,9 @@ static void print(const plan *ego_, printer *p)
      p->print(p, "(dft-generic-%D)", ego->n);
 }
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static int applicable(const solver *ego, const problem *p_, 
 		      const planner *plnr)
 {

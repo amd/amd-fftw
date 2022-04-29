@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
+ * Copyright (C) 2022, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -184,6 +185,9 @@ static void rarand(R *a, int n)
 }
 
 /* C = A + B */
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static void raadd(R *c, R *a, R *b, int n)
 {
      int i;
@@ -194,6 +198,9 @@ static void raadd(R *c, R *a, R *b, int n)
 }
 
 /* C = A - B */
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static void rasub(R *c, R *a, R *b, int n)
 {
      int i;
@@ -204,6 +211,9 @@ static void rasub(R *c, R *a, R *b, int n)
 }
 
 /* B = rotate left A + rotate right A */
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static void rarolr(R *b, R *a, int n, int nb, int na, 
 		   r2r_kind_t k)
 {
@@ -313,6 +323,9 @@ static void rarolr(R *b, R *a, int n, int nb, int na,
      }
 }
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static void raphase_shift(R *b, R *a, int n, int nb, int na,
 			 int n0, int k0, trigfun t)
 {
@@ -330,6 +343,9 @@ static void raphase_shift(R *b, R *a, int n, int nb, int na,
 }
 
 /* A = alpha * A  (real, in place) */
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static void rascale(R *a, R alpha, int n)
 {
      int i;
@@ -460,6 +476,9 @@ static double rlinear(int n, info *nfo, R *inA, R *inB, R *inC, R *outA,
      return e;
 }
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static double rimpulse(dim_stuff *d, R impulse_amp,
 		       int n, int vecn, info *nfo, 
 		       R *inA, R *inB, R *inC,
@@ -693,6 +712,9 @@ typedef struct {
      int n0;
 } dofft_r2r_closure;
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static void cpyr1(int n, R *in, int is, R *out, int os, R scale)
 {
      int i;
@@ -700,6 +722,9 @@ static void cpyr1(int n, R *in, int is, R *out, int os, R scale)
 	  out[i * os] = in[i * is] * scale;
 }
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static void mke00(C *a, int n, int c)
 {
      int i;
@@ -720,6 +745,9 @@ static void mkimag(C *a, int n)
 	  c_re(a[i]) = 0.0;
 }
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static void mko00(C *a, int n, int c)
 {
      int i;
@@ -758,6 +786,9 @@ static void mkro01(C *a, int n) /* n should be be multiple of 4 */
      mkro00(a, n);
 }
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static void mkoddonly(C *a, int n)
 {
      int i;

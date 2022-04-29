@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
+ * Copyright (C) 2022, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,6 +40,9 @@ typedef struct {
    the n loops? */
 
 /* copy halfcomplex array r (contiguous) to complex (strided) array rio/iio. */
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static void hc2c(INT n, R *r, R *rio, R *iio, INT os)
 {
      INT i;
@@ -58,6 +62,9 @@ static void hc2c(INT n, R *r, R *rio, R *iio, INT os)
 }
 
 /* reverse of hc2c */
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static void c2hc(INT n, R *rio, R *iio, INT is, R *r)
 {
      INT i;

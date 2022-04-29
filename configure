@@ -875,6 +875,7 @@ with_sysroot
 enable_libtool_lock
 enable_mpi
 enable_amd_opt
+enable_dynamic_dispatcher
 enable_amd_mpi_vader_limit
 enable_amd_app_opt
 enable_amd_trans
@@ -1588,6 +1589,10 @@ Optional Features:
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --enable-mpi            compile FFTW MPI library
   --enable-amd-opt        enable AMD cpu specific optimizations
+  --enable-dynamic-dispatcher
+                          enable AMD dynamic CPU dispatcher system to support
+                          execution on multiple x86 CPU arch by a single
+                          library
   --enable-amd-mpi-vader-limit
                           enable setting of VADER LIMIT that controls enabling
                           of new AMD MPI transpose algorithms
@@ -17593,9 +17598,32 @@ else
   have_amd_opt=no
 fi
 
+
 if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
+
+		# Check whether --enable-dynamic-dispatcher was given.
+if test "${enable_dynamic_dispatcher+set}" = set; then :
+  enableval=$enable_dynamic_dispatcher; have_dynamic_dispatcher=$enableval
+else
+  have_dynamic_dispatcher=no
+fi
+
+
 	AMDZENFAMILY=$(expr `cat /proc/cpuinfo | grep -m1 family|cut -f2 -d:`)
 	AMDZENMODEL=$(expr `cat /proc/cpuinfo | grep -m1 model|cut -f2 -d:`)
+
+	if test "$have_dynamic_dispatcher" = yes; then
+
+$as_echo "#define AMD_DYNAMIC_DISPATCHER 1" >>confdefs.h
+
+
+		SUBSTRGCC='gcc'
+		if grep -q "$SUBSTRGCC" <<<"$CC"; then
+			CFLAGS="$CFLAGS -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128"
+		else
+			as_fn_error $? "AMD Dynamic Dispatcher feature is only supported for GCC build." "$LINENO" 5
+		fi
+	else
 	if test "$ac_test_CFLAGS" != "set"; then
 		if [ "$AMD_ARCH" = "auto" ]; then
 			AMD_ARCH=""
@@ -17672,6 +17700,7 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
 			fi
 		fi
 	fi
+	fi
 
 $as_echo "#define AMD_OPT_ALL 1" >>confdefs.h
 
@@ -17730,7 +17759,6 @@ fi
 $as_echo "#define AMD_OPT_MPIFFT 1" >>confdefs.h
 
 	fi
-
 fi
 
 # Check whether --enable-openmp was given.

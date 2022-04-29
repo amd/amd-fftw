@@ -1,6 +1,6 @@
 /**************************************************************************/
 /* 
- * Copyright (C) 2020, Advanced Micro Devices, Inc. All Rights Reserved.
+ * Copyright (C) 2022, Advanced Micro Devices, Inc. All Rights Reserved.
  */
 
 /* NOTE to users: this is the FFTW-MPI self-test and benchmark program.
@@ -102,6 +102,9 @@ static void alloc_rnk(int rnk_) {
      all_local_starto = local_ni + (8 + 3 * n_pes) * rnk;
 }
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static void setup_gather_scatter(void)
 {
      int i, j;
@@ -158,6 +161,9 @@ static void setup_gather_scatter(void)
 	  ostrides[j] = total_no[j + 1] * ostrides[j + 1];
 }
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static void copy_block_out(const bench_real *in,
 			   int rnk, ptrdiff_t *n, ptrdiff_t *start, 
 			   ptrdiff_t is, ptrdiff_t *os, ptrdiff_t vn,
@@ -187,6 +193,9 @@ static void copy_block_out(const bench_real *in,
      }
 }
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static void copy_block_in(bench_real *in,
 			  int rnk, ptrdiff_t *n, ptrdiff_t *start, 
 			  ptrdiff_t is, ptrdiff_t *os, ptrdiff_t vn,
@@ -377,6 +386,9 @@ static int tensor_contiguousp(bench_tensor *t, int s)
 		 || tensor_rowmajor_transposedp(t)));
 }
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static FFTW(plan) mkplan_complex(bench_problem *p, unsigned flags)
 {
      FFTW(plan) pln = 0;
@@ -463,6 +475,9 @@ static int tensor_real_contiguousp(bench_tensor *t, int sign, int s)
 		  t->dims[t->rnk-1].is == t->dims[t->rnk-1].os)));
 }
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static FFTW(plan) mkplan_real(bench_problem *p, unsigned flags)
 {
      FFTW(plan) pln = 0;
@@ -637,6 +652,9 @@ static FFTW(plan) mkplan_transpose(bench_problem *p, unsigned flags)
      return pln;
 }
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static FFTW(plan) mkplan_r2r(bench_problem *p, unsigned flags)
 {
      FFTW(plan) pln = 0;

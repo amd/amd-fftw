@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
- * Copyright (C) 2019, Advanced Micro Devices, Inc. All Rights Reserved.
+ * Copyright (C) 2022, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -87,7 +87,7 @@ typedef DS(__m256d, __m256) V;
 #define LDK(x) x
 
 /* FMA support */
-#ifdef AMD_OPT_KERNEL_256SIMD_PERF
+#if defined(AMD_OPT_KERNEL_256SIMD_PERF) && !defined(AMD_DYNAMIC_DISPATCHER)
 #define VFMA 	SUFF(_mm256_fmadd_p)
 #define VFNMS 	SUFF(_mm256_fnmadd_p)
 #define VFMS 	SUFF(_mm256_fmsub_p)

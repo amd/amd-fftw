@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2001 Matteo Frigo
  * Copyright (c) 2001 Massachusetts Institute of Technology
+ * Copyright (C) 2022, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,6 +44,9 @@ void tensor_destroy(bench_tensor *sz)
      bench_free(sz);
 }
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 size_t tensor_sz(const bench_tensor *sz)
 {
      int i;
@@ -58,6 +62,9 @@ size_t tensor_sz(const bench_tensor *sz)
 
 
 /* total order among bench_iodim's */
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static int dimcmp(const bench_iodim *a, const bench_iodim *b)
 {
      if (b->is != a->is)
@@ -225,6 +232,9 @@ bench_tensor *tensor_copy_sub(const bench_tensor *sz, int start_dim, int rnk)
      return x;
 }
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 bench_tensor *tensor_copy_swapio(const bench_tensor *sz)
 {
      bench_tensor *x = tensor_copy(sz);
