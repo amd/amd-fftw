@@ -208,11 +208,22 @@ extern "C"
 #define AMD_FMV_AUTO
 
 #if defined(HAVE_AVX2)
-#define TARGET_STRINGS "arch=znver3", "arch=znver2", "avx2", "avx", "sse2", "default"
+#if (__GNUC__ >= 11)
+#define TARGET_STRINGS "arch=znver3", "arch=znver2", "arch=znver1", "avx2", "avx", "sse2", "default"
+#elif (__GNUC__ >= 9)
+#define TARGET_STRINGS "arch=znver2", "arch=znver1", "avx2", "avx", "sse2", "default"
+#elif (__GNUC__ > 6 || (__GNUC__ == 6 && __GNUC_MINOR__ >= 3))
+#define TARGET_STRINGS "arch=znver1", "avx2", "avx", "sse2", "default"
+#else
+#define TARGET_STRINGS "avx2", "avx", "sse2", "default"
+#endif
+
 #elif defined(HAVE_AVX)
 #define TARGET_STRINGS "avx", "sse2", "default"
+
 #elif defined(HAVE_SSE) || defined(HAVE_SSE2)
 #define TARGET_STRINGS "sse2", "default"
+
 #else
 #define TARGET_STRINGS "default"
 #endif

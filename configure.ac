@@ -645,6 +645,8 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
 	AMDZENFAMILY=$(expr `cat /proc/cpuinfo | grep -m1 family|cut -f2 -d:`)
 	AMDZENMODEL=$(expr `cat /proc/cpuinfo | grep -m1 model|cut -f2 -d:`)
 
+	AM_CONDITIONAL(AMD_DYNAMIC_DISPATCHER, test "$have_dynamic_dispatcher" = "yes")
+
 	if test "$have_dynamic_dispatcher" = yes; then
 		AC_DEFINE(AMD_DYNAMIC_DISPATCHER,1,[Define to enable AMD dynamic dispatcher feature that would build a single portable optimized library which can execute on different x86 CPU architectures.])
 		

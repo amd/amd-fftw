@@ -87,7 +87,7 @@ typedef DS(__m256d, __m256) V;
 #define LDK(x) x
 
 /* FMA support */
-#if defined(AMD_OPT_KERNEL_256SIMD_PERF) && !defined(AMD_DYNAMIC_DISPATCHER)
+#if defined(AMD_OPT_KERNEL_256SIMD_PERF)
 #define VFMA 	SUFF(_mm256_fmadd_p)
 #define VFNMS 	SUFF(_mm256_fnmadd_p)
 #define VFMS 	SUFF(_mm256_fmsub_p)

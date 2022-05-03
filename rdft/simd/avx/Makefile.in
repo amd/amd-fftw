@@ -361,7 +361,8 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CFLAGS = $(AVX_CFLAGS)
+@AMD_DYNAMIC_DISPATCHER_FALSE@AM_CFLAGS = $(AVX_CFLAGS)
+@AMD_DYNAMIC_DISPATCHER_TRUE@AM_CFLAGS = $(AVX_CFLAGS) -mfma
 SIMD_HEADER = simd-support/simd-avx.h
 HC2CFDFTV = hc2cfdftv_2.c hc2cfdftv_4.c hc2cfdftv_6.c hc2cfdftv_8.c	\
 hc2cfdftv_10.c hc2cfdftv_12.c hc2cfdftv_16.c hc2cfdftv_32.c		\

@@ -654,6 +654,8 @@ ac_ct_F77
 FFLAGS
 F77
 INDENT
+AMD_DYNAMIC_DISPATCHER_FALSE
+AMD_DYNAMIC_DISPATCHER_TRUE
 LIBQUADMATH
 LIBOBJS
 POW_LIB
@@ -17612,6 +17614,15 @@ fi
 	AMDZENFAMILY=$(expr `cat /proc/cpuinfo | grep -m1 family|cut -f2 -d:`)
 	AMDZENMODEL=$(expr `cat /proc/cpuinfo | grep -m1 model|cut -f2 -d:`)
 
+	 if test "$have_dynamic_dispatcher" = "yes"; then
+  AMD_DYNAMIC_DISPATCHER_TRUE=
+  AMD_DYNAMIC_DISPATCHER_FALSE='#'
+else
+  AMD_DYNAMIC_DISPATCHER_TRUE='#'
+  AMD_DYNAMIC_DISPATCHER_FALSE=
+fi
+
+
 	if test "$have_dynamic_dispatcher" = yes; then
 
 $as_echo "#define AMD_DYNAMIC_DISPATCHER 1" >>confdefs.h
@@ -22614,6 +22625,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${MPI_TRUE}" && test -z "${MPI_FALSE}"; then
   as_fn_error $? "conditional \"MPI\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${AMD_DYNAMIC_DISPATCHER_TRUE}" && test -z "${AMD_DYNAMIC_DISPATCHER_FALSE}"; then
+  as_fn_error $? "conditional \"AMD_DYNAMIC_DISPATCHER\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${THREADS_TRUE}" && test -z "${THREADS_FALSE}"; then
