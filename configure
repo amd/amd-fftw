@@ -17603,6 +17603,9 @@ fi
 
 if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
 
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: AMD OPT Flag is enabled and so AMD optimizations will be turned on." >&5
+$as_echo "AMD OPT Flag is enabled and so AMD optimizations will be turned on." >&6; }
+
 		# Check whether --enable-dynamic-dispatcher was given.
 if test "${enable_dynamic_dispatcher+set}" = set; then :
   enableval=$enable_dynamic_dispatcher; have_dynamic_dispatcher=$enableval
@@ -17613,15 +17616,6 @@ fi
 
 	AMDZENFAMILY=$(expr `cat /proc/cpuinfo | grep -m1 family|cut -f2 -d:`)
 	AMDZENMODEL=$(expr `cat /proc/cpuinfo | grep -m1 model|cut -f2 -d:`)
-
-	 if test "$have_dynamic_dispatcher" = "yes"; then
-  AMD_DYNAMIC_DISPATCHER_TRUE=
-  AMD_DYNAMIC_DISPATCHER_FALSE='#'
-else
-  AMD_DYNAMIC_DISPATCHER_TRUE='#'
-  AMD_DYNAMIC_DISPATCHER_FALSE=
-fi
-
 
 	if test "$have_dynamic_dispatcher" = yes; then
 
@@ -17770,7 +17764,16 @@ fi
 $as_echo "#define AMD_OPT_MPIFFT 1" >>confdefs.h
 
 	fi
+fi #End of the condition - if (test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set")
+
+ if test "$have_amd_opt" = "yes" -a "${enable_debug+set}" != "set" -a "$have_dynamic_dispatcher" = "yes"; then
+  AMD_DYNAMIC_DISPATCHER_TRUE=
+  AMD_DYNAMIC_DISPATCHER_FALSE='#'
+else
+  AMD_DYNAMIC_DISPATCHER_TRUE='#'
+  AMD_DYNAMIC_DISPATCHER_FALSE=
 fi
+
 
 # Check whether --enable-openmp was given.
 if test "${enable_openmp+set}" = set; then :

@@ -639,13 +639,13 @@ AC_ARG_ENABLE(amd-opt, [AC_HELP_STRING([--enable-amd-opt],[enable AMD cpu specif
 
 if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
 
+	AC_MSG_RESULT(AMD OPT Flag is enabled and so AMD optimizations will be turned on.)
+
 	dnl AMD's dynamic dispatcher system to support multiple x86 CPU arch execution by a single library --enable-dynamic-dispatcher
 	AC_ARG_ENABLE(dynamic-dispatcher, [AC_HELP_STRING([--enable-dynamic-dispatcher],[enable AMD dynamic CPU dispatcher system to support execution on multiple x86 CPU arch by a single library])], have_dynamic_dispatcher=$enableval, have_dynamic_dispatcher=no)
 
 	AMDZENFAMILY=$(expr `cat /proc/cpuinfo | grep -m1 family|cut -f2 -d:`)
 	AMDZENMODEL=$(expr `cat /proc/cpuinfo | grep -m1 model|cut -f2 -d:`)
-
-	AM_CONDITIONAL(AMD_DYNAMIC_DISPATCHER, test "$have_dynamic_dispatcher" = "yes")
 
 	if test "$have_dynamic_dispatcher" = yes; then
 		AC_DEFINE(AMD_DYNAMIC_DISPATCHER,1,[Define to enable AMD dynamic dispatcher feature that would build a single portable optimized library which can execute on different x86 CPU architectures.])
@@ -762,7 +762,9 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
 	if test "$have_amd_mpifft" = yes; then
 		AC_DEFINE(AMD_OPT_MPIFFT,1,[Define to enable AMD cpu optimized MPI FFT.])
 	fi
-fi
+fi #End of the condition - if (test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set")
+
+AM_CONDITIONAL(AMD_DYNAMIC_DISPATCHER, test "$have_amd_opt" = "yes" -a "${enable_debug+set}" != "set" -a "$have_dynamic_dispatcher" = "yes")
 
 AC_ARG_ENABLE(openmp, [AC_HELP_STRING([--enable-openmp],[use OpenMP directives for parallelism])], enable_openmp=$enableval, enable_openmp=no)
 AC_ARG_ENABLE(threads, [AC_HELP_STRING([--enable-threads],[compile FFTW SMP threads library])], enable_threads=$enableval, enable_threads=no)
