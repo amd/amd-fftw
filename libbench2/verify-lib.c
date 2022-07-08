@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
+ * Copyright (C) 2022, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -137,6 +138,9 @@ void mkhermitian1(C *a, int n)
 }
 
 /* C = A */
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 void acopy(C *c, C *a, int n)
 {
      int i;
@@ -148,6 +152,9 @@ void acopy(C *c, C *a, int n)
 }
 
 /* C = A + B */
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 void aadd(C *c, C *a, C *b, int n)
 {
      int i;
@@ -159,6 +166,9 @@ void aadd(C *c, C *a, C *b, int n)
 }
 
 /* C = A - B */
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 void asub(C *c, C *a, C *b, int n)
 {
      int i;
@@ -170,6 +180,9 @@ void asub(C *c, C *a, C *b, int n)
 }
 
 /* B = rotate left A (complex) */
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 void arol(C *b, C *a, int n, int nb, int na)
 {
      int i, ib, ia;
@@ -192,6 +205,9 @@ void arol(C *b, C *a, int n, int nb, int na)
      }
 }
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 void aphase_shift(C *b, C *a, int n, int nb, int na, double sign)
 {
      int j, jb, ja;
@@ -212,6 +228,9 @@ void aphase_shift(C *b, C *a, int n, int nb, int na, double sign)
 }
 
 /* A = alpha * A  (complex, in place) */
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 void ascale(C *a, C alpha, int n)
 {
      int i;
@@ -281,6 +300,9 @@ static double impulse0(dofft_closure *k,
      return e;
 }
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 double impulse(dofft_closure *k,
 	       int n, int vecn, 
 	       C *inA, C *inB, C *inC,

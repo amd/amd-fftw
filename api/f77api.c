@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
+ * Copyright (C) 2022, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,6 +34,9 @@
 
 /* in fortran, the natural array ordering is column-major, which
    corresponds to reversing the dimensions relative to C's row-major */
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static int *reverse_n(int rnk, const int *n)
 {
      int *nrev;
@@ -46,6 +50,9 @@ static int *reverse_n(int rnk, const int *n)
 
 /* f77 doesn't have data structures, so we have to pass iodims as
    parallel arrays */
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static X(iodim) *make_dims(int rnk, const int *n,
 			   const int *is, const int *os)
 {
@@ -85,6 +92,9 @@ static int read_char(void *d)
      return (c < 0 ? EOF : c);
 }
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static X(r2r_kind) *ints2kinds(int rnk, const int *ik)
 {
      if (!FINITE_RNK(rnk) || rnk == 0)

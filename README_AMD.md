@@ -1,23 +1,26 @@
-AMD OPTIMIZED FFTW
-------------------
+AOCL-FFTW
+---------
 
-AMD Optimized FFTW is the optimized FFTW implementation targeted for 
-AMD EPYC CPUs. It is developed on top of FFTW (version fftw-3.3.8).
+AOCL-FFTW is AMD optimized version of FFTW implementation targeted for 
+AMD EPYC CPUs. It is developed on top of FFTW (version fftw-3.3.10).
 All known features and functionalities of FFTW are retained and supported
 as it is with this AMD optimized FFTW library.
 
-AMD Optimized FFTW achieves higher performance than the FFTW 3.3.8 due to its
+AOCL-FFTW achieves higher performance than the original FFTW 3.3.10 due to its
 various optimizations involving improved SIMD Kernel functions, improved copy
 functions (cpy2d and cpy2d_pair used in rank-0 transform and buffering plan),
 improved 256-bit kernels selection by Planner and an optional in-place 
-transpose for large problem sizes. AMD Optimized FFTW improves the performance
-of in-place MPI FFTs over FFTW 3.3.8 by employing a faster in-place MPI
-transpose function. AMD Optimized FFTW provides a new fast planner as an
+transpose for large problem sizes. AOCL-FFTW improves the performance
+of in-place MPI FFTs over FFTW 3.3.10 by employing a faster in-place MPI
+transpose function. AOCL-FFTW provides a new fast planner mode as an
 extension to the original planner that improves planning time of various
 planning modes in general and PATIENT mode in particular. Another new planning
-mode called Top N planner is made available that minimizes single-threaded
-run-to-run variations. As of AMD FFTW 3.1, a feature called AMD's application
-optimization layer is introduced to speedup HPC and scientific applications.
+mode called Top N planner is also available that minimizes single-threaded
+run-to-run variations. AOCL-FFTW has a feature called AMD's application
+optimization layer that speeds up HPC and scientific applications. As of 
+AOCL-FFTW-3.2, a new feature called dynamic dispatcher is implemented that 
+can build a single portable optimized library for execution on a wide range of
+x86 CPU architectures.
 
 FFTW is a free collection of fast C routines for computing the
 Discrete Fourier Transform and various special cases thereof in one or more
@@ -34,7 +37,7 @@ of the manual.
 INSTALLATION
 ------------
 
-INSTALLATION FROM AMD Optimized FFTW GIT REPOSITORY:
+INSTALLATION FROM AOCL-FFTW GIT REPOSITORY:
 
 After downloading the latest stable release from the git repository,
 https://github.com/amd/amd-fftw, follow the below steps to configure and
@@ -81,6 +84,12 @@ Currently it is developed for complex and real (r2c and c2r) DFT problem types
 in double and single precisions. It is not supported for MPI FFTs, r2r real DFT
 problem types, Quad or Long double precisions, and split array format.
 
+Dynamic dispatcher achieves Function Multi-versioning by using compiler's
+attributes. Use "--enable-dynamic-dispatcher" configure option to enable this
+feature. It is supported for GCC compiler and Linux based systems for now.
+The set of x86 CPUs on which the single portable library can work depends upon
+the highest level of CPU SIMD instruction set with which it is configured.
+
 An optional configure option "--enable-amd-trans" is provided that may benefit
 the performance of transpose operations in case of very large FFT problem sizes.
 This is by default not enabled and provided as an experimental optional switch. 
@@ -92,7 +101,7 @@ or long-double mode.
 CONTACTS
 --------
 
-AMD Optimized FFTW is developed and maintained by AMD.
+AOCL-FFTW is developed and maintained by AMD.
 You can contact us on the email-id aoclsupport@amd.com.
 You can also raise any issue/suggestion on the git-hub repository at
 https://github.com/amd/amd-fftw/issues

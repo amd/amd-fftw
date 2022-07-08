@@ -79,6 +79,15 @@ static void setup_sigfpe_handler(void)
 }
 #endif
 
+/* dummy serial threads backend for testing threads_set_callback */
+static void serial_threads(void *(*work)(char *), char *jobdata, size_t elsize, int njobs, void *data)
+{
+     int i;
+     (void) data; /* unused */
+     for (i = 0; i < njobs; ++i)
+          work(jobdata + elsize * i);
+}
+
 void useropt(const char *arg)
 {
      int x;
@@ -97,6 +106,12 @@ void useropt(const char *arg)
      else if (!strcmp(arg, "paranoid")) paranoid = 1;
      else if (!strcmp(arg, "wisdom")) usewisdom = 1;
      else if (!strcmp(arg, "amnesia")) amnesia = 1;
+     else if (!strcmp(arg, "threads_callback"))
+#ifdef HAVE_SMP
+          FFTW(threads_set_callback)(serial_threads, NULL);
+#else
+          fprintf(stderr, "Serial FFTW; ignoring threads_callback option.\n");
+#endif
      else if (sscanf(arg, "nthreads=%d", &x) == 1) nthreads = x;
 #ifdef FFTW_RANDOM_ESTIMATOR
      else if (sscanf(arg, "eseed=%d", &x) == 1) FFTW(random_estimate_seed) = x;
@@ -120,6 +135,7 @@ void rdwisdom(void)
      if (threads_ok) {
 	  BENCH_ASSERT(FFTW(init_threads)());
 	  FFTW(plan_with_nthreads)(nthreads);
+	  BENCH_ASSERT(FFTW(planner_nthreads)() == nthreads);
           FFTW(make_planner_thread_safe)();
 #ifdef _OPENMP
 	  omp_set_num_threads(nthreads);
@@ -145,7 +161,7 @@ void rdwisdom(void)
 
      if (success) {
 	  if (verbose > 1) printf("READ WISDOM (%g seconds): ", tim);
-	  
+
 	  if (verbose > 3)
 	       export_wisdom(stdout);
 	  if (verbose > 1)
@@ -181,9 +197,9 @@ static unsigned preserve_input_flags(bench_problem *p)
       * fftw3 cannot preserve input for multidimensional c2r transforms.
       * Enforce FFTW_DESTROY_INPUT
       */
-     if (p->kind == PROBLEM_REAL && 
-	 p->sign > 0 && 
-	 !p->in_place && 
+     if (p->kind == PROBLEM_REAL &&
+	 p->sign > 0 &&
+	 !p->in_place &&
 	 p->sz->rnk > 1)
 	  p->destroy_input = 1;
 
@@ -223,7 +239,7 @@ void setup(bench_problem *p)
      double tim;
 
      setup_sigfpe_handler();
-     
+
      if (amnesia) {
 	  FFTW(forget_wisdom)();
 	  havewisdom = 0;
@@ -233,7 +249,7 @@ void setup(bench_problem *p)
       * properly */
      {
           void *ptr = FFTW(malloc(42));
-          BENCH_ASSERT(FFTW(alignment_of)(ptr) == 0);
+          BENCH_ASSERT(FFTW(alignment_of)((bench_real *)ptr) == 0);
           FFTW(free(ptr));
      }
 
@@ -276,9 +292,9 @@ void doit(int iter, bench_problem *p)
 {
      int i;
      FFTW(plan) q = the_plan;
-     
+
      UNUSED(p);
-     for (i = 0; i < iter; ++i) 
+     for (i = 0; i < iter; ++i)
 	  FFTW(execute)(q);
 }
 
@@ -311,26 +327,3 @@ void cleanup(void)
 
      final_cleanup();
 }
-
-/*void cleanup_ex(bench_problem *p)
-{
-	initial_cleanup();
-	//wisdat already contains wisdom file name string due to strcpy done in can_do/setup
-	wrwisdom();
-
-#ifdef HAVE_SMP
-	FFTW(cleanup_threads)();
-#else
-	FFTW(cleanup)();
-#endif
-
-#    ifdef FFTW_DEBUG_MALLOC
-	{
-		// undocumented memory checker 
-		FFTW_EXTERN void FFTW(malloc_print_minfo)(int v);
-		FFTW(malloc_print_minfo)(verbose);
-	}
-#    endif
-
-	final_cleanup();
-}*/

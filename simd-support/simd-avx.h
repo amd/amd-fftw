@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
- * Copyright (C) 2019, Advanced Micro Devices, Inc. All Rights Reserved.
+ * Copyright (C) 2022, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -87,7 +87,7 @@ typedef DS(__m256d, __m256) V;
 #define LDK(x) x
 
 /* FMA support */
-#ifdef AMD_OPT_KERNEL_256SIMD_PERF
+#if defined(AMD_OPT_KERNEL_256SIMD_PERF)
 #define VFMA 	SUFF(_mm256_fmadd_p)
 #define VFNMS 	SUFF(_mm256_fnmadd_p)
 #define VFMS 	SUFF(_mm256_fmsub_p)
@@ -282,6 +282,7 @@ static inline V BYTWJB(const R *t, V sr)
 #endif
 
 #else //DOUBLE PRECISION STARTS
+
 static inline __m128d VMOVAPD_LD(const R *x)
 {
      /* gcc-4.6 miscompiles the combination _mm256_castpd128_pd256(VMOVAPD_LD(x))
@@ -368,6 +369,7 @@ static inline V VZMUL(V tx, V sr)
      sr = VBYI(sr);
      return VFMA(ti, sr, tr);
 }
+
 static inline V VZMULJ(V tx, V sr)
 {
      V tr = VDUPL(tx);
@@ -412,6 +414,7 @@ static inline V BYTWJ1(const R *t, V sr)
 {
      return VZMULJ(LDA(t, 2, t), sr);
 }
+
 /* twiddle storage #2: twice the space, faster (when in cache) */
 #ifdef FFTW_SINGLE
 # define VTW2(v,x)							\

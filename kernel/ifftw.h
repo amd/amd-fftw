@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
- * Copyright (C) 2019-2021, Advanced Micro Devices, Inc. All Rights Reserved.
+ * Copyright (C) 2019-2022, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -198,6 +198,39 @@ extern "C"
 //without any synchronization on completion status.
 #define VADER_LIMIT 8000//8000//4000//500
 
+//Below switches control AOCL-FFTW's dynamic dispatcher system to run a single library across different x86 CPU architectures.
+//Based on how the CPU dispatching is performed to achieve Function Multi-versioning, it has two categories: AUTO and MANUAL.
+#ifdef AMD_DYNAMIC_DISPATCHER
+
+#define AMD_FMV_MANUAL
+
+#ifdef __GNUC__
+#define AMD_FMV_AUTO
+
+#if defined(HAVE_AVX2)
+#if (__GNUC__ >= 11)
+#define TARGET_STRINGS "arch=znver3", "arch=znver2", "arch=znver1", "avx2", "avx", "sse2", "default"
+#elif (__GNUC__ >= 9)
+#define TARGET_STRINGS "arch=znver2", "arch=znver1", "avx2", "avx", "sse2", "default"
+#elif (__GNUC__ > 6 || (__GNUC__ == 6 && __GNUC_MINOR__ >= 3))
+#define TARGET_STRINGS "arch=znver1", "avx2", "avx", "sse2", "default"
+#else
+#define TARGET_STRINGS "avx2", "avx", "sse2", "default"
+#endif
+
+#elif defined(HAVE_AVX)
+#define TARGET_STRINGS "avx", "sse2", "default"
+
+#elif defined(HAVE_SSE) || defined(HAVE_SSE2)
+#define TARGET_STRINGS "sse2", "default"
+
+#else
+#define TARGET_STRINGS "default"
+#endif
+
+#endif //__GNUC__
+
+#endif //AMD_DYNAMIC_DISPATCHER
 //============================================================
 //AMD OPTIMIZATIONS :- end
 
@@ -887,6 +920,7 @@ struct planner_s {
 #ifdef AMD_OPT_PREFER_256BIT_FPU
      int size;
 #endif
+
      /* various statistics */
      int nplan;    /* number of plans evaluated */
      double pcost, epcost; /* total pcost of measured/estimated plans */

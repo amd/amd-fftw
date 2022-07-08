@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
+ * Copyright (C) 2022, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -81,6 +82,9 @@ typedef struct {
    and post-processing passes.
 */
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static void apply_re01(const plan *ego_, R *I, R *O)
 {
      const P *ego = (const P *) ego_;
@@ -135,6 +139,9 @@ static void apply_re01(const plan *ego_, R *I, R *O)
 
 /* ro01 is same as re01, but with i <-> n - 1 - i in the input and
    the sign of the odd output elements flipped. */
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static void apply_ro01(const plan *ego_, R *I, R *O)
 {
      const P *ego = (const P *) ego_;
@@ -187,6 +194,9 @@ static void apply_ro01(const plan *ego_, R *I, R *O)
      X(ifree)(buf);
 }
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static void apply_re10(const plan *ego_, R *I, R *O)
 {
      const P *ego = (const P *) ego_;
@@ -238,6 +248,9 @@ static void apply_re10(const plan *ego_, R *I, R *O)
 
 /* ro10 is same as re10, but with i <-> n - 1 - i in the output and
    the sign of the odd input elements flipped. */
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static void apply_ro10(const plan *ego_, R *I, R *O)
 {
      const P *ego = (const P *) ego_;

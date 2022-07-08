@@ -1,6 +1,6 @@
 /**************************************************************************/
 /* 
- * Copyright (C) 2020, Advanced Micro Devices, Inc. All Rights Reserved.
+ * Copyright (C) 2022, Advanced Micro Devices, Inc. All Rights Reserved.
  */
 
 /* NOTE to users: this is the FFTW self-test and benchmark program.
@@ -30,6 +30,9 @@ BENCH_DOCF("cc", mkcc)
 BENCH_DOCF("codelet-optim", mkcodelet_optim)
 END_BENCH_DOC 
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static FFTW(iodim) *bench_tensor_to_fftw_iodim(bench_tensor *t)
 {
      FFTW(iodim) *d;

@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
- * Copyright (C) 2019-2020, Advanced Micro Devices, Inc. All Rights Reserved.
+ * Copyright (C) 2019-2022, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -171,6 +171,9 @@ problem *X(mkproblem_dft)(const tensor *sz, const tensor *vecsz,
 }
 
 /* Same as X(mkproblem_dft), but also destroy input tensors. */
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 problem *X(mkproblem_dft_d)(tensor *sz, tensor *vecsz,
 			    R *ri, R *ii, R *ro, R *io)
 {

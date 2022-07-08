@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
+ * Copyright (C) 2022, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -70,10 +71,10 @@ static void transpose_chunks(int *sched, int n_pes, int my_pe,
 		    else {
 			 memcpy(buf, O + sbo[pe], sbs[pe] * sizeof(R));
 			 MPI_Sendrecv(buf, (int) (sbs[pe]), FFTW_MPI_TYPE,
-				      pe, (my_pe * n_pes + pe) & 0xffff,
+				      pe, (my_pe * n_pes + pe) & 0x7fff,
 				      O + rbo[pe], (int) (rbs[pe]),
 				      FFTW_MPI_TYPE,
-				      pe, (pe * n_pes + my_pe) & 0xffff,
+				      pe, (pe * n_pes + my_pe) & 0x7fff,
 				      comm, &status);
 		    }
 	       }
@@ -88,10 +89,10 @@ static void transpose_chunks(int *sched, int n_pes, int my_pe,
 		    else
 			 MPI_Sendrecv(I + sbo[pe], (int) (sbs[pe]),
 				      FFTW_MPI_TYPE,
-				      pe, (my_pe * n_pes + pe) & 0xffff,
+				      pe, (my_pe * n_pes + pe) & 0x7fff,
 				      O + rbo[pe], (int) (rbs[pe]),
 				      FFTW_MPI_TYPE,
-				      pe, (pe * n_pes + my_pe) & 0xffff,
+				      pe, (pe * n_pes + my_pe) & 0x7fff,
 				      comm, &status);
 	       }
 	  }
@@ -250,6 +251,9 @@ static void fill1_comm_sched(int *sched, int which_pe, int npes)
    outgoing blocks and thus have to be received in
    descending/ascending order, respectively, to avoid overwriting data
    before it is sent. */
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static void sort1_comm_sched(int *sched, int npes, int sortpe, int ascending)
 {
      int *sortsched, i;

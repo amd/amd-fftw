@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2001 Matteo Frigo
  * Copyright (c) 2001 Massachusetts Institute of Technology
- * Copyright (C) 2019, Advanced Micro Devices, Inc. All Rights Reserved.
+ * Copyright (C) 2022, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,9 @@
 //#endif
 int no_speed_allocation = 0; /* 1 to not allocate array data in speed() */
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 void speed(const char *param, int setup_only)
 {
      double *t;

@@ -45,6 +45,13 @@ int X(have_simd_avx)(void)
                     /* have OS support for XMM, YMM? */
                     res = ((xgetbv_eax(0) & 0x6) == 0x6);                    
                }
+#ifdef AMD_DYNAMIC_DISPATCHER
+               /* Check for FMA support.
+		* If yes, then enable AVX kernels with FMA for use on such CPUs
+		* by Dynamic Dispatcher. Otherwise disable AVX kernels on those
+		* older CPUs where FMA support is not there. */
+               res &= ((ecx & 0x1000) == 0x1000);
+#endif
           }
           init = 1;
      }

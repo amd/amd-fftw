@@ -821,6 +821,7 @@ static plan *search(planner *ego, const problem *p, unsigned *slvndx,
 	  (ego->wisdom_state = ego->bogosity_hook(ego->wisdom_state, p)) \
 	  : ego->wisdom_state) == WISDOM_IS_BOGUS)			\
 	  goto wisdom_is_bogus;
+
 static plan *mkplan(planner *ego, const problem *p)
 {
      plan *pln;
@@ -872,6 +873,7 @@ static plan *mkplan(planner *ego, const problem *p)
 		    goto do_search; /* ignore not-ok wisdom */
 	       
 	       slvndx = SLVNDX(sol);
+	       
 	       if (slvndx == INFEASIBLE_SLVNDX) {
 		    if (ego->wisdom_state == WISDOM_IGNORE_INFEASIBLE)
 			 goto do_search;
@@ -935,8 +937,8 @@ static plan *mkplan(planner *ego, const problem *p)
 
      flags_of_solution = ego->flags;
      pln = search(ego, p, &slvndx, &flags_of_solution);
-
      CHECK_FOR_BOGOSITY; 	  /* catch error in child solvers */
+
      if (ego->timed_out) {
 	  A(!pln);
 	  if (PLNR_TIMELIMIT_IMPATIENCE(ego) != 0) {
@@ -963,6 +965,7 @@ static plan *mkplan(planner *ego, const problem *p)
 	       hinsert(ego, m.s, &flags_of_solution, INFEASIBLE_SLVNDX);
 	  }
      }
+
      return pln;
 
  wisdom_is_bogus:
@@ -1099,7 +1102,7 @@ static void exprt(planner *ego, printer *p)
 
      p->print(p, 
 	      "(" WISDOM_PREAMBLE " #x%M #x%M #x%M #x%M\n",
-	       m.s[0], m.s[1], m.s[2], m.s[3]);
+	      m.s[0], m.s[1], m.s[2], m.s[3]);
 
      for (h = 0; h < ht->hashsiz; ++h) {
 	  solution *l = ht->solutions + h;

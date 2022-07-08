@@ -3,6 +3,11 @@
 /* Enable AMD application optimization layer. */
 #undef AMD_APP_OPT_LAYER
 
+/* Define to enable AMD dynamic dispatcher feature that would build a single
+   portable optimized library which can execute on different x86 CPU
+   architectures. */
+#undef AMD_DYNAMIC_DISPATCHER
+
 /* Set VADER LIMIT in order to enable new AMD MPI transpose algorithms. */
 #undef AMD_MPI_VADER_LIMIT_SET
 

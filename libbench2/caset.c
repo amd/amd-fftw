@@ -1,7 +1,14 @@
 /* not worth copyrighting */
+/*
+ * Copyright (C) 2022, Advanced Micro Devices, Inc. All Rights Reserved.
+ *
+ */
 
 #include "libbench2/bench.h"
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 void caset(bench_complex *A, int n, bench_complex x)
 {
      int i;

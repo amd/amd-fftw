@@ -389,6 +389,7 @@ static inline V VZMULI(V tx, V sr)
      * VMUL(FLIP_RI(sr), VDUPL(tx)));
     */
 }
+
 static inline V VZMULIJ(V tx, V sr)
 {
      /* V tr = VDUPL(tx); */
@@ -416,6 +417,7 @@ static inline V BYTWJ1(const R *t, V sr)
 {
      return VZMULJ(LDA(t, 2, t), sr);
 }
+
 /* twiddle storage #2: twice the space, faster (when in cache) */
 #ifdef FFTW_SINGLE
 # define VTW2(v,x)							\

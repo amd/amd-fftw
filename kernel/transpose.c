@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2003, 2007-14 Matteo Frigo
  * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
- * Copyright (C) 2019-2021, Advanced Micro Devices, Inc. All Rights Reserved.
+ * Copyright (C) 2019-2022, Advanced Micro Devices, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,53 @@
 
 #include "kernel/ifftw.h"
 
+#ifdef AMD_FMV_AUTO
+/* in place square transposition, iterative */
+__attribute__((target_clones(TARGET_STRINGS)))
+void X(transpose)(R *I, INT n, INT s0, INT s1, INT vl)
+{
+     INT i0, i1, v;
+
+     switch (vl) {
+	 case 1:
+          for (i1 = 1; i1 < n; ++i1) {
+           for (i0 = 0; i0 < i1; ++i0) {
+            R x0 = I[i1 * s0 + i0 * s1];
+            R y0 = I[i1 * s1 + i0 * s0];
+            I[i1 * s1 + i0 * s0] = x0;
+            I[i1 * s0 + i0 * s1] = y0;
+           }
+          }
+          break;
+	 case 2:
+          for (i1 = 1; i1 < n; ++i1) {
+           for (i0 = 0; i0 < i1; ++i0) {
+            R x0 = I[i1 * s0 + i0 * s1];
+            R x1 = I[i1 * s0 + i0 * s1 + 1];
+            R y0 = I[i1 * s1 + i0 * s0];
+            R y1 = I[i1 * s1 + i0 * s0 + 1];
+            I[i1 * s1 + i0 * s0] = x0;
+            I[i1 * s1 + i0 * s0 + 1] = x1;
+            I[i1 * s0 + i0 * s1] = y0;
+            I[i1 * s0 + i0 * s1 + 1] = y1;
+           }
+          }
+          break;
+	 default:
+          for (i1 = 1; i1 < n; ++i1) {
+           for (i0 = 0; i0 < i1; ++i0) {
+            for (v = 0; v < vl; ++v) {
+                R x0 = I[i1 * s0 + i0 * s1 + v];
+                R y0 = I[i1 * s1 + i0 * s0 + v];
+                I[i1 * s1 + i0 * s0 + v] = x0;
+                I[i1 * s0 + i0 * s1 + v] = y0;
+            }
+           }
+          }
+          break;
+     }
+}
+#else
 #if defined(AMD_OPT_IN_PLACE_SQU_TRANS) && (!defined(FFTW_LDOUBLE) && !defined(FFTW_QUAD))
 #include "immintrin.h"
 #endif
@@ -135,6 +182,7 @@ void X(transpose)(R *I, INT n, INT s0, INT s1, INT vl)
 	      break;
      }
 }
+#endif
 
 struct transpose_closure {
      R *I;
@@ -142,6 +190,9 @@ struct transpose_closure {
      R *buf0, *buf1; 
 };
 
+#ifdef AMD_FMV_AUTO
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 static void dotile(INT n0l, INT n0u, INT n1l, INT n1u, void *args)
 {
      struct transpose_closure *k = (struct transpose_closure *)args;

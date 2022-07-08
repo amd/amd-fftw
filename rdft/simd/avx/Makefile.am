@@ -1,4 +1,9 @@
+if AMD_DYNAMIC_DISPATCHER
+AM_CFLAGS = $(AVX_CFLAGS) -mfma
+else
 AM_CFLAGS = $(AVX_CFLAGS)
+endif
+
 SIMD_HEADER=simd-support/simd-avx.h
 
 include $(top_srcdir)/rdft/simd/codlist.mk
