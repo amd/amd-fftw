@@ -17790,7 +17790,7 @@ else
 fi
 
 
-$as_echo "#define AOCL_FFTW_VERSION \"AOCL-FFTW-3.2\"" >>confdefs.h
+$as_echo "#define AOCL_FFTW_VERSION \"AOCL-FFTW-3.2.1\"" >>confdefs.h
 
 # Check whether --enable-amd-fast-planner was given.
 if test "${enable_amd_fast_planner+set}" = set; then :
