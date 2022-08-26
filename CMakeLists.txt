@@ -247,7 +247,8 @@ if (MSVC)
   add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif(MSVC)
 
-add_compile_definitions(AOCL_FFTW_VERSION="AOCL-FFTW-3.2.1")
+string(TIMESTAMP TODAY "%Y%m%d")
+add_compile_definitions(AOCL_FFTW_VERSION="AOCL-FFTW 4.0 Build ${TODAY}")
 
 find_library (LIBM_LIBRARY NAMES m)
 if (LIBM_LIBRARY)
