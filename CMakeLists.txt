@@ -316,7 +316,7 @@ if(CMAKE_C_COMPILER_ID MATCHES MSVC)
     message(STATUS "Enabling SSE instructions")
   endif()
 
-  add_compile_definitions(${AVX_FLAG} ${AVX2_FLAG} ${SSE_FLAG} ${SSE2_FLAG} ${AVX512_FLAG})
+  add_compile_definitions(${AVX_FLAG} ${AVX2_FLAG} ${SSE_FLAG} ${SSE2_FLAG})
 
 elseif(CMAKE_C_COMPILER_ID MATCHES Clang)
 
@@ -352,7 +352,7 @@ elseif(CMAKE_C_COMPILER_ID MATCHES Clang)
     message(STATUS "Enabling SSE instructions")
   endif()
 
-  add_compile_options(${AVX_FLAG} ${AVX2_FLAG} ${SSE_FLAG} ${SSE2_FLAG} ${FMA_FLAG} ${AVX512_FLAG})
+  add_compile_options(${AVX_FLAG} ${AVX2_FLAG} ${SSE_FLAG} ${SSE2_FLAG} ${FMA_FLAG})
 
 else()
 
@@ -527,6 +527,7 @@ if (HAVE_AVX2)
 endif ()
 
 if (HAVE_AVX512)
+  set_source_files_properties(${fftw_dft_simd_avx512_SOURCE} ${fftw_rdft_simd_avx512_SOURCE} PROPERTIES COMPILE_OPTIONS "${AVX512_FLAG}")
   list (APPEND SOURCEFILES ${fftw_dft_simd_avx512_SOURCE} ${fftw_rdft_simd_avx512_SOURCE})
 endif ()
 
@@ -646,9 +647,9 @@ endif ()
 if (HAVE_FMA)
   target_compile_options (${lib_name} PRIVATE ${FMA_FLAG})
 endif ()
-if (HAVE_AVX512)
-  target_compile_options (${lib_name} PRIVATE ${AVX512_FLAG})
-endif ()
+#if (HAVE_AVX512)
+#  target_compile_options (${lib_name} PRIVATE ${AVX512_FLAG})
+#endif ()
 if (HAVE_LIBM)
   target_link_libraries (${lib_name} m)
 endif ()
