@@ -126,6 +126,8 @@ extern "C"
 //#define AMD_OPT_AUTO_TUNED_RASTER_TILED_TRANS_METHOD
 //The below switch enables AMD optimizations for the in-place square transpose routine.
 //#define AMD_OPT_IN_PLACE_SQU_TRANS
+//The below switch enables AMD AVX512 optimization for the in-place square transpose routine
+#define AMD_OPT_SQ_TRANS_AVX512 
 //The below switch enables AMD optimizations for the in-situ Toms513 algorithm.
 #define AMD_OPT_TOMS513_TRANS
 //--------------------------------
