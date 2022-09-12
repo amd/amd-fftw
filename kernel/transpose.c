@@ -77,6 +77,295 @@ unsigned int L1D_blk_size;// = CACHESIZE;
 #endif
 
 /* in place square transposition, iterative */
+#if defined(AMD_OPT_SQ_TRANS_AVX512) &&  defined(AMD_DYNAMIC_DISPATCHER)
+void X(transpose_avx2)(R *I, INT n, INT s0, INT s1, INT vl)
+{
+     INT i0, i1, v;
+#if defined(AMD_OPT_IN_PLACE_SQU_TRANS) && (!defined(FFTW_LDOUBLE) && !defined(FFTW_QUAD))
+	 int vl_8factor = vl - (vl & 0xF);
+#ifdef FFTW_SINGLE
+ 	 __m256 in1, in2, in3, in4, in5, in6, in7, in8;
+#else
+	 __m256d in1, in2, in3, in4, in5, in6, in7, in8;
+#endif
+#endif
+
+     switch (vl) {
+	 case 1:
+	      for (i1 = 1; i1 < n; ++i1) {
+		   for (i0 = 0; i0 < i1; ++i0) {
+			R x0 = I[i1 * s0 + i0 * s1];
+			R y0 = I[i1 * s1 + i0 * s0];
+			I[i1 * s1 + i0 * s0] = x0;
+			I[i1 * s0 + i0 * s1] = y0;
+		   }
+	      }
+	      break;
+	 case 2:
+	      for (i1 = 1; i1 < n; ++i1) {
+		   for (i0 = 0; i0 < i1; ++i0) {
+			R x0 = I[i1 * s0 + i0 * s1];
+			R x1 = I[i1 * s0 + i0 * s1 + 1];
+			R y0 = I[i1 * s1 + i0 * s0];
+			R y1 = I[i1 * s1 + i0 * s0 + 1];
+			I[i1 * s1 + i0 * s0] = x0;
+			I[i1 * s1 + i0 * s0 + 1] = x1;
+			I[i1 * s0 + i0 * s1] = y0;
+			I[i1 * s0 + i0 * s1 + 1] = y1;
+		   }
+	      }
+	      break;
+	 default:
+#if defined(AMD_OPT_IN_PLACE_SQU_TRANS) && (!defined(FFTW_LDOUBLE) && !defined(FFTW_QUAD))
+#ifdef FFTW_SINGLE
+	      for (i1 = 1; i1 < n; ++i1) {
+		      for (i0 = 0; i0 < i1; ++i0) {
+			      for (v = 0; v < vl_8factor; v+=16) {
+				      in1 = _mm256_loadu_ps((float const *)&I[i1 * s0 + i0 * s1 + v + 0]);
+				      in2 = _mm256_loadu_ps((float const *)&I[i1 * s1 + i0 * s0 + v + 0]);
+				      in3 = _mm256_loadu_ps((float const *)&I[i1 * s0 + i0 * s1 + v + 8]);
+				      in4 = _mm256_loadu_ps((float const *)&I[i1 * s1 + i0 * s0 + v + 8]);
+				      _mm256_storeu_ps((double *)&I[i1 * s1 + i0 * s0 + v + 0], in1);
+				      _mm256_storeu_ps((double *)&I[i1 * s0 + i0 * s1 + v + 0], in2);
+				      _mm256_storeu_ps((double *)&I[i1 * s1 + i0 * s0 + v + 8], in3);
+				      _mm256_storeu_ps((double *)&I[i1 * s0 + i0 * s1 + v + 8], in4);
+			      }
+			      for (; v < vl; ++v) {
+				      R x0 = I[i1 * s0 + i0 * s1 + v];
+				      R y0 = I[i1 * s1 + i0 * s0 + v];
+				      I[i1 * s1 + i0 * s0 + v] = x0;
+				      I[i1 * s0 + i0 * s1 + v] = y0;
+			      }
+		      }
+	      }
+#else
+	      for (i1 = 1; i1 < n; ++i1) {
+		      for (i0 = 0; i0 < i1; ++i0) {
+			      for (v = 0; v < vl_8factor; v+=16) {
+				      in1 = _mm256_loadu_pd((double const *)&I[i1 * s0 + i0 * s1 + v + 0]);
+				      in2 = _mm256_loadu_pd((double const *)&I[i1 * s1 + i0 * s0 + v + 0]);
+				      in3 = _mm256_loadu_pd((double const *)&I[i1 * s0 + i0 * s1 + v + 4]);
+				      in4 = _mm256_loadu_pd((double const *)&I[i1 * s1 + i0 * s0 + v + 4]);
+				      in5 = _mm256_loadu_pd((double const *)&I[i1 * s0 + i0 * s1 + v + 8]);
+				      in6 = _mm256_loadu_pd((double const *)&I[i1 * s1 + i0 * s0 + v + 8]);
+				      in7 = _mm256_loadu_pd((double const *)&I[i1 * s0 + i0 * s1 + v + 12]);
+				      in8 = _mm256_loadu_pd((double const *)&I[i1 * s1 + i0 * s0 + v + 12]);
+				      _mm256_storeu_pd((double *)&I[i1 * s1 + i0 * s0 + v + 0], in1);
+				      _mm256_storeu_pd((double *)&I[i1 * s0 + i0 * s1 + v + 0], in2);
+				      _mm256_storeu_pd((double *)&I[i1 * s1 + i0 * s0 + v + 4], in3);
+				      _mm256_storeu_pd((double *)&I[i1 * s0 + i0 * s1 + v + 4], in4);
+				      _mm256_storeu_pd((double *)&I[i1 * s1 + i0 * s0 + v + 8], in5);
+				      _mm256_storeu_pd((double *)&I[i1 * s0 + i0 * s1 + v + 8], in6);
+				      _mm256_storeu_pd((double *)&I[i1 * s1 + i0 * s0 + v + 12], in7);
+				      _mm256_storeu_pd((double *)&I[i1 * s0 + i0 * s1 + v + 12], in8);
+			      }
+			      for (; v < vl; ++v) {
+				      R x0 = I[i1 * s0 + i0 * s1 + v];
+				      R y0 = I[i1 * s1 + i0 * s0 + v];
+				      I[i1 * s1 + i0 * s0 + v] = x0;
+				      I[i1 * s0 + i0 * s1 + v] = y0;
+			      }
+		      }
+	      }
+#endif
+#else
+	      for (i1 = 1; i1 < n; ++i1) {
+		   for (i0 = 0; i0 < i1; ++i0) {
+			for (v = 0; v < vl; ++v) {
+			     R x0 = I[i1 * s0 + i0 * s1 + v];
+			     R y0 = I[i1 * s1 + i0 * s0 + v];
+			     I[i1 * s1 + i0 * s0 + v] = x0;
+			     I[i1 * s0 + i0 * s1 + v] = y0;
+			}
+		   }
+	      }
+#endif
+	      break;
+     }
+}
+
+//variant of transpose routine for AVX512
+#ifdef HAVE_AVX512
+void X(transpose_avx512)(R *I, INT n, INT s0, INT s1, INT vl)
+{
+	INT i0, i1, v;
+#if defined(AMD_OPT_IN_PLACE_SQU_TRANS) && (!defined(FFTW_LDOUBLE) && !defined(FFTW_QUAD))
+		int vl_8factor = vl - (vl & 0xF);
+#ifdef FFTW_SINGLE
+		__m512 in1, in2, in3, in4;
+#else
+		__m512d in1, in2, in3, in4;
+#endif
+#endif
+		switch (vl) {
+			case 1:
+				for (i1 = 1; i1 < n; ++i1) {
+					for (i0 = 0; i0 < i1; ++i0) {
+						R x0 = I[i1 * s0 + i0 * s1];
+						R y0 = I[i1 * s1 + i0 * s0];
+						I[i1 * s1 + i0 * s0] = x0;
+						I[i1 * s0 + i0 * s1] = y0;
+					}
+				}
+				break;
+			case 2:
+				for (i1 = 1; i1 < n; ++i1) {
+					for (i0 = 0; i0 < i1; ++i0) {
+						R x0 = I[i1 * s0 + i0 * s1];
+						R x1 = I[i1 * s0 + i0 * s1 + 1];
+						R y0 = I[i1 * s1 + i0 * s0];
+						R y1 = I[i1 * s1 + i0 * s0 + 1];
+						I[i1 * s1 + i0 * s0] = x0;
+						I[i1 * s1 + i0 * s0 + 1] = x1;
+						I[i1 * s0 + i0 * s1] = y0;
+						I[i1 * s0 + i0 * s1 + 1] = y1;
+					}
+				}
+				break;
+			default:
+#if defined(AMD_OPT_IN_PLACE_SQU_TRANS) && (!defined(FFTW_LDOUBLE) && !defined(FFTW_QUAD))
+#ifdef FFTW_SINGLE
+				for (i1 = 1; i1 < n; ++i1) {
+					for (i0 = 0; i0 < i1; ++i0) {
+						for (v = 0; v < vl_8factor; v+=16) {
+							in1 = _mm512_loadu_ps((float const *)&I[i1 * s0 + i0 * s1 + v + 0]);
+							in2 = _mm512_loadu_ps((float const *)&I[i1 * s1 + i0 * s0 + v + 0]);
+							_mm512_storeu_ps((double *)&I[i1 * s1 + i0 * s0 + v + 0], in1);
+							_mm512_storeu_ps((double *)&I[i1 * s0 + i0 * s1 + v + 0], in2);
+						}
+						for (; v < vl; ++v) {
+							R x0 = I[i1 * s0 + i0 * s1 + v];
+							R y0 = I[i1 * s1 + i0 * s0 + v];
+							I[i1 * s1 + i0 * s0 + v] = x0;
+							I[i1 * s0 + i0 * s1 + v] = y0;
+						}
+					}
+				}
+#else
+				for (i1 = 1; i1 < n; ++i1) {
+					for (i0 = 0; i0 < i1; ++i0) {
+						for (v = 0; v < vl_8factor; v+=16) {
+							in1 = _mm512_loadu_pd((double const *)&I[i1 * s0 + i0 * s1 + v + 0]);
+							in2 = _mm512_loadu_pd((double const *)&I[i1 * s1 + i0 * s0 + v + 0]);
+							in3 = _mm512_loadu_pd((double const *)&I[i1 * s0 + i0 * s1 + v + 8]);
+							in4 = _mm512_loadu_pd((double const *)&I[i1 * s1 + i0 * s0 + v + 8]);
+							_mm512_storeu_pd((double *)&I[i1 * s1 + i0 * s0 + v + 0], in1);
+							_mm512_storeu_pd((double *)&I[i1 * s0 + i0 * s1 + v + 0], in2);
+							_mm512_storeu_pd((double *)&I[i1 * s1 + i0 * s0 + v + 8], in3);
+							_mm512_storeu_pd((double *)&I[i1 * s0 + i0 * s1 + v + 8], in4);
+						}
+						for (; v < vl; ++v) {
+							R x0 = I[i1 * s0 + i0 * s1 + v];
+							R y0 = I[i1 * s1 + i0 * s0 + v];
+							I[i1 * s1 + i0 * s0 + v] = x0;
+							I[i1 * s0 + i0 * s1 + v] = y0;
+						}
+					}
+				}
+#endif
+#else
+				for (i1 = 1; i1 < n; ++i1) {
+					for (i0 = 0; i0 < i1; ++i0) {
+						for (v = 0; v < vl; ++v) {
+							R x0 = I[i1 * s0 + i0 * s1 + v];
+							R y0 = I[i1 * s1 + i0 * s0 + v];
+							I[i1 * s1 + i0 * s0 + v] = x0;
+							I[i1 * s0 + i0 * s1 + v] = y0;
+						}
+					}
+				}
+#endif
+				break;
+		}
+}
+#endif
+void X(transpose_c)(R *I, INT n, INT s0, INT s1, INT vl)
+{
+     INT i0, i1, v;
+
+     switch (vl) {
+	 case 1:
+          for (i1 = 1; i1 < n; ++i1) {
+           for (i0 = 0; i0 < i1; ++i0) {
+            R x0 = I[i1 * s0 + i0 * s1];
+            R y0 = I[i1 * s1 + i0 * s0];
+            I[i1 * s1 + i0 * s0] = x0;
+            I[i1 * s0 + i0 * s1] = y0;
+           }
+          }
+          break;
+	 case 2:
+          for (i1 = 1; i1 < n; ++i1) {
+           for (i0 = 0; i0 < i1; ++i0) {
+            R x0 = I[i1 * s0 + i0 * s1];
+            R x1 = I[i1 * s0 + i0 * s1 + 1];
+            R y0 = I[i1 * s1 + i0 * s0];
+            R y1 = I[i1 * s1 + i0 * s0 + 1];
+            I[i1 * s1 + i0 * s0] = x0;
+            I[i1 * s1 + i0 * s0 + 1] = x1;
+            I[i1 * s0 + i0 * s1] = y0;
+            I[i1 * s0 + i0 * s1 + 1] = y1;
+           }
+          }
+          break;
+	 default:
+          for (i1 = 1; i1 < n; ++i1) {
+           for (i0 = 0; i0 < i1; ++i0) {
+            for (v = 0; v < vl; ++v) {
+                R x0 = I[i1 * s0 + i0 * s1 + v];
+                R y0 = I[i1 * s1 + i0 * s0 + v];
+                I[i1 * s1 + i0 * s0 + v] = x0;
+                I[i1 * s0 + i0 * s1 + v] = y0;
+            }
+           }
+          }
+          break;
+     }
+}
+
+
+int is_avx512, is_avx2;
+
+void X(transpose_internal)(R* I, INT n, INT s0, INT s1, INT vl) __attribute__((ifunc("fmv_resolver_transpose")));
+void X(transpose)(R* I, INT n, INT s0, INT s1, INT vl)
+{
+#if defined(HAVE_AVX512)
+	is_avx512 = X(have_simd_avx512);
+#else
+	is_avx512 = 0;
+#endif
+#if defined(HAVE_AVX2) || defined(HAVE_AVX)
+	is_avx2 = X(have_simd_avx2);
+#else
+	is_avx2 = 0;
+#endif
+	X(transpose_internal)(I, n, s0, s1, vl);
+}
+
+static void* fmv_resolver_transpose(void)
+{
+#if defined(HAVE_AVX512)
+	if (is_avx512)
+	{
+		return X(transpose_avx512);
+	}
+	else
+#endif
+	{
+#if defined(HAVE_AVX) || defined(HAVE_AVX2)
+		if (is_avx2)
+		{
+			return X(transpose_avx2);
+		}
+		else
+#endif
+		{
+			return X(transpose_c);
+		}
+	}
+
+}
+#else
 void X(transpose)(R *I, INT n, INT s0, INT s1, INT vl)
 {
      INT i0, i1, v;
@@ -182,6 +471,7 @@ void X(transpose)(R *I, INT n, INT s0, INT s1, INT vl)
 	      break;
      }
 }
+#endif
 #endif
 
 struct transpose_closure {
