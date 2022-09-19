@@ -2007,7 +2007,7 @@ static void *fmv_resolver_cpy2d_pair(void)
     else
 #endif
     {
-#if defined(HAVE_AVX) || defined(HAVE_AVX2)
+#if defined(HAVE_AVX)
         if (X(have_simd_avx)())
         {
                 return X(cpy2d_pair_avx);
