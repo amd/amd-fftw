@@ -21,7 +21,7 @@
 
 #include "kernel/ifftw.h"
 
-#ifdef AMD_FMV_AUTO
+#if 0 //#ifdef AMD_FMV_AUTO //Let the manual FMV option be enabled
 /* in place square transposition, iterative */
 __attribute__((target_clones(TARGET_STRINGS)))
 void X(transpose)(R *I, INT n, INT s0, INT s1, INT vl)
@@ -77,8 +77,11 @@ unsigned int L1D_blk_size;// = CACHESIZE;
 #endif
 
 /* in place square transposition, iterative */
-#if defined(AMD_OPT_SQ_TRANS_AVX512) &&  defined(AMD_DYNAMIC_DISPATCHER)
-void X(transpose_avx2)(R *I, INT n, INT s0, INT s1, INT vl)
+
+#ifdef AMD_FMV_MANUAL
+//variant of transpose routine for AVX
+__attribute__ ((target ("avx")))
+void X(transpose_avx)(R *I, INT n, INT s0, INT s1, INT vl)
 {
      INT i0, i1, v;
 #if defined(AMD_OPT_IN_PLACE_SQU_TRANS) && (!defined(FFTW_LDOUBLE) && !defined(FFTW_QUAD))
@@ -186,6 +189,7 @@ void X(transpose_avx2)(R *I, INT n, INT s0, INT s1, INT vl)
 
 //variant of transpose routine for AVX512
 #ifdef HAVE_AVX512
+__attribute__ ((target ("avx512f")))
 void X(transpose_avx512)(R *I, INT n, INT s0, INT s1, INT vl)
 {
 	INT i0, i1, v;
@@ -279,6 +283,7 @@ void X(transpose_avx512)(R *I, INT n, INT s0, INT s1, INT vl)
 		}
 }
 #endif
+__attribute__ ((target ("sse2")))
 void X(transpose_c)(R *I, INT n, INT s0, INT s1, INT vl)
 {
      INT i0, i1, v;
@@ -324,7 +329,7 @@ void X(transpose_c)(R *I, INT n, INT s0, INT s1, INT vl)
 }
 
 
-int is_avx512, is_avx2;
+int is_avx512, is_avx;
 
 void X(transpose_internal)(R* I, INT n, INT s0, INT s1, INT vl) __attribute__((ifunc("fmv_resolver_transpose")));
 void X(transpose)(R* I, INT n, INT s0, INT s1, INT vl)
@@ -334,10 +339,10 @@ void X(transpose)(R* I, INT n, INT s0, INT s1, INT vl)
 #else
 	is_avx512 = 0;
 #endif
-#if defined(HAVE_AVX2) || defined(HAVE_AVX)
-	is_avx2 = X(have_simd_avx2);
+#if defined(HAVE_AVX)
+	is_avx = X(have_simd_avx);
 #else
-	is_avx2 = 0;
+	is_avx = 0;
 #endif
 	X(transpose_internal)(I, n, s0, s1, vl);
 }
@@ -352,10 +357,10 @@ static void* fmv_resolver_transpose(void)
 	else
 #endif
 	{
-#if defined(HAVE_AVX) || defined(HAVE_AVX2)
-		if (is_avx2)
+#if defined(HAVE_AVX)
+		if (is_avx)
 		{
-			return X(transpose_avx2);
+			return X(transpose_avx);
 		}
 		else
 #endif
