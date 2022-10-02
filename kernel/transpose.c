@@ -335,12 +335,12 @@ void X(transpose_internal)(R* I, INT n, INT s0, INT s1, INT vl) __attribute__((i
 void X(transpose)(R* I, INT n, INT s0, INT s1, INT vl)
 {
 #if defined(HAVE_AVX512)
-	is_avx512 = X(have_simd_avx512);
+	is_avx512 = X(have_simd_avx512)();
 #else
 	is_avx512 = 0;
 #endif
 #if defined(HAVE_AVX)
-	is_avx = X(have_simd_avx);
+	is_avx = X(have_simd_avx)();
 #else
 	is_avx = 0;
 #endif
