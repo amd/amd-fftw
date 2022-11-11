@@ -17,10 +17,9 @@ extension to the original planner that improves planning time of various
 planning modes in general and PATIENT mode in particular. Another new planning
 mode called Top N planner is also available that minimizes single-threaded
 run-to-run variations. AOCL-FFTW has a feature called AMD's application
-optimization layer that speeds up HPC and scientific applications. As of 
-AOCL-FFTW-3.2, a new feature called dynamic dispatcher is implemented that 
-can build a single portable optimized library for execution on a wide range of
-x86 CPU architectures.
+optimization layer that speeds up HPC and scientific applications. AOCL-FFTW
+implements the dynamic dispatcher feature that can build a single portable 
+optimized library for execution on a wide range of x86 CPU architectures.
 
 FFTW is a free collection of fast C routines for computing the
 Discrete Fourier Transform and various special cases thereof in one or more
@@ -44,7 +43,7 @@ https://github.com/amd/amd-fftw, follow the below steps to configure and
 build it for AMD EPYC processor based on Naples, Rome, Milan and future 
 generation architectures.
 
-     ./configure --enable-sse2 --enable-avx --enable-avx2 
+     ./configure --enable-sse2 --enable-avx --enable-avx2 --enable-avx512
                  --enable-mpi --enable-openmp --enable-shared 
                  --enable-amd-opt --enable-amd-mpifft 
                  --prefix=<your-install-dir>
@@ -75,8 +74,8 @@ Top N planner mode can be enabled using optional configure option
 It is supported in single-threaded execution in single and double precisions.
 
 An optional configure option "AMD_ARCH" is supported that can be set to CPU 
-architecture values like "auto" or "znver1" or "znver2" or "znver3" for AMD 
-EPYC processors.
+architecture values like "auto" or "znver1" or "znver2" or "znver3" or "znver4"
+for AMD EPYC processors.
 
 The optional configure option "--enable-amd-app-opt" turns on AMD's application
 optimization layer to benefit performance of HPC and scientific applications.
