@@ -17780,7 +17780,7 @@ fi
 dateVar=`date +"%Y%m%d"`
 
 cat >>confdefs.h <<_ACEOF
-#define AOCL_FFTW_VERSION "AOCL-FFTW 4.0 Build $dateVar"
+#define AOCL_FFTW_VERSION "AOCL-FFTW 4.0.1 Build $dateVar"
 _ACEOF
 
 # Check whether --enable-amd-fast-planner was given.
