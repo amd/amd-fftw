@@ -45,7 +45,8 @@ generation architectures.
 
      ./configure --enable-sse2 --enable-avx --enable-avx2 --enable-avx512
                  --enable-mpi --enable-openmp --enable-shared 
-                 --enable-amd-opt --enable-amd-mpifft 
+                 --enable-amd-opt --enable-amd-mpifft
+                 --enable-dynamic-dispatcher
                  --prefix=<your-install-dir>
      make
      make install
@@ -85,7 +86,7 @@ problem types, Quad or Long double precisions, and split array format.
 
 Dynamic dispatcher achieves Function Multi-versioning by using compiler's
 attributes. Use "--enable-dynamic-dispatcher" configure option to enable this
-feature. It is supported for GCC compiler and Linux based systems for now.
+feature. It is supported for Linux based systems for now.
 The set of x86 CPUs on which the single portable library can work depends upon
 the highest level of CPU SIMD instruction set with which it is configured.
 
@@ -101,9 +102,8 @@ CONTACTS
 --------
 
 AOCL-FFTW is developed and maintained by AMD.
-You can contact us on the email-id aoclsupport@amd.com.
-You can also raise any issue/suggestion on the git-hub repository at
-https://github.com/amd/amd-fftw/issues
+For support of these libraries and the other tools of AMD Zen Software Studio,
+see https://www.amd.com/en/developer/aocc/compiler-technical-support.html
 
 ACKNOWLEDGEMENTS
 ----------------

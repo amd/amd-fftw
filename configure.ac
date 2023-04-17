@@ -637,7 +637,9 @@ fi
 dnl amd optimization switch and CFLAGS setting based on config arg option --enable-amd-opt
 AC_ARG_ENABLE(amd-opt, [AC_HELP_STRING([--enable-amd-opt],[enable AMD cpu specific optimizations])], have_amd_opt=$enableval, have_amd_opt=no)
 
-if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
+ISAMDCPU=$(expr `cat /proc/cpuinfo | grep -m1 vendor_id|cut -f2 -d:`)
+
+if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set" && test "$ISAMDCPU" = "AuthenticAMD"; then
 
 	AC_MSG_RESULT(AMD OPT Flag is enabled and so AMD optimizations will be turned on.)
 
@@ -648,14 +650,32 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set"; then
 	AMDZENMODEL=$(expr `cat /proc/cpuinfo | grep -m1 model|cut -f2 -d:`)
 
 	if test "$have_dynamic_dispatcher" = yes; then
-		AC_DEFINE(AMD_DYNAMIC_DISPATCHER,1,[Define to enable AMD dynamic dispatcher feature that would build a single portable optimized library which can execute on different x86 CPU architectures.])
-		
-		SUBSTRGCC='gcc'
-		if grep -q "$SUBSTRGCC" <<<"$CC"; then		
-			CFLAGS="$CFLAGS -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128"
-		else
-			AC_MSG_ERROR([AMD Dynamic Dispatcher feature is only supported for GCC build.])
-		fi
+        AC_DEFINE(AMD_DYNAMIC_DISPATCHER,1,[Define to enable AMD dynamic dispatcher feature that would build a single portable optimized library which can execute on different x86 CPU architectures.])
+        
+        SUBSTRGCC='gcc'
+        if grep -q "$SUBSTRGCC" <<<"$CC"; then		
+        	CFLAGS="$CFLAGS -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128"
+        else
+            AC_MSG_CHECKING([whether we are using clang 14 or later])
+            AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+                #ifdef __clang__
+                #if __clang_major__ < 14
+                #error Clang 14 or later is recommended for AMD dynamic dispatcher feature
+                #endif
+                #endif
+                ]])],
+                [AC_MSG_RESULT([yes])
+                clang_dyn_dispatch_supported=1],
+                [AC_MSG_RESULT([no])
+                clang_dyn_dispatch_supported=0])
+            if test "$clang_dyn_dispatch_supported" = "1"; then
+                :
+                LDFLAGS="$LDFLAGS -Wl,--allow-multiple-definition"
+                AC_MSG_RESULT(AMD Dynamic Dispatcher feature is selected.)
+            else
+                AC_MSG_ERROR([AMD Dynamic Dispatcher feature is only supported for AOCC 4.0 (Clang 14.0.0) onwards.])
+            fi
+        fi
 	else
 	if test "$ac_test_CFLAGS" != "set"; then
 		if [[ "$AMD_ARCH" = "auto" ]]; then

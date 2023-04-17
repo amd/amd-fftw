@@ -14,7 +14,7 @@ SET(AMD_ARCH "znver1" CACHE STRING "select AMD zen version for Clang toolchain")
 
 if (CMAKE_C_COMPILER_ID MATCHES Clang)
   if ("${AMD_ARCH}" STREQUAL "")
-    message(FATAL_ERROR "Machine arch missing! Select one of znver1, znver2 or znver3")
+    message(FATAL_ERROR "Machine arch missing! Select one of znver1, znver2, znver3 or znver4")
   elseif (${AMD_ARCH} STREQUAL "znver1")
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=znver1")
   elseif (${AMD_ARCH} STREQUAL "znver2")

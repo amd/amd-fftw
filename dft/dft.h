@@ -40,6 +40,9 @@ typedef struct {
 void X(dft_zerotens)(tensor *sz, R *ri, R *ii);
 problem *X(mkproblem_dft)(const tensor *sz, const tensor *vecsz,
 				R *ri, R *ii, R *ro, R *io);
+#if defined(__clang__) && defined(AMD_FMV_AUTO)
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 problem *X(mkproblem_dft_d)(tensor *sz, tensor *vecsz,
 			    R *ri, R *ii, R *ro, R *io);
 
