@@ -6,16 +6,16 @@ AMD EPYC CPUs. It is developed on top of FFTW (version fftw-3.3.10).
 All known features and functionalities of FFTW are retained and supported
 as it is with this AMD optimized FFTW library.
 
-AOCL-FFTW achieves higher performance than the original FFTW 3.3.10 due to its
-various optimizations involving improved SIMD Kernel functions, improved copy
-functions (cpy2d and cpy2d_pair used in rank-0 transform and buffering plan),
+AOCL-FFTW achieves high performance as a result of its various optimizations 
+involving improved SIMD Kernel functions, improved copy functions 
+(cpy2d and cpy2d_pair used in rank-0 transform and buffering plan),
 improved 256-bit kernels selection by Planner and an optional in-place 
 transpose for large problem sizes. AOCL-FFTW improves the performance
-of in-place MPI FFTs over FFTW 3.3.10 by employing a faster in-place MPI
-transpose function. AOCL-FFTW provides a new fast planner mode as an
-extension to the original planner that improves planning time of various
-planning modes in general and PATIENT mode in particular. Another new planning
-mode called Top N planner is also available that minimizes single-threaded
+of in-place MPI FFTs by employing a faster in-place MPI transpose function. 
+AOCL-FFTW provides a new fast planner mode as an extension to the original 
+planner that improves planning time of various planning modes in general 
+and PATIENT mode in particular. Another new planning mode called 
+Top N planner is also available that minimizes single-threaded
 run-to-run variations. AOCL-FFTW has a feature called AMD's application
 optimization layer that speeds up HPC and scientific applications. AOCL-FFTW
 implements the dynamic dispatcher feature that can build a single portable 
