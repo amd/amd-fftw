@@ -14,7 +14,7 @@ SET(AMD_ARCH "znver1" CACHE STRING "select AMD zen version for Clang toolchain")
 
 if (CMAKE_C_COMPILER_ID MATCHES Clang)
   if ("${AMD_ARCH}" STREQUAL "")
-    message(FATAL_ERROR "Machine arch missing! Select one of znver1, znver2 or znver3")
+    message(FATAL_ERROR "Machine arch missing! Select one of znver1, znver2, znver3 or znver4")
   elseif (${AMD_ARCH} STREQUAL "znver1")
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=znver1")
   elseif (${AMD_ARCH} STREQUAL "znver2")
@@ -252,7 +252,7 @@ if (MSVC)
 endif(MSVC)
 
 string(TIMESTAMP TODAY "%Y%m%d")
-add_compile_definitions(AOCL_FFTW_VERSION="AOCL-FFTW 4.0 Build ${TODAY}")
+add_compile_definitions(AOCL_FFTW_VERSION="AOCL-FFTW 4.1.0 Build ${TODAY}")
 
 find_library (LIBM_LIBRARY NAMES m)
 if (LIBM_LIBRARY)

@@ -202,9 +202,18 @@ extern "C"
 //Based on how the CPU dispatching is performed to achieve Function Multi-versioning, it has two categories: AUTO and MANUAL.
 #ifdef AMD_DYNAMIC_DISPATCHER
 
+#if (__clang__)
+
+#if (__clang_major__ >= 14) //Clang supports target_clones() from version 14 onwards
 #define AMD_FMV_MANUAL
+#define AMD_FMV_AUTO
+#define TARGET_STRINGS "arch=znver4", "arch=znver3", "arch=znver2", "arch=znver1", "avx2", "avx", "sse2", "default"
+#endif
+
+#else
 
 #ifdef __GNUC__
+#define AMD_FMV_MANUAL
 #define AMD_FMV_AUTO
 
 #if defined(HAVE_AVX2)
@@ -229,6 +238,8 @@ extern "C"
 #endif
 
 #endif //__GNUC__
+
+#endif //__clang__
 
 #endif //AMD_DYNAMIC_DISPATCHER
 //============================================================
@@ -621,6 +632,9 @@ tensor *X(tensor_copy_inplace)(const tensor *sz, inplace_kind k);
 tensor *X(tensor_copy_except)(const tensor *sz, int except_dim);
 tensor *X(tensor_copy_sub)(const tensor *sz, int start_dim, int rnk);
 tensor *X(tensor_compress)(const tensor *sz);
+#if defined(__clang__) && defined(AMD_FMV_AUTO)
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 tensor *X(tensor_compress_contiguous)(const tensor *sz);
 tensor *X(tensor_append)(const tensor *a, const tensor *b);
 void X(tensor_split)(const tensor *sz, tensor **a, int a_rnk, tensor **b);
@@ -986,6 +1000,9 @@ extern const INT X(an_INT_guaranteed_to_be_zero);
 #ifdef PRECOMPUTE_ARRAY_INDICES
 typedef INT *stride;
 #define WS(stride, i)  (stride[i])
+#if defined(__clang__) && defined(AMD_FMV_AUTO)
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 extern stride X(mkstride)(INT n, INT s);
 void X(stride_destroy)(stride p);
 /* hackery to prevent the compiler from copying the strides array
@@ -1144,6 +1161,9 @@ INT X(compute_tilesz)(INT vl, int how_many_tiles_in_cache);
 void X(tile2d)(INT n0l, INT n0u, INT n1l, INT n1u, INT tilesz,
 	       void (*f)(INT n0l, INT n0u, INT n1l, INT n1u, void *args),
 	       void *args);
+#if defined(__clang__) && defined(AMD_FMV_AUTO)
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 void X(cpy1d)(R *I, R *O, INT n0, INT is0, INT os0, INT vl);
 void X(zero1d_pair)(R *O0, R *O1, INT n0, INT os0);
 void X(cpy2d)(R *I, R *O,
@@ -1176,6 +1196,9 @@ void X(cpy2d_pair_co)(R *I0, R *I1, R *O0, R *O1,
 		      INT n0, INT is0, INT os0,
 		      INT n1, INT is1, INT os1);
 
+//#if defined(__clang__) && defined(AMD_FMV_AUTO)
+//__attribute__((target_clones(TARGET_STRINGS)))
+//#endif
 void X(transpose)(R *I, INT n, INT s0, INT s1, INT vl);
 void X(transpose_tiled)(R *I, INT n, INT s0, INT s1, INT vl);
 void X(transpose_tiledbuf)(R *I, INT n, INT s0, INT s1, INT vl);

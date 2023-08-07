@@ -6,16 +6,16 @@ AMD EPYC CPUs. It is developed on top of FFTW (version fftw-3.3.10).
 All known features and functionalities of FFTW are retained and supported
 as it is with this AMD optimized FFTW library.
 
-AOCL-FFTW achieves higher performance than the original FFTW 3.3.10 due to its
-various optimizations involving improved SIMD Kernel functions, improved copy
-functions (cpy2d and cpy2d_pair used in rank-0 transform and buffering plan),
+AOCL-FFTW achieves high performance as a result of its various optimizations 
+involving improved SIMD Kernel functions, improved copy functions 
+(cpy2d and cpy2d_pair used in rank-0 transform and buffering plan),
 improved 256-bit kernels selection by Planner and an optional in-place 
 transpose for large problem sizes. AOCL-FFTW improves the performance
-of in-place MPI FFTs over FFTW 3.3.10 by employing a faster in-place MPI
-transpose function. AOCL-FFTW provides a new fast planner mode as an
-extension to the original planner that improves planning time of various
-planning modes in general and PATIENT mode in particular. Another new planning
-mode called Top N planner is also available that minimizes single-threaded
+of in-place MPI FFTs by employing a faster in-place MPI transpose function. 
+AOCL-FFTW provides a new fast planner mode as an extension to the original 
+planner that improves planning time of various planning modes in general 
+and PATIENT mode in particular. Another new planning mode called 
+Top N planner is also available that minimizes single-threaded
 run-to-run variations. AOCL-FFTW has a feature called AMD's application
 optimization layer that speeds up HPC and scientific applications. AOCL-FFTW
 implements the dynamic dispatcher feature that can build a single portable 
@@ -45,7 +45,8 @@ generation architectures.
 
      ./configure --enable-sse2 --enable-avx --enable-avx2 --enable-avx512
                  --enable-mpi --enable-openmp --enable-shared 
-                 --enable-amd-opt --enable-amd-mpifft 
+                 --enable-amd-opt --enable-amd-mpifft
+                 --enable-dynamic-dispatcher
                  --prefix=<your-install-dir>
      make
      make install
@@ -85,7 +86,7 @@ problem types, Quad or Long double precisions, and split array format.
 
 Dynamic dispatcher achieves Function Multi-versioning by using compiler's
 attributes. Use "--enable-dynamic-dispatcher" configure option to enable this
-feature. It is supported for GCC compiler and Linux based systems for now.
+feature. It is supported for Linux based systems for now.
 The set of x86 CPUs on which the single portable library can work depends upon
 the highest level of CPU SIMD instruction set with which it is configured.
 
@@ -101,9 +102,8 @@ CONTACTS
 --------
 
 AOCL-FFTW is developed and maintained by AMD.
-You can contact us on the email-id aoclsupport@amd.com.
-You can also raise any issue/suggestion on the git-hub repository at
-https://github.com/amd/amd-fftw/issues
+For support of these libraries and the other tools of AMD Zen Software Studio,
+see https://www.amd.com/en/developer/aocc/compiler-technical-support.html
 
 ACKNOWLEDGEMENTS
 ----------------

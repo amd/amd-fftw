@@ -21,6 +21,7 @@
 
 /* out of place copy routines for pairs of isomorphic 2D arrays */
 #include "kernel/ifftw.h"
+#include <string.h>
 
 #ifdef AMD_OPT_ALL
 #include "immintrin.h"

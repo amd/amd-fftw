@@ -32,6 +32,9 @@ typedef struct {
 
 typedef void *(*spawn_function) (spawn_data *);
 
+#if defined(__clang__) && defined(AMD_FMV_AUTO)
+__attribute__((target_clones(TARGET_STRINGS)))
+#endif
 void X(spawn_loop)(int loopmax, int nthreads,
 		   spawn_function proc, void *data);
 int X(ithreads_init)(void);
