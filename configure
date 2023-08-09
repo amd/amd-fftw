@@ -18385,7 +18385,7 @@ fi
 
 dateVar=`date +"%Y%m%d"`
 
-printf "%s\n" "#define AOCL_FFTW_VERSION \"AOCL-FFTW 4.1.0 Build $dateVar\"" >>confdefs.h
+printf "%s\n" "#define AOCL_FFTW_VERSION \"AOCL-FFTW 4.1.1 Build $dateVar\"" >>confdefs.h
 
 # Check whether --enable-amd-fast-planner was given.
 if test ${enable_amd_fast_planner+y}
