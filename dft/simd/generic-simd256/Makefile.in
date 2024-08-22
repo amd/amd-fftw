@@ -125,22 +125,24 @@ libdft_generic_simd256_codelets_la_LIBADD =
 am__libdft_generic_simd256_codelets_la_SOURCES_DIST = n1fv_2.c \
 	n1fv_3.c n1fv_4.c n1fv_5.c n1fv_6.c n1fv_7.c n1fv_8.c n1fv_9.c \
 	n1fv_10.c n1fv_11.c n1fv_12.c n1fv_13.c n1fv_14.c n1fv_15.c \
-	n1fv_16.c n1fv_32.c n1fv_64.c n1fv_128.c n1fv_20.c n1fv_25.c \
-	n1bv_2.c n1bv_3.c n1bv_4.c n1bv_5.c n1bv_6.c n1bv_7.c n1bv_8.c \
-	n1bv_9.c n1bv_10.c n1bv_11.c n1bv_12.c n1bv_13.c n1bv_14.c \
-	n1bv_15.c n1bv_16.c n1bv_32.c n1bv_64.c n1bv_128.c n1bv_20.c \
-	n1bv_25.c n2fv_2.c n2fv_4.c n2fv_6.c n2fv_8.c n2fv_10.c \
-	n2fv_12.c n2fv_14.c n2fv_16.c n2fv_32.c n2fv_64.c n2fv_20.c \
+	n1fv_16.c n1fv_32.c n1fv_64.c n1fv_128.c n1fv_256.c n1fv_512.c \
+	n1fv_20.c n1fv_25.c n1bv_2.c n1bv_3.c n1bv_4.c n1bv_5.c \
+	n1bv_6.c n1bv_7.c n1bv_8.c n1bv_9.c n1bv_10.c n1bv_11.c \
+	n1bv_12.c n1bv_13.c n1bv_14.c n1bv_15.c n1bv_16.c n1bv_32.c \
+	n1bv_64.c n1bv_128.c n1bv_20.c n1bv_25.c n2fv_2.c n2fv_4.c \
+	n2fv_6.c n2fv_8.c n2fv_10.c n2fv_12.c n2fv_14.c n2fv_16.c \
+	n2fv_32.c n2fv_64.c n2fv_128.c n2fv_256.c n2fv_512.c n2fv_20.c \
 	n2bv_2.c n2bv_4.c n2bv_6.c n2bv_8.c n2bv_10.c n2bv_12.c \
 	n2bv_14.c n2bv_16.c n2bv_32.c n2bv_64.c n2bv_20.c n2sv_4.c \
 	n2sv_8.c n2sv_16.c n2sv_32.c n2sv_64.c t1fuv_2.c t1fuv_3.c \
 	t1fuv_4.c t1fuv_5.c t1fuv_6.c t1fuv_7.c t1fuv_8.c t1fuv_9.c \
 	t1fuv_10.c t1fv_2.c t1fv_3.c t1fv_4.c t1fv_5.c t1fv_6.c \
 	t1fv_7.c t1fv_8.c t1fv_9.c t1fv_10.c t1fv_12.c t1fv_15.c \
-	t1fv_16.c t1fv_32.c t1fv_64.c t1fv_20.c t1fv_25.c t2fv_2.c \
-	t2fv_4.c t2fv_8.c t2fv_16.c t2fv_32.c t2fv_64.c t2fv_5.c \
-	t2fv_10.c t2fv_20.c t2fv_25.c t3fv_4.c t3fv_8.c t3fv_16.c \
-	t3fv_32.c t3fv_5.c t3fv_10.c t3fv_20.c t3fv_25.c t1buv_2.c \
+	t1fv_16.c t1fv_32.c t1fv_64.c t1fv_20.c t1fv_25.c t1fv_128.c \
+	t1fv_256.c t2fv_2.c t2fv_4.c t2fv_8.c t2fv_16.c t2fv_32.c \
+	t2fv_64.c t2fv_5.c t2fv_10.c t2fv_20.c t2fv_25.c t2fv_128.c \
+	t2fv_256.c t3fv_4.c t3fv_8.c t3fv_16.c t3fv_32.c t3fv_5.c \
+	t3fv_10.c t3fv_20.c t3fv_25.c t3fv_128.c t3fv_64.c t1buv_2.c \
 	t1buv_3.c t1buv_4.c t1buv_5.c t1buv_6.c t1buv_7.c t1buv_8.c \
 	t1buv_9.c t1buv_10.c t1bv_2.c t1bv_3.c t1bv_4.c t1bv_5.c \
 	t1bv_6.c t1bv_7.c t1bv_8.c t1bv_9.c t1bv_10.c t1bv_12.c \
@@ -150,18 +152,20 @@ am__libdft_generic_simd256_codelets_la_SOURCES_DIST = n1fv_2.c \
 	t3bv_16.c t3bv_32.c t3bv_5.c t3bv_10.c t3bv_20.c t3bv_25.c \
 	t1sv_2.c t1sv_4.c t1sv_8.c t1sv_16.c t1sv_32.c t2sv_4.c \
 	t2sv_8.c t2sv_16.c t2sv_32.c q1fv_2.c q1fv_4.c q1fv_5.c \
-	q1fv_8.c q1bv_2.c q1bv_4.c q1bv_5.c q1bv_8.c genus.c codlist.c
+	q1fv_8.c q1fv_10.c q1fv_12.c q1fv_16.c q1fv_20.c q1fv_32.c \
+	q1bv_2.c q1bv_4.c q1bv_5.c q1bv_8.c genus.c codlist.c
 am__objects_1 = n1fv_2.lo n1fv_3.lo n1fv_4.lo n1fv_5.lo n1fv_6.lo \
 	n1fv_7.lo n1fv_8.lo n1fv_9.lo n1fv_10.lo n1fv_11.lo n1fv_12.lo \
 	n1fv_13.lo n1fv_14.lo n1fv_15.lo n1fv_16.lo n1fv_32.lo \
-	n1fv_64.lo n1fv_128.lo n1fv_20.lo n1fv_25.lo
+	n1fv_64.lo n1fv_128.lo n1fv_256.lo n1fv_512.lo n1fv_20.lo \
+	n1fv_25.lo
 am__objects_2 = n1bv_2.lo n1bv_3.lo n1bv_4.lo n1bv_5.lo n1bv_6.lo \
 	n1bv_7.lo n1bv_8.lo n1bv_9.lo n1bv_10.lo n1bv_11.lo n1bv_12.lo \
 	n1bv_13.lo n1bv_14.lo n1bv_15.lo n1bv_16.lo n1bv_32.lo \
 	n1bv_64.lo n1bv_128.lo n1bv_20.lo n1bv_25.lo
 am__objects_3 = n2fv_2.lo n2fv_4.lo n2fv_6.lo n2fv_8.lo n2fv_10.lo \
 	n2fv_12.lo n2fv_14.lo n2fv_16.lo n2fv_32.lo n2fv_64.lo \
-	n2fv_20.lo
+	n2fv_128.lo n2fv_256.lo n2fv_512.lo n2fv_20.lo
 am__objects_4 = n2bv_2.lo n2bv_4.lo n2bv_6.lo n2bv_8.lo n2bv_10.lo \
 	n2bv_12.lo n2bv_14.lo n2bv_16.lo n2bv_32.lo n2bv_64.lo \
 	n2bv_20.lo
@@ -170,11 +174,13 @@ am__objects_6 = t1fuv_2.lo t1fuv_3.lo t1fuv_4.lo t1fuv_5.lo t1fuv_6.lo \
 	t1fuv_7.lo t1fuv_8.lo t1fuv_9.lo t1fuv_10.lo
 am__objects_7 = t1fv_2.lo t1fv_3.lo t1fv_4.lo t1fv_5.lo t1fv_6.lo \
 	t1fv_7.lo t1fv_8.lo t1fv_9.lo t1fv_10.lo t1fv_12.lo t1fv_15.lo \
-	t1fv_16.lo t1fv_32.lo t1fv_64.lo t1fv_20.lo t1fv_25.lo
+	t1fv_16.lo t1fv_32.lo t1fv_64.lo t1fv_20.lo t1fv_25.lo \
+	t1fv_128.lo t1fv_256.lo
 am__objects_8 = t2fv_2.lo t2fv_4.lo t2fv_8.lo t2fv_16.lo t2fv_32.lo \
-	t2fv_64.lo t2fv_5.lo t2fv_10.lo t2fv_20.lo t2fv_25.lo
+	t2fv_64.lo t2fv_5.lo t2fv_10.lo t2fv_20.lo t2fv_25.lo \
+	t2fv_128.lo t2fv_256.lo
 am__objects_9 = t3fv_4.lo t3fv_8.lo t3fv_16.lo t3fv_32.lo t3fv_5.lo \
-	t3fv_10.lo t3fv_20.lo t3fv_25.lo
+	t3fv_10.lo t3fv_20.lo t3fv_25.lo t3fv_128.lo t3fv_64.lo
 am__objects_10 = t1buv_2.lo t1buv_3.lo t1buv_4.lo t1buv_5.lo \
 	t1buv_6.lo t1buv_7.lo t1buv_8.lo t1buv_9.lo t1buv_10.lo
 am__objects_11 = t1bv_2.lo t1bv_3.lo t1bv_4.lo t1bv_5.lo t1bv_6.lo \
@@ -186,7 +192,8 @@ am__objects_13 = t3bv_4.lo t3bv_8.lo t3bv_16.lo t3bv_32.lo t3bv_5.lo \
 	t3bv_10.lo t3bv_20.lo t3bv_25.lo
 am__objects_14 = t1sv_2.lo t1sv_4.lo t1sv_8.lo t1sv_16.lo t1sv_32.lo
 am__objects_15 = t2sv_4.lo t2sv_8.lo t2sv_16.lo t2sv_32.lo
-am__objects_16 = q1fv_2.lo q1fv_4.lo q1fv_5.lo q1fv_8.lo
+am__objects_16 = q1fv_2.lo q1fv_4.lo q1fv_5.lo q1fv_8.lo q1fv_10.lo \
+	q1fv_12.lo q1fv_16.lo q1fv_20.lo q1fv_32.lo
 am__objects_17 = q1bv_2.lo q1bv_4.lo q1bv_5.lo q1bv_8.lo
 am__objects_18 = $(am__objects_1) $(am__objects_2) $(am__objects_3) \
 	$(am__objects_4) $(am__objects_5) $(am__objects_6) \
@@ -427,12 +434,12 @@ SIMD_HEADER = simd-support/simd-generic256.h
 # n1fv_<n> is a hard-coded FFTW_FORWARD FFT of size <n>, using SIMD
 N1F = n1fv_2.c n1fv_3.c n1fv_4.c n1fv_5.c n1fv_6.c n1fv_7.c n1fv_8.c	\
 n1fv_9.c n1fv_10.c n1fv_11.c n1fv_12.c n1fv_13.c n1fv_14.c n1fv_15.c	\
-n1fv_16.c n1fv_32.c n1fv_64.c n1fv_128.c n1fv_20.c n1fv_25.c
+n1fv_16.c n1fv_32.c n1fv_64.c n1fv_128.c n1fv_256.c n1fv_512.c n1fv_20.c n1fv_25.c
 
 
 # as above, with restricted input vector stride
 N2F = n2fv_2.c n2fv_4.c n2fv_6.c n2fv_8.c n2fv_10.c n2fv_12.c	\
-n2fv_14.c n2fv_16.c n2fv_32.c n2fv_64.c n2fv_20.c
+n2fv_14.c n2fv_16.c n2fv_32.c n2fv_64.c n2fv_128.c n2fv_256.c n2fv_512.c n2fv_20.c
 
 
 # as above, but FFTW_BACKWARD
@@ -452,15 +459,15 @@ N2S = n2sv_4.c n2sv_8.c n2sv_16.c n2sv_32.c n2sv_64.c
 # for an FFTW_FORWARD transform, using SIMD
 T1F = t1fv_2.c t1fv_3.c t1fv_4.c t1fv_5.c t1fv_6.c t1fv_7.c t1fv_8.c	\
 t1fv_9.c t1fv_10.c t1fv_12.c t1fv_15.c t1fv_16.c t1fv_32.c t1fv_64.c	\
-t1fv_20.c t1fv_25.c
+t1fv_20.c t1fv_25.c t1fv_128.c t1fv_256.c
 
 
 # same as t1fv_*, but with different twiddle storage scheme
 T2F = t2fv_2.c t2fv_4.c t2fv_8.c t2fv_16.c t2fv_32.c t2fv_64.c	\
-t2fv_5.c t2fv_10.c t2fv_20.c t2fv_25.c
+t2fv_5.c t2fv_10.c t2fv_20.c t2fv_25.c t2fv_128.c t2fv_256.c
 
 T3F = t3fv_4.c t3fv_8.c t3fv_16.c t3fv_32.c t3fv_5.c t3fv_10.c	\
-t3fv_20.c t3fv_25.c
+t3fv_20.c t3fv_25.c t3fv_128.c t3fv_64.c
 
 T1FU = t1fuv_2.c t1fuv_3.c t1fuv_4.c t1fuv_5.c t1fuv_6.c t1fuv_7.c	\
 t1fuv_8.c t1fuv_9.c t1fuv_10.c
@@ -493,7 +500,7 @@ T2S = t2sv_4.c t2sv_8.c t2sv_16.c t2sv_32.c
 # in-place transposes in sizes that are divisible by <r>^2.  These
 # codelets have size ~ <r>^2, so you should probably not use <r>
 # bigger than 8 or so.
-Q1F = q1fv_2.c q1fv_4.c q1fv_5.c q1fv_8.c
+Q1F = q1fv_2.c q1fv_4.c q1fv_5.c q1fv_8.c q1fv_10.c q1fv_12.c q1fv_16.c q1fv_20.c q1fv_32.c
 
 # as above, but FFTW_BACKWARD
 Q1B = q1bv_2.c q1bv_4.c q1bv_5.c q1bv_8.c
@@ -596,10 +603,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n1fv_2.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n1fv_20.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n1fv_25.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n1fv_256.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n1fv_3.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n1fv_32.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n1fv_4.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n1fv_5.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n1fv_512.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n1fv_6.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n1fv_64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n1fv_7.Plo@am__quote@
@@ -618,12 +627,15 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n2bv_8.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n2fv_10.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n2fv_12.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n2fv_128.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n2fv_14.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n2fv_16.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n2fv_2.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n2fv_20.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n2fv_256.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n2fv_32.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n2fv_4.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n2fv_512.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n2fv_6.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n2fv_64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/n2fv_8.Plo@am__quote@
@@ -636,7 +648,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/q1bv_4.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/q1bv_5.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/q1bv_8.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/q1fv_10.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/q1fv_12.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/q1fv_16.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/q1fv_2.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/q1fv_20.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/q1fv_32.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/q1fv_4.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/q1fv_5.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/q1fv_8.Plo@am__quote@
@@ -676,11 +693,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t1fuv_9.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t1fv_10.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t1fv_12.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t1fv_128.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t1fv_15.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t1fv_16.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t1fv_2.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t1fv_20.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t1fv_25.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t1fv_256.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t1fv_3.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t1fv_32.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t1fv_4.Plo@am__quote@
@@ -706,10 +725,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t2bv_64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t2bv_8.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t2fv_10.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t2fv_128.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t2fv_16.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t2fv_2.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t2fv_20.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t2fv_25.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t2fv_256.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t2fv_32.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t2fv_4.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t2fv_5.Plo@am__quote@
@@ -728,12 +749,14 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t3bv_5.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t3bv_8.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t3fv_10.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t3fv_128.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t3fv_16.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t3fv_20.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t3fv_25.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t3fv_32.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t3fv_4.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t3fv_5.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t3fv_64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/t3fv_8.Plo@am__quote@
 
 .c.o:

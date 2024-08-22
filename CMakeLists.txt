@@ -721,7 +721,7 @@ add_library (libtestbench STATIC tests/bench.c tests/hook.c tests/fftw-bench.c t
 if(Threads_FOUND)
         set(CMAKE_C_COMPILER_CFLAGS ${PTHREAD_CFLAGS})
         if(NOT COMBINED_THREADS)
-                set(LIBFFTWTHREADS = libfftw3${PREC_SUFFIX}_threads)
+                set(LIBFFTWTHREADS libfftw3${PREC_SUFFIX}_threads)
         endif()
 elseif(OPENMP_FOUND)
         set(CMAKE_C_COMPILER_CFLAGS ${OpenMP_C_FLAGS})
