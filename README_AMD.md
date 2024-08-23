@@ -76,7 +76,7 @@ It is supported in single-threaded execution in single and double precisions.
 
 An optional configure option "AMD_ARCH" is supported that can be set to CPU 
 architecture values like "auto" or "znver1" or "znver2" or "znver3" or "znver4"
-for AMD EPYC processors.
+or "znver5" for AMD EPYC processors.
 
 The optional configure option "--enable-amd-app-opt" turns on AMD's application
 optimization layer to benefit performance of HPC and scientific applications.
