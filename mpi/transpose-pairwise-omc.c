@@ -71,7 +71,7 @@ static void transpose_chunks(int *sched, int n_pes, int my_pe,
            buf[1] = bufs[1];
 #endif
            int pe = sched[0], pe2, j=0;
-           MPI_Status send_status, recv_status;
+           MPI_Request send_request, recv_request;
 
 #ifdef AMD_MPI_TRANSPOSE_LOGS
            printf("TRANSPOSE-PAIRWISE: n_pes[%d], my_pe[%d], first_pe[%d]\n", n_pes, my_pe, pe);
@@ -105,13 +105,13 @@ static void transpose_chunks(int *sched, int n_pes, int my_pe,
 #ifdef AMD_MPI_TRANSPOSE_LOGS
                printf("OVERLAP REGION:(my_pe != pe)=> my_pe[%d], i[%d]:pe[%d], src_offset[%d], dst_offset[%d], size[%d]\n", my_pe, i, pe2, sbo[pe2], rbo[pe2], sbs[pe2]);
 #endif
-                   MPI_Isend(buf[j&0x1], (int) (sbs[pe]), FFTW_MPI_TYPE, pe, (my_pe * n_pes + pe) & 0xffff, comm, &send_status);
-                   MPI_Irecv(O + rbo[pe], (int) (rbs[pe]), FFTW_MPI_TYPE, pe, (pe * n_pes + my_pe) & 0xffff, comm, &recv_status);
+                   MPI_Isend(buf[j&0x1], (int) (sbs[pe]), FFTW_MPI_TYPE, pe, (my_pe * n_pes + pe) & 0xffff, comm, &send_request);
+                   MPI_Irecv(O + rbo[pe], (int) (rbs[pe]), FFTW_MPI_TYPE, pe, (pe * n_pes + my_pe) & 0xffff, comm, &recv_request);
                    memcpy(buf[(j+1)&0x1], O + sbo[pe2], sbs[pe2] * sizeof(R));
                    pe = pe2;
                    //barrier
-                   MPI_Wait(&send_status, MPI_STATUS_IGNORE);
-                   MPI_Wait(&recv_status, MPI_STATUS_IGNORE);
+                   MPI_Wait(&send_request, MPI_STATUS_IGNORE);
+                   MPI_Wait(&recv_request, MPI_STATUS_IGNORE);
                }
                j++;
            }
