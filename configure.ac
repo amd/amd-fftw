@@ -629,7 +629,7 @@ dnl add gcc warnings, in debug/maintainer mode only
 if test "$enable_debug" = yes || test "$USE_MAINTAINER_MODE" = yes; then
 if test "$ac_test_CFLAGS" != "set"; then
 	if test $ac_cv_prog_gcc = yes; then
-		CFLAGS="$CFLAGS -Wall -W -Wcast-qual -Wpointer-arith -Wcast-align -pedantic -Wno-long-long -Wshadow -Wbad-function-cast -Wwrite-strings -Wstrict-prototypes -Wredundant-decls -Wnested-externs" # -Wundef -Wconversion -Wmissing-prototypes -Wmissing-declarations 
+		CFLAGS="$CFLAGS -Wall -W -Wcast-qual -Wpointer-arith -Wcast-align -pedantic -Wno-long-long -Wshadow -Wbad-function-cast -Wwrite-strings -Wstrict-prototypes -Wredundant-decls -Wnested-externs" # -Wundef -Wconversion -Wmissing-prototypes -Wmissing-declarations
 	fi
 fi
 fi
@@ -651,9 +651,9 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set" && test "$I
 
 	if test "$have_dynamic_dispatcher" = yes; then
         AC_DEFINE(AMD_DYNAMIC_DISPATCHER,1,[Define to enable AMD dynamic dispatcher feature that would build a single portable optimized library which can execute on different x86 CPU architectures.])
-        
+
         SUBSTRGCC='gcc'
-        if grep -q "$SUBSTRGCC" <<<"$CC"; then		
+        if grep -q "$SUBSTRGCC" <<<"$CC"; then
         	CFLAGS="$CFLAGS -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128"
         else
             AC_MSG_CHECKING([whether we are using clang 14 or later])
@@ -692,7 +692,7 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set" && test "$I
 		elif grep -q "$SUBSTRGCC" <<<"$CC"; then
 			GCCVERSION=$(expr `gcc -dumpversion | cut -f1 -d.`)
 			case "$AMDZENFAMILY" in
-				"23") 
+				"23")
 				if [[ -z "${AMD_ARCH}" ]]; then
 				if [[ "$GCCVERSION" -ge "9" ]] && [[ "$AMDZENMODEL" -ge "48" ]]; then
 					CFLAGS="$CFLAGS -march=znver2 -mavx2 -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128 -mfma"
@@ -733,7 +733,7 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set" && test "$I
 		if [[ -n "${AMD_ARCH}" ]]; then
 			if [[ "$AMD_ARCH" = "auto" ]]; then
 			case "$AMDZENFAMILY" in
-				"23") 
+				"23")
 				if [[ "$AMDZENMODEL" -ge "48" ]]; then
 					CFLAGS="$CFLAGS -march=znver2"
 				else
@@ -755,7 +755,7 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set" && test "$I
 	fi
 	fi
 	AC_DEFINE(AMD_OPT_ALL,1,[Define to enable AMD cpu specific optimizations.])
-	
+
 	dnl amd switch for VADER LIMIT that controls enabling of AMD's new MPI transpose algorithms --enable-amd-mpi-vader-limit
 	AC_ARG_ENABLE(amd-mpi-vader-limit, [AC_HELP_STRING([--enable-amd-mpi-vader-limit],[enable setting of VADER LIMIT that controls enabling of new AMD MPI transpose algorithms])], have_amd_mpi_vl=$enableval, have_amd_mpi_vl=no)
 	if test "$have_amd_mpi_vl" = yes ; then
@@ -790,16 +790,16 @@ AC_ARG_ENABLE(openmp, [AC_HELP_STRING([--enable-openmp],[use OpenMP directives f
 AC_ARG_ENABLE(threads, [AC_HELP_STRING([--enable-threads],[compile FFTW SMP threads library])], enable_threads=$enableval, enable_threads=no)
 dnl aocl version number of amd-fftw
 dateVar=`date +"%Y%m%d"`
-AC_DEFINE_UNQUOTED(AOCL_FFTW_VERSION,"AOCL-FFTW 5.2.0 Build $dateVar",[AOCL Version of AMD-FFTW])
+AC_DEFINE_UNQUOTED(AOCL_FFTW_VERSION,"AOCL-FFTW 5.3.0 Build $dateVar",[AOCL Version of AMD-FFTW])
 dnl amd optimization switch to enable AMD Fast Planner for AMD cpus --enable-amd-fast-planner
 AC_ARG_ENABLE(amd-fast-planner, [AC_HELP_STRING([--enable-amd-fast-planner],[enable AMD Fast Planner for a faster planning time on AMD cpus])], have_amd_fast_planner=$enableval, have_amd_fast_planner=no)
 dnl amd optimization switch to enable AMD Top N Planner for AMD cpus --enable-amd-top-n-planner
 AC_ARG_ENABLE(amd-top-n-planner, [AC_HELP_STRING([--enable-amd-top-n-planner],[enable AMD Top N Planner feature to search, save and reuse top N plans using wisdom file on AMD cpus])], have_amd_top_n_planner=$enableval, have_amd_top_n_planner=no)
-# Check if both amd-fast-planner and amd-top-n-planner are enabled together 
-if test "$have_amd_fast_planner" = yes && test "$have_amd_top_n_planner" = yes; then 
+# Check if both amd-fast-planner and amd-top-n-planner are enabled together
+if test "$have_amd_fast_planner" = yes && test "$have_amd_top_n_planner" = yes; then
 	AC_MSG_ERROR([AMD_FAST_PLANNER and AMD_TOP_N_PLANNER can not be enabled together])
 else
-        if (test "$have_amd_fast_planner" = yes && (test "$quad_precision_supported" = yes || test "$long_double_supported" = yes)); then		
+        if (test "$have_amd_fast_planner" = yes && (test "$quad_precision_supported" = yes || test "$long_double_supported" = yes)); then
 		AC_MSG_ERROR([AMD_FAST_PLANNER can not be enabled for Quad or Long double])
 	elif (test "$have_amd_fast_planner" = yes); then
 	        AC_DEFINE(AMD_OPT_FAST_PLANNER,1,[Define to enable AMD Fast Planner for AMD cpus.])
@@ -807,13 +807,13 @@ else
 	# Check if amd-top-n-planner is enabled with mpi, openmp or threads
 	if (test "$have_amd_top_n_planner" = yes && (test "$enable_threads" = yes || test "$enable_openmp" = yes || test "$enable_mpi" = yes)); then
 		AC_MSG_ERROR([AMD_TOP_N_PLANNER can not be enabled with mpi, openmp or threads as it is supported only for single threaded mode])
-	else	
-               if (test "$have_amd_top_n_planner" = yes && (test "$quad_precision_supported" = yes || test "$long_double_supported" = yes)); then 
+	else
+               if (test "$have_amd_top_n_planner" = yes && (test "$quad_precision_supported" = yes || test "$long_double_supported" = yes)); then
 	 	       AC_MSG_ERROR([AMD_TOP_N_PLANNER can not be enabled for Quad or Long double])
 	       elif (test "$have_amd_top_n_planner" = yes); then
                        AC_DEFINE(AMD_OPT_TOP_N_PLANNER,1,[Define to enable AMD Top N Planner for AMD cpus.])
                fi
-        fi		
+        fi
 fi
 
 dnl check for a proper indent in maintainer mode

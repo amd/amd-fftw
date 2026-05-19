@@ -254,7 +254,7 @@ if (MSVC)
 endif(MSVC)
 
 string(TIMESTAMP TODAY "%Y%m%d")
-add_compile_definitions(AOCL_FFTW_VERSION="AOCL-FFTW 5.2.0 Build ${TODAY}")
+add_compile_definitions(AOCL_FFTW_VERSION="AOCL-FFTW 5.3.0 Build ${TODAY}")
 
 find_library (LIBM_LIBRARY NAMES m)
 if (LIBM_LIBRARY)
@@ -583,7 +583,7 @@ if (ENABLE_AMD_TOP_N_planner)
   else ()
     message(FATAL_ERROR "AMD_TOP_N_PLANNER cannot be set for Quad and Long Double precision")
   endif ()
-  
+
   endif ()
 
 set (fftw3_lib libfftw3${PREC_SUFFIX})
@@ -613,13 +613,13 @@ if (Threads_FOUND)
     target_link_libraries (${lib_name} ${CMAKE_THREAD_LIBS_INIT})
   endif ()
 endif ()
-  
+
 if (OPENMP_FOUND)
   set (lib_name ${fftw3_lib}_omp)
   add_library (${lib_name} ${fftw_omp_SOURCE} ${SOURCEFILES})
   target_include_directories (${lib_name} INTERFACE $<INSTALL_INTERFACE:include>)
   target_link_libraries (${lib_name} ${CMAKE_THREAD_LIBS_INIT})
-  target_compile_options (${lib_name} PRIVATE ${OpenMP_C_FLAGS})  
+  target_compile_options (${lib_name} PRIVATE ${OpenMP_C_FLAGS})
   if (BUILD_SHARED_LIBS)
        target_link_libraries(${lib_name} PRIVATE OpenMP::OpenMP_C)
   endif(BUILD_SHARED_LIBS)
@@ -631,10 +631,10 @@ if (HAVE_MPI)
   add_library (${lib_name} ${fftw_omp_SOURCE} ${SOURCEFILES})
   target_include_directories (${lib_name} INTERFACE $<INSTALL_INTERFACE:include>)
   target_link_libraries (${lib_name} ${CMAKE_THREAD_LIBS_INIT})
-  target_compile_options (${lib_name} PRIVATE ${OpenMP_C_FLAGS}) 
+  target_compile_options (${lib_name} PRIVATE ${OpenMP_C_FLAGS})
   if (BUILD_SHARED_LIBS AND OPENMP_FOUND)
        target_link_libraries(${lib_name} PRIVATE OpenMP::OpenMP_C)
-  endif() 
+  endif()
 endif ()
 
 
