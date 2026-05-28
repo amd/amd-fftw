@@ -215,15 +215,16 @@ int bench_main(int argc, char *argv[])
 		   break;
 
 	      case 'o':
-		   if (output_fname)
+		   if (output_fname){
 			bench_free(output_fname);
-		   
+			output_fname = NULL;
+		   }
 		   if (!strcmp(my_optarg, "-"))
 			output_fname = 0;
 		   else {
 			output_fname = (char *) bench_malloc(sizeof(char) *
 						    (strlen(my_optarg) + 1));
-							
+
 			/* Check for allocation failure to prevent NULL pointer dereference */
         	if (!output_fname) {
             	fprintf(stderr, "fftw-wisdom: out of memory\n");
