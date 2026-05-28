@@ -223,6 +223,12 @@ int bench_main(int argc, char *argv[])
 		   else {
 			output_fname = (char *) bench_malloc(sizeof(char) *
 						    (strlen(my_optarg) + 1));
+							
+			/* Check for allocation failure to prevent NULL pointer dereference */
+        	if (!output_fname) {
+            	fprintf(stderr, "fftw-wisdom: out of memory\n");
+            	exit(EXIT_FAILURE);
+        	}
 			strcpy(output_fname, my_optarg);
 		   }
 		   break;
