@@ -62,7 +62,7 @@ jobs:
             ./configure --enable-sse2 --enable-avx --enable-avx2 --enable-avx512 \
               --enable-mpi --enable-openmp --enable-shared --enable-single \
               --enable-amd-opt --enable-dynamic-dispatcher \
-              --prefix=$PWD/install CC=${CC}
+              --prefix=$PWD/install CC=${CC} MPICC=${OPENMPI}/bin/mpicc MPIFC=${OPENMPI}/bin/mpif90
           else
             export AOCC_INSTALL_PATH=/home/amd/aocc-compiler-5.2.0
             export OPENMPI=/home/amd/mpi5.1.0/aocc/openmpi-5.0.1/openMPI_aocc
@@ -71,7 +71,7 @@ jobs:
             ./configure --enable-sse2 --enable-avx --enable-avx2 --enable-avx512 \
               --enable-mpi --enable-openmp --enable-shared \
               --enable-amd-opt --enable-dynamic-dispatcher \
-              --prefix=$PWD/install CC=clang FC=flang F77=flang
+              --prefix=$PWD/install CC=clang FC=flang F77=flang MPICC=${OPENMPI}/bin/mpicc MPIFC=${OPENMPI}/bin/mpifort
           fi
           make -j$(nproc)
 
