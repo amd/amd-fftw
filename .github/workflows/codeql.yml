@@ -1,0 +1,81 @@
+name: "CodeQL Advanced"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "amd-main" ]
+  pull_request:
+    branches: [ "amd-main" ]
+  schedule:
+    - cron: '42 19 * * 5'
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }}) - ${{ matrix.compiler }}
+    runs-on: amd_linux
+    permissions:
+      # required for all workflows
+      security-events: write
+      # required to fetch internal or private CodeQL packs
+      packages: read
+      # only required for workflows in private repositories
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: c-cpp
+            build-mode: manual
+            compiler: gcc
+          - language: c-cpp
+            build-mode: manual
+            compiler: aocc
+          - language: python
+            build-mode: none
+            compiler: none
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Initializes the CodeQL tools for scanning.
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix['build-mode'] }}
+          queries: security-and-quality
+
+      # Build
+      - name: Build
+        if: matrix['build-mode'] == 'manual'
+        shell: bash
+        run: |
+          if [ "${{ matrix.compiler }}" = "gcc" ]; then
+            export GCC_PATH=/usr/bin
+            export CC=${GCC_PATH}/gcc
+            export OPENMPI=/home/amd/mpi5.1.0/openmpi-5.0.1/openMPI_gcc
+            export PATH="${OPENMPI}/bin:${GCC_PATH}:${PATH}"
+            export LD_LIBRARY_PATH="${OPENMPI}/lib:${LD_LIBRARY_PATH}"
+            ./configure --enable-sse2 --enable-avx --enable-avx2 --enable-avx512 \
+              --enable-mpi --enable-openmp --enable-shared --enable-single \
+              --enable-amd-opt --enable-dynamic-dispatcher \
+              --prefix=$PWD/install CC=${CC}
+          else
+            export AOCC_INSTALL_PATH=/home/amd/aocc-compiler-5.2.0
+            export OPENMPI=/home/amd/mpi5.1.0/aocc/openmpi-5.0.1/openMPI_aocc
+            export PATH="${AOCC_INSTALL_PATH}/bin:${OPENMPI}/bin:${PATH}"
+            export LD_LIBRARY_PATH="${AOCC_INSTALL_PATH}/lib:${OPENMPI}/lib:${LD_LIBRARY_PATH}"
+            ./configure --enable-sse2 --enable-avx --enable-avx2 --enable-avx512 \
+              --enable-mpi --enable-openmp --enable-shared \
+              --enable-amd-opt --enable-dynamic-dispatcher \
+              --prefix=$PWD/install CC=clang FC=flang F77=flang
+          fi
+          make -j$(nproc)
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}-${{ matrix.compiler }}"
