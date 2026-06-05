@@ -79,3 +79,7 @@ jobs:
         uses: github/codeql-action/analyze@v3
         with:
           category: "/language:${{ matrix.language }}-${{ matrix.compiler }}"
+
+      - name: Cleanup workspace
+        if: always()
+        run: rm -rf "$GITHUB_WORKSPACE"
