@@ -25,13 +25,16 @@
 
 FFTW_VOIDFUNC F77(execute, EXECUTE)(X(plan) * const p)
 {
-     plan *pln = (*p)->pln;
-     pln->adt->solve(pln, (*p)->prb);
+     if (p && *p) {
+          plan *pln = (*p)->pln;
+          pln->adt->solve(pln, (*p)->prb);
+     }
 }
 
 FFTW_VOIDFUNC F77(destroy_plan, DESTROY_PLAN)(X(plan) *p)
 {
-     X(destroy_plan)(*p);
+     if (p)
+          X(destroy_plan)(*p);
 }
 
 FFTW_VOIDFUNC F77(cleanup, CLEANUP)(void)

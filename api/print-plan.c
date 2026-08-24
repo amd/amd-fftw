@@ -24,9 +24,15 @@ char *X(sprint_plan)(const X(plan) p)
 {
      size_t cnt;
      char *s;
-     plan *pln = p->pln;
+     plan *pln;
+     printer *pr;
 
-     printer *pr = X(mkprinter_cnt)(&cnt);
+     if (!p)
+          return 0;
+
+     pln = p->pln;
+
+     pr = X(mkprinter_cnt)(&cnt);
      pln->adt->print(pln, pr);
      X(printer_destroy)(pr);
 
@@ -41,10 +47,12 @@ char *X(sprint_plan)(const X(plan) p)
 
 void X(fprint_plan)(const X(plan) p, FILE *output_file)
 {
-     printer *pr = X(mkprinter_file)(output_file);
-     plan *pln = p->pln;
-     pln->adt->print(pln, pr);
-     X(printer_destroy)(pr);
+     if (p) {
+          printer *pr = X(mkprinter_file)(output_file);
+          plan *pln = p->pln;
+          pln->adt->print(pln, pr);
+          X(printer_destroy)(pr);
+     }
 }
 
 void X(print_plan)(const X(plan) p)
