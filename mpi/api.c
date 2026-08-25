@@ -190,7 +190,10 @@ static dtensor *default_sz(int rnk, const XM(ddim) *dims0, int n_pes,
 	possible with as few distributed dimensions as possible. */
      FORALL_BLOCK_KIND(k) {
 	  INT nb = XM(num_blocks_total)(sz, k);
-	  INT np = n_pes / nb;
+	  INT np;
+	  if (nb <= 0)
+	       continue;
+	  np = n_pes / nb;
 	  for (i = 0; i < rnk && np > 1; ++i)
 	       if (!sz0->dims[i].b[k]) {
 		    sz->dims[i].b[k] = XM(default_block)(sz->dims[i].n, np);

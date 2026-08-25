@@ -64,7 +64,9 @@ INT XM(choose_radix)(ddim d, int n_pes, unsigned flags, int sign,
 	 && d.n / n_pes >= n_pes /* .. unless we can't use n_pes processes */)
 	  r = d.n / n_pes;
      else {  /* n_pes does not divide d.n, pick a factor close to sqrt(d.n) */
-	  for (r = X(isqrt)(d.n); d.n % r != 0; ++r)
+	  r = X(isqrt)(d.n);
+	  if (r <= 0) return 0;
+	  for (; d.n % r != 0; ++r)
 	       ;
      }
      if (r == 1 || r == d.n) return 0; /* punt if we can't reduce size */
