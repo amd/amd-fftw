@@ -43,10 +43,10 @@ https://github.com/amd/amd-fftw, follow the below steps to configure and
 build it for AMD EPYC processor based on Naples, Rome, Milan and future 
 generation architectures.
 
-     ./configure --enable-sse2 --enable-avx --enable-avx2 --enable-avx512
-                 --enable-mpi --enable-openmp --enable-shared 
-                 --enable-amd-opt --enable-amd-mpifft
-                 --enable-dynamic-dispatcher
+     ./configure --enable-sse2 --enable-avx --enable-avx2 --enable-avx512 \
+                 --enable-mpi --enable-openmp --enable-shared  \
+                 --enable-amd-opt --enable-amd-mpifft \
+                 --enable-dynamic-dispatcher \
                  --prefix=<your-install-dir>
      make
      make install
