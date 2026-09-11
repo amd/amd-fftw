@@ -2,7 +2,7 @@ SECTION 1: AMD Contributions
 AMD includes FFTW libraries in AOCL under their respective open source licenses. No AMD-specific BSD/MIT code applies here; compliance is based on upstream licenses.
 
 SECTION 2: Third-Party Components
-The following third-party components are included in AOCL-FFTW v5.3.2:
+The following third-party components are included in AOCL-FFTW v6.0.0:
 
 
 automake
