@@ -329,7 +329,7 @@ void X(transpose_c)(R *I, INT n, INT s0, INT s1, INT vl)
 }
 
 
-int is_avx512, is_avx;
+static int is_avx512, is_avx;
 
 void X(transpose_internal)(R* I, INT n, INT s0, INT s1, INT vl) __attribute__((ifunc("fmv_resolver_transpose")));
 void X(transpose)(R* I, INT n, INT s0, INT s1, INT vl)

@@ -653,7 +653,7 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set" && test "$I
         AC_DEFINE(AMD_DYNAMIC_DISPATCHER,1,[Define to enable AMD dynamic dispatcher feature that would build a single portable optimized library which can execute on different x86 CPU architectures.])
 
         SUBSTRGCC='gcc'
-        if grep -q "$SUBSTRGCC" <<<"$CC"; then
+        if echo "$CC" | grep -q "$SUBSTRGCC"; then
         	CFLAGS="$CFLAGS -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128"
         else
             AC_MSG_CHECKING([whether we are using clang 14 or later])
@@ -683,13 +683,13 @@ if test "$have_amd_opt" = yes && test "${enable_debug+set}" != "set" && test "$I
 		fi
 		SUBSTRCLANG='clang'
 		SUBSTRGCC='gcc'
-		if grep -q "$SUBSTRCLANG" <<<"$CC"; then
+		if echo "$CC" | grep -q "$SUBSTRCLANG"; then
 			if [[ -z "${AMD_ARCH}" ]]; then
 				CFLAGS="$CFLAGS -mavx2 -mfma"
 			else
 				CFLAGS="$CFLAGS -march=$AMD_ARCH -mavx2 -mfma"
 			fi
-		elif grep -q "$SUBSTRGCC" <<<"$CC"; then
+		elif echo "$CC" | grep -q "$SUBSTRGCC"; then
 			GCCVERSION=$(expr `gcc -dumpversion | cut -f1 -d.`)
 			case "$AMDZENFAMILY" in
 				"23")
@@ -790,7 +790,7 @@ AC_ARG_ENABLE(openmp, [AC_HELP_STRING([--enable-openmp],[use OpenMP directives f
 AC_ARG_ENABLE(threads, [AC_HELP_STRING([--enable-threads],[compile FFTW SMP threads library])], enable_threads=$enableval, enable_threads=no)
 dnl aocl version number of amd-fftw
 dateVar=`date +"%Y%m%d"`
-AC_DEFINE_UNQUOTED(AOCL_FFTW_VERSION,"AOCL-FFTW 5.3.0 Build $dateVar",[AOCL Version of AMD-FFTW])
+AC_DEFINE_UNQUOTED(AOCL_FFTW_VERSION,"AOCL-FFTW 6.0.0 Build $dateVar",[AOCL Version of AMD-FFTW])
 dnl amd optimization switch to enable AMD Fast Planner for AMD cpus --enable-amd-fast-planner
 AC_ARG_ENABLE(amd-fast-planner, [AC_HELP_STRING([--enable-amd-fast-planner],[enable AMD Fast Planner for a faster planning time on AMD cpus])], have_amd_fast_planner=$enableval, have_amd_fast_planner=no)
 dnl amd optimization switch to enable AMD Top N Planner for AMD cpus --enable-amd-top-n-planner

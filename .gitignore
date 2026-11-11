@@ -1,0 +1,17 @@
+*.a
+*.cmake
+*.la
+*.lo
+*.o
+*.pc
+*bench
+.deps/
+.libs/
+Makefile
+config.*
+fftw3-mpi.f03
+fftw3.f03
+fftw3l-mpi.f03
+fftw[-_]wisdom*
+libtool
+stamp-h1

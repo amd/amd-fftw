@@ -22,6 +22,8 @@
 
 void X(execute)(const X(plan) p)
 {
-     plan *pln = p->pln;
-     pln->adt->solve(pln, p->prb);
+     if (p) {
+          plan *pln = p->pln;
+          pln->adt->solve(pln, p->prb);
+     }
 }

@@ -212,7 +212,10 @@ This function:
 void fftw_destroy_plan(fftw_plan plan);
 @end example
 @findex fftw_destroy_plan
-deallocates the @code{plan} and all its associated data.
+deallocates the @code{plan} and all its associated data.  Each plan must
+be destroyed at most once.  After calling @code{fftw_destroy_plan}, the
+plan handle must not be used again (for execution, printing, or another
+call to @code{fftw_destroy_plan}); doing so has undefined behavior.
 
 FFTW's planner saves some other persistent data, such as the
 accumulated wisdom and a list of algorithms available in the current

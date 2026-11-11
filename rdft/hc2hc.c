@@ -133,6 +133,8 @@ static plan *mkplan(const solver *ego_, const problem *p_, planner *plnr)
      d = p->sz->dims;
      n = d[0].n;
      r = X(choose_radix)(ego->r, n);
+     if (r <= 0)
+          return (plan *) 0;
      m = n / r;
 
      X(tensor_tornk1)(p->vecsz, &v, &ivs, &ovs);
@@ -177,6 +179,8 @@ static plan *mkplan(const solver *ego_, const problem *p_, planner *plnr)
 	 default: 
 	      A(0);
      }
+
+     if (!pln) goto nada;
 
      pln->cld = cld;
      pln->cldw = cldw;

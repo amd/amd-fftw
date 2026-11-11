@@ -1,13 +1,13 @@
-AOCL-FFTW v5.3 – LICENSE 
+AOCL-FFTW v6.0.0 - LICENSE
 
-SECTION 1: AMD CONTRIBUTIONS 
+SECTION 1: AMD CONTRIBUTIONS
 
-This distribution does not include AMD-owned licensable code. 
+AMD contributions are included in this distribution and are incorporated into components that are licensed under the GNU General Public License Version 2.0 (GPL-2.0). Accordingly, such contributions are licensed under GPL-2.0 as part of those components.
 
------------------------------------------------------------------------ 
-SECTION 2: THIRD-PARTY SOFTWARE 
------------------------------------------------------------------------ 
+-----------------------------------------------------------------------
+SECTION 2: THIRD-PARTY SOFTWARE
+-----------------------------------------------------------------------
 
-This distribution includes third-party software components. Each third-party component is licensed under its own respective license terms, which are provided in the accompanying NOTICE file. 
+This distribution includes third-party software components. Each third-party component is licensed under its own respective license terms, which are provided in the accompanying NOTICE file.
 
 Compliance with the licenses of such third-party components is required.

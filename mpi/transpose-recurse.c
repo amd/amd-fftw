@@ -74,7 +74,10 @@ static void apply(const plan *ego_, R *I, R *O)
 static int radix_sqrt(int np)
 {
      int r;
-     for (r = (int) (X(isqrt)(np)); np % r != 0; ++r)
+     r = (int) (X(isqrt)(np));
+     if (r <= 0)
+	  return 0;
+     for (; np % r != 0; ++r)
 	  ;
      return r;
 }

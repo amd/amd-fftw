@@ -18181,7 +18181,7 @@ printf "%s\n" "#define AMD_DYNAMIC_DISPATCHER 1" >>confdefs.h
 
 
         SUBSTRGCC='gcc'
-        if grep -q "$SUBSTRGCC" <<<"$CC"; then
+        if echo "$CC" | grep -q "$SUBSTRGCC"; then
         	CFLAGS="$CFLAGS -mno-avx256-split-unaligned-store -mno-avx256-split-unaligned-load -mno-prefer-avx128"
         else
             { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether we are using clang 14 or later" >&5
@@ -18223,13 +18223,13 @@ printf "%s\n" "AMD Dynamic Dispatcher feature is selected." >&6; }
 		fi
 		SUBSTRCLANG='clang'
 		SUBSTRGCC='gcc'
-		if grep -q "$SUBSTRCLANG" <<<"$CC"; then
+		if echo "$CC" | grep -q "$SUBSTRCLANG"; then
 			if [ -z "${AMD_ARCH}" ]; then
 				CFLAGS="$CFLAGS -mavx2 -mfma"
 			else
 				CFLAGS="$CFLAGS -march=$AMD_ARCH -mavx2 -mfma"
 			fi
-		elif grep -q "$SUBSTRGCC" <<<"$CC"; then
+		elif echo "$CC" | grep -q "$SUBSTRGCC"; then
 			GCCVERSION=$(expr `gcc -dumpversion | cut -f1 -d.`)
 			case "$AMDZENFAMILY" in
 				"23")
@@ -18385,7 +18385,7 @@ fi
 
 dateVar=`date +"%Y%m%d"`
 
-printf "%s\n" "#define AOCL_FFTW_VERSION \"AOCL-FFTW 5.3.0 Build $dateVar\"" >>confdefs.h
+printf "%s\n" "#define AOCL_FFTW_VERSION \"AOCL-FFTW 6.0.0 Build $dateVar\"" >>confdefs.h
 
 # Check whether --enable-amd-fast-planner was given.
 if test ${enable_amd_fast_planner+y}

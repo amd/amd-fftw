@@ -86,8 +86,12 @@ static int expressible_as_api_many(bench_tensor *t)
 
 static int *mkn(bench_tensor *t)
 {
-     int *n = (int *) bench_malloc(sizeof(int *) * t->rnk);
+     int *n;
      int i;
+
+     BENCH_ASSERT(BENCH_FINITE_RNK(t->rnk));
+
+     n = (int *) bench_malloc(sizeof(int) * t->rnk);
      for (i = 0; i < t->rnk; ++i) 
 	  n[i] = t->dims[i].n;
      return n;
@@ -97,10 +101,13 @@ static void mknembed_many(bench_tensor *t, int **inembedp, int **onembedp)
 {
      int i;
      bench_iodim *d;
-     int *inembed = (int *) bench_malloc(sizeof(int *) * t->rnk);
-     int *onembed = (int *) bench_malloc(sizeof(int *) * t->rnk);
+     int *inembed, *onembed;
 
      BENCH_ASSERT(BENCH_FINITE_RNK(t->rnk));
+
+     inembed = (int *) bench_malloc(sizeof(int) * t->rnk);
+     onembed = (int *) bench_malloc(sizeof(int) * t->rnk);
+
      *inembedp = inembed; *onembedp = onembed;
 
      i = t->rnk - 1;

@@ -247,6 +247,8 @@ static plan *mkplan(const solver *ego_, const problem *p_, planner *plnr)
      bufdist = X(bufdist)(n + 2, vl); /* complex-side rdft2 stores N+2
 					 real numbers */
      A(nbuf > 0);
+     if (nbuf <= 0)
+          goto nada;
 
      /* attempt to keep real and imaginary part in the same order,
 	so as to allow optimizations in the the copy plan */
